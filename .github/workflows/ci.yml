@@ -110,7 +110,7 @@ jobs:
       - name: Show server logs on failure
         if: failure()
         run: tail -n 50 api.log web.log
-      - run: npx playwright test
+      - run: npx playwright test --reporter=github,list
         working-directory: frontend
         env:
           E2E_BASE_URL: http://127.0.0.1:5173
