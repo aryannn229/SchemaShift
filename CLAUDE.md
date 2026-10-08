@@ -53,3 +53,12 @@ Frontend: `cd frontend; npm test | npm run lint | npm run typecheck | npm run bu
   App DB: SQLAlchemy models in `api/db/models.py`; Alembic in `backend/alembic` (`alembic upgrade head`;
   a test asserts migrations cover the models). Verification runs only via `POST /runs` with `verify:true`
   and needs SANDBOX_ADMIN_DATABASE_URL + MONGO_URL.
+- Phase 11 frontend (`frontend/`): React + Vite + Tailwind (`darkMode: "class"`), Monaco editor, react-flow graph.
+  API client is generated: `python scripts/gen_openapi.py` (from `backend/`, venv active) then `npm run gen:api`;
+  `openapi.json` and `src/api/schema.d.ts` are committed and CI fails when stale. Never hand-write API types.
+  Tests: `npm test` (Vitest), `npx playwright test` (E2E, runs in CI).
+- Phase 12 metrics: `schemashift evaluate [--verify] [--ai] --write-docs` updates docs/METRICS.md and docs/metrics.json
+  (served by GET /metrics). Sections not recomputed keep their previous values.
+- Phase 13 deploy: `backend/Dockerfile` (build context = repo root), `render.yaml`, `frontend/vercel.json`,
+  docs/DEPLOYMENT.md. The image runs `alembic upgrade head` then uvicorn with 2 workers.
+- Python in bash heredocs: avoid `"\n"` inside generated code (it becomes a real newline); use the Edit tool.

@@ -57,3 +57,7 @@
 | API app DB | SQLite fallback when APP_DATABASE_URL is unset; JSONB on PostgreSQL via `with_variant` | Zero-setup dev and fast tests; production uses Neon + Alembic. |
 | Run execution | In-process ThreadPoolExecutor (2 workers), polling via GET /runs/{id} | No queue infrastructure for a portfolio-scale deployment; graceful shutdown drains the pool. |
 | Rate limits | In-memory sliding window per IP (per worker) | Good enough for abuse protection; a shared store is a documented follow-up. |
+| Generated TS client | openapi-typescript + openapi-fetch, schema and openapi.json committed, CI diff check | SPEC forbids hand-written API types; committing keeps `npm ci && typecheck` independent of the backend. |
+| Frontend zip download | Built client-side with JSZip for stateless compiles; server zip for stored runs | Compile stores nothing, so there is no run to export. |
+| Metrics sections | Result-set and AI numbers persist in metrics.json until recomputed | They need live databases / an API key that CI and most dev machines lack. |
+| Docker context | Repository root | The image bundles samples/ and docs/metrics.json for /samples and /metrics. |

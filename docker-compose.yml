@@ -38,11 +38,16 @@ services:
       - "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'localhost:27017'}]}) }"
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     command: ["uvicorn", "schemashift.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     environment:
       APP_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-schemashift}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-schemashift_app}
+      SANDBOX_ADMIN_DATABASE_URL: postgresql://${POSTGRES_USER:-schemashift}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/schemashift_sandbox
       MONGO_URL: mongodb://mongo:27017/?directConnection=true
+      DB_AUTO_CREATE: "true"
+      ENVIRONMENT: development
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
     volumes: ["./backend/schemashift:/app/schemashift"]
     ports: ["${BACKEND_PORT:-8000}:8000"]
