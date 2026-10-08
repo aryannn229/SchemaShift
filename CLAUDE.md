@@ -34,6 +34,13 @@ Frontend: `cd frontend; npm test | npm run lint | npm run typecheck | npm run bu
   `check_program` / `check_both`. `docs/RULES.md` is generated: `python -m schemashift.equivalence.rules_doc`
   (CI fails if stale). Add a rule => add outcomes, a branch case in `tests/unit/equivalence/test_rule_branches.py`,
   and regenerate RULES.md.
+- Phase 5 optimizer (`optimizer/`): `plan_placement(...) -> PlacementPlan`; weights in `optimizer/weights.yaml`;
+  docs/OPTIMIZER.md. `pipeline.compile_sql(schema, queries, seed, CompileOptions)` runs every pure stage.
+- Phase 6 codegen (`codegen/`): `generate_code(result, options)`; the layout is the single source of truth for
+  validators, indexes, query translation and migration; `runtime_migrate.py` / `runtime_helpers.py` are embedded
+  verbatim in the generated scripts. Integration tests need `docker compose -f docker-compose.test.yml up -d --wait`
+  and `pytest -m integration`. See docs/CODEGEN.md.
+- Never patch a file with `s[:i] + new + s[j:]` without asserting `j > i` (it silently duplicated a file once).
 - Corpus (`backend/tests/corpus/*/expected.yaml`): hand-labeled ground truth; `schemashift evaluate` prints metrics
   (`--write-docs` updates `docs/METRICS.md`).
 - Shell gotcha: do not run Python from inside `backend/schemashift/parser/` (its `types.py` shadows stdlib `types`).

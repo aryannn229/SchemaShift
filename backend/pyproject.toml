@@ -47,6 +47,7 @@ addopts = "-m \"not integration and not live\""
 source = ["schemashift"]
 
 [tool.ruff]
+extend-exclude = ["tests/unit/codegen/golden", "tests/unit/parser/golden", "tests/corpus"]
 line-length = 100
 target-version = "py311"
 

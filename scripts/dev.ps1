@@ -25,7 +25,7 @@ switch ($Target) {
         try { Invoke-Checked { npm test } } finally { Pop-Location }
     }
     "test-integration" {
-        Invoke-Checked { docker compose -f "$root/docker-compose.test.yml" up -d }
+        Invoke-Checked { docker compose -f "$root/docker-compose.test.yml" up -d --wait }
         Push-Location "$root/backend"
         try { Invoke-Checked { & $py -m pytest -m integration } } finally { Pop-Location }
     }
