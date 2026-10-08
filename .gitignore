@@ -19,3 +19,5 @@ frontend/src/api/schema.d.ts
 install.log
 npm.log
 compose.log
+schemashift_dev.db
+schemashift_dev.db

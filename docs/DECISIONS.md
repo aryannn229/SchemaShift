@@ -54,3 +54,6 @@
 | 2026-10-08 | Default `LLM_MODEL` is `claude-opus-5-5` with `output_config.effort = low`, no `thinking`/`temperature` parameters | Current default Opus; those parameters are rejected or unnecessary on it. Still overridable by env var. |
 | 2026-10-08 | The mock advisor's opinion is stored but flagged `available=false` and excluded from the agreement rate | Spec: show "AI advisor disabled" without a key; agreement is only meaningful for a real model. |
 | 2026-10-08 | `ai.prompts` imports the DDL helpers lazily | Avoids an import cycle through `verification` -> `codegen` -> `pipeline`. |
+| API app DB | SQLite fallback when APP_DATABASE_URL is unset; JSONB on PostgreSQL via `with_variant` | Zero-setup dev and fast tests; production uses Neon + Alembic. |
+| Run execution | In-process ThreadPoolExecutor (2 workers), polling via GET /runs/{id} | No queue infrastructure for a portfolio-scale deployment; graceful shutdown drains the pool. |
+| Rate limits | In-memory sliding window per IP (per worker) | Good enough for abuse protection; a shared store is a documented follow-up. |

@@ -47,3 +47,9 @@ Frontend: `cd frontend; npm test | npm run lint | npm run typecheck | npm run bu
 - Corpus (`backend/tests/corpus/*/expected.yaml`): hand-labeled ground truth; `schemashift evaluate` prints metrics
   (`--write-docs` updates `docs/METRICS.md`).
 - Shell gotcha: do not run Python from inside `backend/schemashift/parser/` (its `types.py` shadows stdlib `types`).
+- Phase 9-10 API (`api/`): routes under `/api/v1` (health, compile, runs, runs/{id}, runs/{id}/export, samples, metrics).
+  `deps.get_state` lazily builds `AppState` (engine, session factory, advisor, DbCache, 2-worker run pool).
+  Middleware: body limit (413), per-IP rate limit (429), security headers, structlog with request_id/run_id.
+  App DB: SQLAlchemy models in `api/db/models.py`; Alembic in `backend/alembic` (`alembic upgrade head`;
+  a test asserts migrations cover the models). Verification runs only via `POST /runs` with `verify:true`
+  and needs SANDBOX_ADMIN_DATABASE_URL + MONGO_URL.
