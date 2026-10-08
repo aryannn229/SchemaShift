@@ -1,0 +1,267 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "courses": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 41,
+              "col_start": 23,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "title",
+            "nullable": true,
+            "span": {
+              "col_end": 53,
+              "col_start": 43,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "courses",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 41,
+            "col_start": 23,
+            "line_end": 2,
+            "line_start": 2
+          }
+        },
+        "span": {
+          "col_end": 54,
+          "col_start": 1,
+          "line_end": 2,
+          "line_start": 2
+        },
+        "uniques": []
+      },
+      "enrollments": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "student_id",
+            "nullable": false,
+            "span": {
+              "col_end": 50,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "course_id",
+            "nullable": false,
+            "span": {
+              "col_end": 48,
+              "col_start": 3,
+              "line_end": 5,
+              "line_start": 5
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "grade",
+            "nullable": true,
+            "span": {
+              "col_end": 16,
+              "col_start": 3,
+              "line_end": 6,
+              "line_start": 6
+            },
+            "sql_type": {
+              "base": "CHAR",
+              "enum_name": null,
+              "is_array": false,
+              "length": 1,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "student_id"
+            ],
+            "deferrable": false,
+            "name": null,
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "ref_columns": [
+              "id"
+            ],
+            "ref_table": "students",
+            "span": {
+              "col_end": 50,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            }
+          },
+          {
+            "columns": [
+              "course_id"
+            ],
+            "deferrable": false,
+            "name": null,
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "ref_columns": [
+              "id"
+            ],
+            "ref_table": "courses",
+            "span": {
+              "col_end": 48,
+              "col_start": 3,
+              "line_end": 5,
+              "line_start": 5
+            }
+          }
+        ],
+        "indexes": [],
+        "name": "enrollments",
+        "primary_key": {
+          "columns": [
+            "student_id",
+            "course_id"
+          ],
+          "span": {
+            "col_end": 38,
+            "col_start": 3,
+            "line_end": 7,
+            "line_start": 7
+          }
+        },
+        "span": {
+          "col_end": 2,
+          "col_start": 1,
+          "line_end": 8,
+          "line_start": 3
+        },
+        "uniques": []
+      },
+      "students": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 42,
+              "col_start": 24,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "name",
+            "nullable": true,
+            "span": {
+              "col_end": 53,
+              "col_start": 44,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "students",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 42,
+            "col_start": 24,
+            "line_end": 1,
+            "line_start": 1
+          }
+        },
+        "span": {
+          "col_end": 54,
+          "col_start": 1,
+          "line_end": 1,
+          "line_start": 1
+        },
+        "uniques": []
+      }
+    }
+  }
+}

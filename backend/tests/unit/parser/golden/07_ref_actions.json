@@ -1,0 +1,402 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "c1": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 36,
+              "col_start": 18,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "p_id",
+            "nullable": true,
+            "span": {
+              "col_end": 100,
+              "col_start": 38,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "p_id"
+            ],
+            "deferrable": false,
+            "name": null,
+            "on_delete": "RESTRICT",
+            "on_update": "CASCADE",
+            "ref_columns": [
+              "id"
+            ],
+            "ref_table": "p",
+            "span": {
+              "col_end": 100,
+              "col_start": 38,
+              "line_end": 2,
+              "line_start": 2
+            }
+          }
+        ],
+        "indexes": [],
+        "name": "c1",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 36,
+            "col_start": 18,
+            "line_end": 2,
+            "line_start": 2
+          }
+        },
+        "span": {
+          "col_end": 101,
+          "col_start": 1,
+          "line_end": 2,
+          "line_start": 2
+        },
+        "uniques": []
+      },
+      "c2": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 36,
+              "col_start": 18,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "p_id",
+            "nullable": true,
+            "span": {
+              "col_end": 102,
+              "col_start": 38,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "p_id"
+            ],
+            "deferrable": false,
+            "name": null,
+            "on_delete": "NO ACTION",
+            "on_update": "RESTRICT",
+            "ref_columns": [
+              "id"
+            ],
+            "ref_table": "p",
+            "span": {
+              "col_end": 102,
+              "col_start": 38,
+              "line_end": 3,
+              "line_start": 3
+            }
+          }
+        ],
+        "indexes": [],
+        "name": "c2",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 36,
+            "col_start": 18,
+            "line_end": 3,
+            "line_start": 3
+          }
+        },
+        "span": {
+          "col_end": 103,
+          "col_start": 1,
+          "line_end": 3,
+          "line_start": 3
+        },
+        "uniques": []
+      },
+      "c3": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 36,
+              "col_start": 18,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": {
+              "kind": "literal",
+              "sql": "1"
+            },
+            "is_identity": false,
+            "name": "p_id",
+            "nullable": true,
+            "span": {
+              "col_end": 114,
+              "col_start": 38,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "p_id"
+            ],
+            "deferrable": false,
+            "name": null,
+            "on_delete": "SET DEFAULT",
+            "on_update": "SET NULL",
+            "ref_columns": [
+              "id"
+            ],
+            "ref_table": "p",
+            "span": {
+              "col_end": 114,
+              "col_start": 38,
+              "line_end": 4,
+              "line_start": 4
+            }
+          }
+        ],
+        "indexes": [],
+        "name": "c3",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 36,
+            "col_start": 18,
+            "line_end": 4,
+            "line_start": 4
+          }
+        },
+        "span": {
+          "col_end": 115,
+          "col_start": 1,
+          "line_end": 4,
+          "line_start": 4
+        },
+        "uniques": []
+      },
+      "c4": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 36,
+              "col_start": 18,
+              "line_end": 5,
+              "line_start": 5
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "p_id",
+            "nullable": true,
+            "span": {
+              "col_end": 59,
+              "col_start": 38,
+              "line_end": 5,
+              "line_start": 5
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "p_id"
+            ],
+            "deferrable": false,
+            "name": null,
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "ref_columns": [
+              "id"
+            ],
+            "ref_table": "p",
+            "span": {
+              "col_end": 59,
+              "col_start": 38,
+              "line_end": 5,
+              "line_start": 5
+            }
+          }
+        ],
+        "indexes": [],
+        "name": "c4",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 36,
+            "col_start": 18,
+            "line_end": 5,
+            "line_start": 5
+          }
+        },
+        "span": {
+          "col_end": 60,
+          "col_start": 1,
+          "line_end": 5,
+          "line_start": 5
+        },
+        "uniques": []
+      },
+      "p": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 35,
+              "col_start": 17,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "p",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 35,
+            "col_start": 17,
+            "line_end": 1,
+            "line_start": 1
+          }
+        },
+        "span": {
+          "col_end": 36,
+          "col_start": 1,
+          "line_end": 1,
+          "line_start": 1
+        },
+        "uniques": []
+      }
+    }
+  }
+}

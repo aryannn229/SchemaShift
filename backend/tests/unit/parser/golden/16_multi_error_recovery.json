@@ -1,0 +1,164 @@
+{
+  "diagnostics": [
+    {
+      "code": "PARSE001",
+      "location": {
+        "col_end": 32,
+        "col_start": 1,
+        "line_end": 2,
+        "line_start": 2
+      },
+      "message": "Syntax error: empty element in column list",
+      "severity": "error"
+    },
+    {
+      "code": "UNSUPPORTED_TRIGGER",
+      "location": {
+        "col_end": 74,
+        "col_start": 1,
+        "line_end": 3,
+        "line_start": 3
+      },
+      "message": "Unsupported construct: triggers are not supported",
+      "severity": "error"
+    }
+  ],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "ok1": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 37,
+              "col_start": 19,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "ok1",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 37,
+            "col_start": 19,
+            "line_end": 1,
+            "line_start": 1
+          }
+        },
+        "span": {
+          "col_end": 38,
+          "col_start": 1,
+          "line_end": 1,
+          "line_start": 1
+        },
+        "uniques": []
+      },
+      "ok2": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 37,
+              "col_start": 19,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "ok1_id",
+            "nullable": true,
+            "span": {
+              "col_end": 68,
+              "col_start": 39,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "ok1_id"
+            ],
+            "deferrable": false,
+            "name": null,
+            "on_delete": "NO ACTION",
+            "on_update": "NO ACTION",
+            "ref_columns": [
+              "id"
+            ],
+            "ref_table": "ok1",
+            "span": {
+              "col_end": 68,
+              "col_start": 39,
+              "line_end": 4,
+              "line_start": 4
+            }
+          }
+        ],
+        "indexes": [],
+        "name": "ok2",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 37,
+            "col_start": 19,
+            "line_end": 4,
+            "line_start": 4
+          }
+        },
+        "span": {
+          "col_end": 69,
+          "col_start": 1,
+          "line_end": 4,
+          "line_start": 4
+        },
+        "uniques": []
+      }
+    }
+  }
+}

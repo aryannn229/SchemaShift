@@ -1,0 +1,95 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "Order Items": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "Item ID",
+            "nullable": false,
+            "span": {
+              "col_end": 28,
+              "col_start": 3,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "mixedcase",
+            "nullable": true,
+            "span": {
+              "col_end": 17,
+              "col_start": 3,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "MixedCase2",
+            "nullable": true,
+            "span": {
+              "col_end": 20,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "Order Items",
+        "primary_key": {
+          "columns": [
+            "Item ID"
+          ],
+          "span": {
+            "col_end": 28,
+            "col_start": 3,
+            "line_end": 2,
+            "line_start": 2
+          }
+        },
+        "span": {
+          "col_end": 2,
+          "col_start": 1,
+          "line_end": 5,
+          "line_start": 1
+        },
+        "uniques": []
+      }
+    }
+  }
+}

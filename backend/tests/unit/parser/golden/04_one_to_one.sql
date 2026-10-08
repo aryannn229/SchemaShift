@@ -1,0 +1,5 @@
+CREATE TABLE users (id INT PRIMARY KEY);
+CREATE TABLE profiles (
+  user_id INT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  bio TEXT
+);

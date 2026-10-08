@@ -1,0 +1,184 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "customers": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 43,
+              "col_start": 25,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "name",
+            "nullable": false,
+            "span": {
+              "col_end": 63,
+              "col_start": 45,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "customers",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 43,
+            "col_start": 25,
+            "line_end": 1,
+            "line_start": 1
+          }
+        },
+        "span": {
+          "col_end": 64,
+          "col_start": 1,
+          "line_end": 1,
+          "line_start": 1
+        },
+        "uniques": []
+      },
+      "orders": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 21,
+              "col_start": 3,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "customer_id",
+            "nullable": false,
+            "span": {
+              "col_end": 71,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": {
+              "kind": "literal",
+              "sql": "0"
+            },
+            "is_identity": false,
+            "name": "total",
+            "nullable": false,
+            "span": {
+              "col_end": 41,
+              "col_start": 3,
+              "line_end": 5,
+              "line_start": 5
+            },
+            "sql_type": {
+              "base": "DECIMAL",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": 10,
+              "scale": 2
+            }
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "customer_id"
+            ],
+            "deferrable": false,
+            "name": null,
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "ref_columns": [
+              "id"
+            ],
+            "ref_table": "customers",
+            "span": {
+              "col_end": 71,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            }
+          }
+        ],
+        "indexes": [],
+        "name": "orders",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 21,
+            "col_start": 3,
+            "line_end": 3,
+            "line_start": 3
+          }
+        },
+        "span": {
+          "col_end": 2,
+          "col_start": 1,
+          "line_end": 6,
+          "line_start": 2
+        },
+        "uniques": []
+      }
+    }
+  }
+}

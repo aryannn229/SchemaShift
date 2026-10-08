@@ -1,0 +1,159 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "items": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 39,
+              "col_start": 21,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "sku",
+            "nullable": true,
+            "span": {
+              "col_end": 49,
+              "col_start": 41,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "price",
+            "nullable": true,
+            "span": {
+              "col_end": 69,
+              "col_start": 51,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "DECIMAL",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": 8,
+              "scale": 2
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "deleted",
+            "nullable": true,
+            "span": {
+              "col_end": 86,
+              "col_start": 71,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "BOOLEAN",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [
+          {
+            "columns": [
+              "price"
+            ],
+            "name": "idx_items_price",
+            "span": {
+              "col_end": 51,
+              "col_start": 1,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "unique": false,
+            "where_sql": null
+          },
+          {
+            "columns": [
+              "sku"
+            ],
+            "name": "uq_items_sku",
+            "span": {
+              "col_end": 70,
+              "col_start": 1,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "unique": true,
+            "where_sql": "deleted = FALSE"
+          },
+          {
+            "columns": [
+              "sku",
+              "price"
+            ],
+            "name": "items_sku_price_idx",
+            "span": {
+              "col_end": 35,
+              "col_start": 1,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "unique": false,
+            "where_sql": null
+          }
+        ],
+        "name": "items",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 39,
+            "col_start": 21,
+            "line_end": 1,
+            "line_start": 1
+          }
+        },
+        "span": {
+          "col_end": 87,
+          "col_start": 1,
+          "line_end": 1,
+          "line_start": 1
+        },
+        "uniques": []
+      }
+    }
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "products": {
+        "checks": [
+          {
+            "expression_sql": "price >= 0",
+            "name": null,
+            "span": {
+              "col_end": 40,
+              "col_start": 3,
+              "line_end": 3,
+              "line_start": 3
+            }
+          },
+          {
+            "expression_sql": "status IN ('new', 'used')",
+            "name": null,
+            "span": {
+              "col_end": 48,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            }
+          },
+          {
+            "expression_sql": "LENGTH(name) > 2",
+            "name": "name_len",
+            "span": {
+              "col_end": 64,
+              "col_start": 3,
+              "line_end": 6,
+              "line_start": 6
+            }
+          },
+          {
+            "expression_sql": "lo <= hi",
+            "name": "lo_hi",
+            "span": {
+              "col_end": 36,
+              "col_start": 3,
+              "line_end": 7,
+              "line_start": 7
+            }
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 21,
+              "col_start": 3,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "price",
+            "nullable": true,
+            "span": {
+              "col_end": 40,
+              "col_start": 3,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "DECIMAL",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": 8,
+              "scale": 2
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "status",
+            "nullable": true,
+            "span": {
+              "col_end": 48,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "lo",
+            "nullable": true,
+            "span": {
+              "col_end": 9,
+              "col_start": 3,
+              "line_end": 5,
+              "line_start": 5
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "hi",
+            "nullable": true,
+            "span": {
+              "col_end": 17,
+              "col_start": 11,
+              "line_end": 5,
+              "line_start": 5
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "name",
+            "nullable": true,
+            "span": {
+              "col_end": 64,
+              "col_start": 3,
+              "line_end": 6,
+              "line_start": 6
+            },
+            "sql_type": {
+              "base": "VARCHAR",
+              "enum_name": null,
+              "is_array": false,
+              "length": 20,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "products",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 21,
+            "col_start": 3,
+            "line_end": 2,
+            "line_start": 2
+          }
+        },
+        "span": {
+          "col_end": 2,
+          "col_start": 1,
+          "line_end": 8,
+          "line_start": 1
+        },
+        "uniques": []
+      }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "notes": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 21,
+              "col_start": 3,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": {
+              "kind": "literal",
+              "sql": "'semi;colon -- not a comment'"
+            },
+            "is_identity": false,
+            "name": "body",
+            "nullable": true,
+            "span": {
+              "col_end": 50,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "notes",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 21,
+            "col_start": 3,
+            "line_end": 3,
+            "line_start": 3
+          }
+        },
+        "span": {
+          "col_end": 2,
+          "col_start": 1,
+          "line_end": 5,
+          "line_start": 2
+        },
+        "uniques": []
+      }
+    }
+  }
+}

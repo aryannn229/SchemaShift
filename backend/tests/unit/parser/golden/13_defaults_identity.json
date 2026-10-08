@@ -1,0 +1,233 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "logs": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": true,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 27,
+              "col_start": 3,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "BIGINT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": true,
+            "name": "seq",
+            "nullable": true,
+            "span": {
+              "col_end": 39,
+              "col_start": 3,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": true,
+            "name": "seq2",
+            "nullable": true,
+            "span": {
+              "col_end": 47,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "BIGINT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": {
+              "kind": "now",
+              "sql": "CURRENT_TIMESTAMP"
+            },
+            "is_identity": false,
+            "name": "created_at",
+            "nullable": false,
+            "span": {
+              "col_end": 48,
+              "col_start": 3,
+              "line_end": 5,
+              "line_start": 5
+            },
+            "sql_type": {
+              "base": "TIMESTAMPTZ",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": {
+              "kind": "now",
+              "sql": "CURRENT_TIMESTAMP"
+            },
+            "is_identity": false,
+            "name": "updated_at",
+            "nullable": true,
+            "span": {
+              "col_end": 49,
+              "col_start": 3,
+              "line_end": 6,
+              "line_start": 6
+            },
+            "sql_type": {
+              "base": "TIMESTAMP",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": {
+              "kind": "literal",
+              "sql": "'info'"
+            },
+            "is_identity": false,
+            "name": "level",
+            "nullable": true,
+            "span": {
+              "col_end": 28,
+              "col_start": 3,
+              "line_end": 7,
+              "line_start": 7
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": {
+              "kind": "literal",
+              "sql": "-1"
+            },
+            "is_identity": false,
+            "name": "retries",
+            "nullable": true,
+            "span": {
+              "col_end": 25,
+              "col_start": 3,
+              "line_end": 8,
+              "line_start": 8
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": {
+              "kind": "literal",
+              "sql": "TRUE"
+            },
+            "is_identity": false,
+            "name": "active",
+            "nullable": true,
+            "span": {
+              "col_end": 30,
+              "col_start": 3,
+              "line_end": 9,
+              "line_start": 9
+            },
+            "sql_type": {
+              "base": "BOOLEAN",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": {
+              "kind": "expression",
+              "sql": "GEN_RANDOM_UUID()"
+            },
+            "is_identity": false,
+            "name": "token",
+            "nullable": true,
+            "span": {
+              "col_end": 39,
+              "col_start": 3,
+              "line_end": 10,
+              "line_start": 10
+            },
+            "sql_type": {
+              "base": "UUID",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "logs",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 27,
+            "col_start": 3,
+            "line_end": 2,
+            "line_start": 2
+          }
+        },
+        "span": {
+          "col_end": 2,
+          "col_start": 1,
+          "line_end": 11,
+          "line_start": 1
+        },
+        "uniques": []
+      }
+    }
+  }
+}

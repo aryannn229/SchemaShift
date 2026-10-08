@@ -1,0 +1,6 @@
+CREATE TABLE public.people (
+  id INT PRIMARY KEY,
+  email TEXT UNIQUE,
+  phone TEXT NULL UNIQUE,
+  ssn TEXT NOT NULL UNIQUE
+);

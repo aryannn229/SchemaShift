@@ -1,0 +1,93 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {
+      "account_type": {
+        "name": "account_type",
+        "span": {
+          "col_end": 69,
+          "col_start": 1,
+          "line_end": 1,
+          "line_start": 1
+        },
+        "values": [
+          "checking",
+          "savings",
+          "business"
+        ]
+      }
+    },
+    "tables": {
+      "accounts": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": true,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 24,
+              "col_start": 3,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": {
+              "kind": "literal",
+              "sql": "'checking'"
+            },
+            "is_identity": false,
+            "name": "kind",
+            "nullable": false,
+            "span": {
+              "col_end": 48,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "ENUM",
+              "enum_name": "account_type",
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "accounts",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 24,
+            "col_start": 3,
+            "line_end": 3,
+            "line_start": 3
+          }
+        },
+        "span": {
+          "col_end": 2,
+          "col_start": 1,
+          "line_end": 5,
+          "line_start": 2
+        },
+        "uniques": []
+      }
+    }
+  }
+}

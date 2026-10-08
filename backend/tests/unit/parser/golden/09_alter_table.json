@@ -1,0 +1,205 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "child": {
+        "checks": [
+          {
+            "expression_sql": "qty > 0",
+            "name": "child_qty_ck",
+            "span": {
+              "col_end": 106,
+              "col_start": 63,
+              "line_end": 6,
+              "line_start": 6
+            }
+          }
+        ],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 27,
+              "col_start": 21,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "parent_id",
+            "nullable": true,
+            "span": {
+              "col_end": 42,
+              "col_start": 29,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "code",
+            "nullable": true,
+            "span": {
+              "col_end": 53,
+              "col_start": 44,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "qty",
+            "nullable": true,
+            "span": {
+              "col_end": 62,
+              "col_start": 55,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [
+          {
+            "columns": [
+              "parent_id"
+            ],
+            "deferrable": false,
+            "name": "child_parent_fk",
+            "on_delete": "CASCADE",
+            "on_update": "NO ACTION",
+            "ref_columns": [
+              "id"
+            ],
+            "ref_table": "parent",
+            "span": {
+              "col_end": 113,
+              "col_start": 19,
+              "line_end": 5,
+              "line_start": 5
+            }
+          }
+        ],
+        "indexes": [],
+        "name": "child",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 59,
+            "col_start": 19,
+            "line_end": 4,
+            "line_start": 4
+          }
+        },
+        "span": {
+          "col_end": 63,
+          "col_start": 1,
+          "line_end": 2,
+          "line_start": 2
+        },
+        "uniques": [
+          {
+            "columns": [
+              "code"
+            ],
+            "name": "child_code_uq",
+            "span": {
+              "col_end": 61,
+              "col_start": 19,
+              "line_end": 6,
+              "line_start": 6
+            }
+          }
+        ]
+      },
+      "parent": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 28,
+              "col_start": 22,
+              "line_end": 1,
+              "line_start": 1
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "parent",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 40,
+            "col_start": 20,
+            "line_end": 3,
+            "line_start": 3
+          }
+        },
+        "span": {
+          "col_end": 29,
+          "col_start": 1,
+          "line_end": 1,
+          "line_start": 1
+        },
+        "uniques": []
+      }
+    }
+  }
+}

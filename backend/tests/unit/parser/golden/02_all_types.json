@@ -1,0 +1,485 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "everything": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "a",
+            "nullable": true,
+            "span": {
+              "col_end": 13,
+              "col_start": 3,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "SMALLINT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "b",
+            "nullable": true,
+            "span": {
+              "col_end": 24,
+              "col_start": 15,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "c",
+            "nullable": true,
+            "span": {
+              "col_end": 34,
+              "col_start": 26,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "BIGINT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "d",
+            "nullable": true,
+            "span": {
+              "col_end": 52,
+              "col_start": 36,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "DECIMAL",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": 10,
+              "scale": 2
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "e",
+            "nullable": true,
+            "span": {
+              "col_end": 66,
+              "col_start": 54,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "DECIMAL",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": 5,
+              "scale": 0
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "f",
+            "nullable": true,
+            "span": {
+              "col_end": 74,
+              "col_start": 68,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "FLOAT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "g",
+            "nullable": true,
+            "span": {
+              "col_end": 94,
+              "col_start": 76,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "DOUBLE",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "h",
+            "nullable": true,
+            "span": {
+              "col_end": 12,
+              "col_start": 3,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "BOOLEAN",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "i",
+            "nullable": true,
+            "span": {
+              "col_end": 20,
+              "col_start": 14,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "j",
+            "nullable": true,
+            "span": {
+              "col_end": 35,
+              "col_start": 22,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "VARCHAR",
+              "enum_name": null,
+              "is_array": false,
+              "length": 40,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "k",
+            "nullable": true,
+            "span": {
+              "col_end": 46,
+              "col_start": 37,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "CHAR",
+              "enum_name": null,
+              "is_array": false,
+              "length": 3,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "l",
+            "nullable": true,
+            "span": {
+              "col_end": 54,
+              "col_start": 48,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "DATE",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "m",
+            "nullable": true,
+            "span": {
+              "col_end": 67,
+              "col_start": 56,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "TIMESTAMP",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "n",
+            "nullable": true,
+            "span": {
+              "col_end": 82,
+              "col_start": 69,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "TIMESTAMPTZ",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "o",
+            "nullable": true,
+            "span": {
+              "col_end": 90,
+              "col_start": 84,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "TIME",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "p",
+            "nullable": true,
+            "span": {
+              "col_end": 9,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "UUID",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "q",
+            "nullable": true,
+            "span": {
+              "col_end": 17,
+              "col_start": 11,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "JSON",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "r",
+            "nullable": true,
+            "span": {
+              "col_end": 26,
+              "col_start": 19,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "JSONB",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "s",
+            "nullable": true,
+            "span": {
+              "col_end": 35,
+              "col_start": 28,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "BYTEA",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "t",
+            "nullable": true,
+            "span": {
+              "col_end": 47,
+              "col_start": 37,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "INTERVAL",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "u",
+            "nullable": true,
+            "span": {
+              "col_end": 56,
+              "col_start": 49,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": true,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "v",
+            "nullable": true,
+            "span": {
+              "col_end": 66,
+              "col_start": 58,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": true,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "w",
+            "nullable": true,
+            "span": {
+              "col_end": 77,
+              "col_start": 68,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "DECIMAL",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "everything",
+        "primary_key": null,
+        "span": {
+          "col_end": 2,
+          "col_start": 1,
+          "line_end": 5,
+          "line_start": 1
+        },
+        "uniques": []
+      }
+    }
+  }
+}

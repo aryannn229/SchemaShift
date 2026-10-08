@@ -1,0 +1,152 @@
+{
+  "diagnostics": [],
+  "schema": {
+    "dialect": "postgres",
+    "enums": {},
+    "tables": {
+      "people": {
+        "checks": [],
+        "columns": [
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "id",
+            "nullable": false,
+            "span": {
+              "col_end": 21,
+              "col_start": 3,
+              "line_end": 2,
+              "line_start": 2
+            },
+            "sql_type": {
+              "base": "INTEGER",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "email",
+            "nullable": true,
+            "span": {
+              "col_end": 20,
+              "col_start": 3,
+              "line_end": 3,
+              "line_start": 3
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "phone",
+            "nullable": true,
+            "span": {
+              "col_end": 25,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          },
+          {
+            "default": null,
+            "is_identity": false,
+            "name": "ssn",
+            "nullable": false,
+            "span": {
+              "col_end": 27,
+              "col_start": 3,
+              "line_end": 5,
+              "line_start": 5
+            },
+            "sql_type": {
+              "base": "TEXT",
+              "enum_name": null,
+              "is_array": false,
+              "length": null,
+              "precision": null,
+              "scale": null
+            }
+          }
+        ],
+        "foreign_keys": [],
+        "indexes": [],
+        "name": "people",
+        "primary_key": {
+          "columns": [
+            "id"
+          ],
+          "span": {
+            "col_end": 21,
+            "col_start": 3,
+            "line_end": 2,
+            "line_start": 2
+          }
+        },
+        "span": {
+          "col_end": 2,
+          "col_start": 1,
+          "line_end": 6,
+          "line_start": 1
+        },
+        "uniques": [
+          {
+            "columns": [
+              "email"
+            ],
+            "name": null,
+            "span": {
+              "col_end": 20,
+              "col_start": 3,
+              "line_end": 3,
+              "line_start": 3
+            }
+          },
+          {
+            "columns": [
+              "phone"
+            ],
+            "name": null,
+            "span": {
+              "col_end": 25,
+              "col_start": 3,
+              "line_end": 4,
+              "line_start": 4
+            }
+          },
+          {
+            "columns": [
+              "ssn"
+            ],
+            "name": null,
+            "span": {
+              "col_end": 27,
+              "col_start": 3,
+              "line_end": 5,
+              "line_start": 5
+            }
+          }
+        ]
+      }
+    }
+  }
+}
