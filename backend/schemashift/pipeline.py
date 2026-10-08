@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import Field
 
+from schemashift.ai import AdvisorCache, LLMAdvisor, attach_opinions
 from schemashift.equivalence import EquivalenceResult, RuleOptions, check_both
 from schemashift.ir import IRProgram, build_ir, print_ir
 from schemashift.models import Placement, PlacementPlan
@@ -13,7 +14,7 @@ from schemashift.models.base import FrozenModel
 from schemashift.models.query import Query, TransactionBlock
 from schemashift.models.schema import Schema
 from schemashift.models.source import Diagnostic
-from schemashift.optimizer import AccessHint, OptimizerOptions, plan_placement
+from schemashift.optimizer import AccessHint, OptimizerOptions, extract_features, plan_placement
 from schemashift.parser import parse
 from schemashift.semantic import SchemaGraph, analyze
 
@@ -67,8 +68,10 @@ def compile_sql(
     queries_sql: str = "",
     seed_sql: str = "",
     options: CompileOptions | None = None,
+    advisor: LLMAdvisor | None = None,
+    cache: AdvisorCache | None = None,
 ) -> CompileResult:
-    """Run every pure compiler stage. Never executes the SQL."""
+    """Run every compiler stage. Never executes the SQL. The advisor (if any) is advisory only."""
     options = options or CompileOptions()
     parsed = parse(schema_sql + "\n" + queries_sql)
     seed = parse(seed_sql, "queries") if seed_sql.strip() else None
@@ -78,6 +81,11 @@ def compile_sql(
     plan = plan_placement(
         analysis.graph, program, parsed.queries, seed_queries, options.optimizer_options()
     )
+    if advisor is not None:
+        features = extract_features(
+            analysis.graph, program, parsed.queries, seed_queries, options.access_hints
+        )
+        plan = attach_opinions(plan, features, parsed.schema_, advisor, cache)
     equivalence = check_both(program, analysis.graph, plan, options.rule_options())
     diagnostics = [*parsed.diagnostics, *analysis.diagnostics]
     if seed:

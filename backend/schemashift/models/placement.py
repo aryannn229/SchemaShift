@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Literal
 
+from pydantic import Field
+
 from schemashift.models.base import FrozenModel
 
 Placement = Literal["EMBED", "REFERENCE", "REF_ARRAY"]
@@ -14,6 +16,21 @@ class Factor(FrozenModel):
     contribution: float
 
 
+class AISuggestion(FrozenModel):
+    """The LLM's advisory opinion (never overrides the optimizer)."""
+
+    decision: Literal["EMBED", "REFERENCE"]
+    confidence: float = Field(ge=0.0, le=1.0)
+    justification: str
+
+
+class AIOpinion(FrozenModel):
+    source: Literal["anthropic", "mock", "unavailable"]
+    available: bool  # False for the mock advisor and for failed calls
+    suggestion: AISuggestion | None = None
+    error: str | None = None
+
+
 class PlacementDecision(FrozenModel):
     relationship_id: str
     decision: Placement
@@ -22,6 +39,8 @@ class PlacementDecision(FrozenModel):
     reason: str = ""
     overridden: bool = False  # forced by the user (relationship_overrides)
     host: str | None = None  # table whose document hosts the embedding / array of references
+    ai: AIOpinion | None = None  # advisory second opinion
+    agree: bool | None = None  # optimizer == AI (only when a real AI opinion exists)
 
 
 def junction_key(junction_table: str) -> str:

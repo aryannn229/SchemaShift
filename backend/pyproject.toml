@@ -18,6 +18,7 @@ dependencies = [
   "typer>=0.12",
   "pyyaml>=6",
   "faker>=25",
+  "anthropic>=1.0",
 ]
 
 [project.optional-dependencies]

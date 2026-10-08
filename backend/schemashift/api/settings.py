@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     mongo_url: str = ""
     cors_origins: str = "http://localhost:5173"
     anthropic_api_key: str = ""
-    llm_model: str = "claude-sonnet-5-5"
+    llm_model: str = "claude-opus-5-5"
     sentry_dsn: str = ""
 
     @property

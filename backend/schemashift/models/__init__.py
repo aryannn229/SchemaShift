@@ -1,4 +1,11 @@
-from schemashift.models.placement import Factor, Placement, PlacementDecision, PlacementPlan
+from schemashift.models.placement import (
+    AIOpinion,
+    AISuggestion,
+    Factor,
+    Placement,
+    PlacementDecision,
+    PlacementPlan,
+)
 from schemashift.models.query import Query, QueryKind, TransactionBlock
 from schemashift.models.schema import (
     CheckConstraint,
@@ -18,6 +25,8 @@ from schemashift.models.source import Diagnostic, Severity, SourceSpan
 from schemashift.models.verdict import ConditionTrace, Status, Verdict, worst
 
 __all__ = [
+    "AIOpinion",
+    "AISuggestion",
     "ConditionTrace",
     "Factor",
     "Placement",

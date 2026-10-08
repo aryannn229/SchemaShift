@@ -51,3 +51,6 @@
 | 2026-10-08 | A junction folded into its parent counts as embedded in that parent in the equivalence rules (cascade/RI/restrict toward the host become SAFE/CHANGED accordingly) | Found by the verification harness: deleting the host removes the folded rows, exactly like a cascade. |
 | 2026-10-08 | Seed generation derives candidate values from simple CHECKs (IN lists, numeric ranges); other CHECKs are verified with an SQL evaluator and retried | Random text never satisfies `status IN ('draft','published')`. |
 | 2026-10-08 | Global aggregates over empty input are a documented gap (PostgreSQL 1 row, MongoDB 0 rows); the diff names the hypothesis | Emulating it needs a `$unionWith` trick that hurts readability. |
+| 2026-10-08 | Default `LLM_MODEL` is `claude-opus-5-5` with `output_config.effort = low`, no `thinking`/`temperature` parameters | Current default Opus; those parameters are rejected or unnecessary on it. Still overridable by env var. |
+| 2026-10-08 | The mock advisor's opinion is stored but flagged `available=false` and excluded from the agreement rate | Spec: show "AI advisor disabled" without a key; agreement is only meaningful for a real model. |
+| 2026-10-08 | `ai.prompts` imports the DDL helpers lazily | Avoids an import cycle through `verification` -> `codegen` -> `pipeline`. |
