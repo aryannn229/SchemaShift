@@ -15,3 +15,6 @@
 | 2026-10-08 | `NormalizedType` gained `enum_name`; `CheckConstraint` stores `expression_sql` (re-parseable) instead of an AST dump; `Index` gained `where_sql`; `Schema` gained `enums` | Needed to model ENUM columns, partial indexes and serialize checks. |
 | 2026-10-08 | Constraint spans are the whole column/table-element definition; unsupported queries use non-`Command` SQL functions list COUNT/SUM/AVG/MIN/MAX/CAST | Simplest highlight target for the UI. |
 | 2026-10-08 | `ParseResult.schema_` (trailing underscore) | `schema` shadows a pydantic BaseModel attribute. |
+| 2026-10-08 | `CrossEntityUniqueness` is emitted for the key of a detected junction table (tables = the two related entities) | Spec text is vague ("unique across a junction/derived shape"); a pair-uniqueness over two entities is the only SQL constraint that naturally spans entities. Verdict depends on whether the junction keeps its own collection. |
+| 2026-10-08 | Every FK without an explicit ON DELETE yields `RestrictDelete(action="NO ACTION")` | Spec maps `RESTRICT`/`NO ACTION` to RestrictDelete and NO ACTION is SQL's default. |
+| 2026-10-08 | Test files exempt from ruff E501 | Long SQL literals in tests are clearer unwrapped. |
