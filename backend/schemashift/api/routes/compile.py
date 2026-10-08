@@ -22,8 +22,11 @@ from schemashift.api.schemas import (
     RunPage,
     RunRequest,
     RunSummary,
+    SampleDetail,
+    SampleInfo,
 )
 from schemashift.api.service import RequestTooLarge, build_response, export_zip, run_compile
+from schemashift.verification import VerificationReport
 
 router = APIRouter()
 
@@ -44,7 +47,9 @@ def _detail(run: Run) -> RunDetail:
         duration_ms=run.duration_ms,
         error=run.error,
         result=CompileResponse.model_validate(run.result) if run.result else None,
-        verification=run.verification,
+        verification=VerificationReport.model_validate(run.verification)
+        if run.verification
+        else None,
     )
 
 
@@ -163,17 +168,19 @@ def _samples(state: AppState) -> dict[str, dict[str, Any]]:
     return out
 
 
-@router.get("/samples")
-def list_samples(state: AppState = Depends(get_state)) -> list[dict[str, str]]:
-    return [{"name": s["name"], "description": s["description"]} for s in _samples(state).values()]
+@router.get("/samples", response_model=list[SampleInfo])
+def list_samples(state: AppState = Depends(get_state)) -> list[SampleInfo]:
+    return [
+        SampleInfo(name=s["name"], description=s["description"]) for s in _samples(state).values()
+    ]
 
 
-@router.get("/samples/{name}")
-def get_sample(name: str, state: AppState = Depends(get_state)) -> dict[str, Any]:
+@router.get("/samples/{name}", response_model=SampleDetail)
+def get_sample(name: str, state: AppState = Depends(get_state)) -> SampleDetail:
     sample = _samples(state).get(name)
     if sample is None:
         raise HTTPException(status_code=404, detail="sample not found")
-    return sample
+    return SampleDetail.model_validate(sample)
 
 
 @router.get("/metrics", response_model=MetricsResponse)

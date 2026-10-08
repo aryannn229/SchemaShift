@@ -1,0 +1,2019 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SchemaShift",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/compile": {
+      "post": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Compile Endpoint",
+        "description": "Run every pure compiler stage. Nothing is stored and no SQL is executed.",
+        "operationId": "compile_endpoint_api_v1_compile_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs": {
+      "post": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Create Run",
+        "operationId": "create_run_api_v1_runs_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "List Runs",
+        "operationId": "list_runs_api_v1_runs_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Get Run",
+        "operationId": "get_run_api_v1_runs__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/runs/{run_id}/export": {
+      "get": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Export Run",
+        "operationId": "export_run_api_v1_runs__run_id__export_get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(zip|json)$",
+              "default": "zip",
+              "title": "Format"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/samples": {
+      "get": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "List Samples",
+        "operationId": "list_samples_api_v1_samples_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SampleInfo"
+                  },
+                  "type": "array",
+                  "title": "Response List Samples Api V1 Samples Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/samples/{name}": {
+      "get": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Get Sample",
+        "operationId": "get_sample_api_v1_samples__name__get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SampleDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/metrics": {
+      "get": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Metrics",
+        "operationId": "metrics_api_v1_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AIOpinion": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "anthropic",
+              "mock",
+              "unavailable"
+            ],
+            "title": "Source"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "suggestion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AISuggestion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "available"
+        ],
+        "title": "AIOpinion"
+      },
+      "AISuggestion": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "EMBED",
+              "REFERENCE"
+            ],
+            "title": "Decision"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence"
+          },
+          "justification": {
+            "type": "string",
+            "title": "Justification"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision",
+          "confidence",
+          "justification"
+        ],
+        "title": "AISuggestion",
+        "description": "The LLM's advisory opinion (never overrides the optimizer)."
+      },
+      "AccessHint": {
+        "properties": {
+          "child_independent_access": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Child Independent Access"
+          },
+          "read_together_ratio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read Together Ratio"
+          },
+          "child_write_frequency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "med",
+                  "high"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Child Write Frequency"
+          },
+          "estimated_child_count_per_parent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Child Count Per Parent"
+          }
+        },
+        "type": "object",
+        "title": "AccessHint",
+        "description": "User supplied overrides for one relationship (all optional)."
+      },
+      "CompileOptions": {
+        "properties": {
+          "target_mongo_version": {
+            "type": "string",
+            "title": "Target Mongo Version",
+            "default": "7.0"
+          },
+          "transactions_available": {
+            "type": "boolean",
+            "title": "Transactions Available",
+            "default": true
+          },
+          "preserve_integer_ids": {
+            "type": "boolean",
+            "title": "Preserve Integer Ids",
+            "default": false
+          },
+          "uuid_as": {
+            "type": "string",
+            "enum": [
+              "binary",
+              "string"
+            ],
+            "title": "Uuid As",
+            "default": "binary"
+          },
+          "rows_per_table": {
+            "type": "integer",
+            "title": "Rows Per Table",
+            "default": 50
+          },
+          "relationship_overrides": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "EMBED",
+                "REFERENCE",
+                "REF_ARRAY"
+              ]
+            },
+            "type": "object",
+            "title": "Relationship Overrides",
+            "default": {}
+          },
+          "access_hints": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AccessHint"
+            },
+            "type": "object",
+            "title": "Access Hints",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "CompileOptions"
+      },
+      "CompileRequest": {
+        "properties": {
+          "schema_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Schema Sql"
+          },
+          "queries_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Queries Sql",
+            "default": ""
+          },
+          "seed_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Seed Sql",
+            "default": ""
+          },
+          "options": {
+            "$ref": "#/components/schemas/CompileOptions",
+            "default": {
+              "target_mongo_version": "7.0",
+              "transactions_available": true,
+              "preserve_integer_ids": false,
+              "uuid_as": "binary",
+              "rows_per_table": 50,
+              "relationship_overrides": {},
+              "access_hints": {}
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "schema_sql"
+        ],
+        "title": "CompileRequest"
+      },
+      "CompileResponse": {
+        "properties": {
+          "overall_verdict": {
+            "type": "string",
+            "enum": [
+              "SAFE",
+              "CHANGED",
+              "BROKEN"
+            ],
+            "title": "Overall Verdict"
+          },
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Counts"
+          },
+          "has_errors": {
+            "type": "boolean",
+            "title": "Has Errors"
+          },
+          "diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/Diagnostic"
+            },
+            "type": "array",
+            "title": "Diagnostics"
+          },
+          "queries_line_offset": {
+            "type": "integer",
+            "title": "Queries Line Offset"
+          },
+          "ir_text": {
+            "type": "string",
+            "title": "Ir Text"
+          },
+          "ir_node_count": {
+            "type": "integer",
+            "title": "Ir Node Count"
+          },
+          "verdicts": {
+            "items": {
+              "$ref": "#/components/schemas/Verdict"
+            },
+            "type": "array",
+            "title": "Verdicts"
+          },
+          "initial_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Initial Counts"
+          },
+          "changed_by_placement": {
+            "items": {
+              "$ref": "#/components/schemas/PlacementChange"
+            },
+            "type": "array",
+            "title": "Changed By Placement"
+          },
+          "plan": {
+            "items": {
+              "$ref": "#/components/schemas/PlacementDecision"
+            },
+            "type": "array",
+            "title": "Plan"
+          },
+          "plan_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Plan Warnings"
+          },
+          "graph_nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            },
+            "type": "array",
+            "title": "Graph Nodes"
+          },
+          "graph_edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            },
+            "type": "array",
+            "title": "Graph Edges"
+          },
+          "ai_enabled": {
+            "type": "boolean",
+            "title": "Ai Enabled"
+          },
+          "generated": {
+            "items": {
+              "$ref": "#/components/schemas/GeneratedFile"
+            },
+            "type": "array",
+            "title": "Generated"
+          },
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/QueryTranslation"
+            },
+            "type": "array",
+            "title": "Queries"
+          },
+          "untranslated_checks": {
+            "items": {
+              "$ref": "#/components/schemas/UntranslatedCheckDTO"
+            },
+            "type": "array",
+            "title": "Untranslated Checks"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "overall_verdict",
+          "counts",
+          "has_errors",
+          "diagnostics",
+          "queries_line_offset",
+          "ir_text",
+          "ir_node_count",
+          "verdicts",
+          "initial_counts",
+          "changed_by_placement",
+          "plan",
+          "plan_warnings",
+          "graph_nodes",
+          "graph_edges",
+          "ai_enabled",
+          "generated",
+          "queries",
+          "untranslated_checks",
+          "warnings"
+        ],
+        "title": "CompileResponse"
+      },
+      "ConditionTrace": {
+        "properties": {
+          "condition": {
+            "type": "string",
+            "title": "Condition"
+          },
+          "result": {
+            "type": "boolean",
+            "title": "Result"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "condition",
+          "result"
+        ],
+        "title": "ConditionTrace",
+        "description": "One condition a rule evaluated and its result (the UI's \"Why?\" view)."
+      },
+      "Diagnostic": {
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "error",
+              "warning",
+              "info"
+            ],
+            "title": "Severity"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceSpan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "severity",
+          "code",
+          "message"
+        ],
+        "title": "Diagnostic"
+      },
+      "Factor": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "contribution": {
+            "type": "number",
+            "title": "Contribution"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "contribution"
+        ],
+        "title": "Factor"
+      },
+      "GeneratedFile": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "mitigates": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Mitigates",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "path",
+          "language",
+          "purpose",
+          "content"
+        ],
+        "title": "GeneratedFile"
+      },
+      "GraphEdge": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "child": {
+            "type": "string",
+            "title": "Child"
+          },
+          "parent": {
+            "type": "string",
+            "title": "Parent"
+          },
+          "cardinality": {
+            "type": "string",
+            "title": "Cardinality"
+          },
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Columns"
+          },
+          "on_delete": {
+            "type": "string",
+            "title": "On Delete"
+          },
+          "decision": {
+            "type": "string",
+            "title": "Decision"
+          },
+          "self_reference": {
+            "type": "boolean",
+            "title": "Self Reference",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "child",
+          "parent",
+          "cardinality",
+          "columns",
+          "on_delete",
+          "decision"
+        ],
+        "title": "GraphEdge"
+      },
+      "GraphNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "columns": {
+            "type": "integer",
+            "title": "Columns"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "collection": {
+            "type": "string",
+            "title": "Collection"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "columns",
+          "kind",
+          "collection"
+        ],
+        "title": "GraphNode"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ],
+            "title": "Status"
+          },
+          "postgres": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "unconfigured"
+            ],
+            "title": "Postgres"
+          },
+          "mongo": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "unconfigured"
+            ],
+            "title": "Mongo"
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "unconfigured"
+            ],
+            "title": "Database",
+            "default": "up"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "postgres",
+          "mongo"
+        ],
+        "title": "HealthResponse"
+      },
+      "MetricsResponse": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available"
+        ],
+        "title": "MetricsResponse"
+      },
+      "PlacementChange": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "initial": {
+            "type": "string",
+            "enum": [
+              "SAFE",
+              "CHANGED",
+              "BROKEN"
+            ],
+            "title": "Initial"
+          },
+          "final": {
+            "type": "string",
+            "enum": [
+              "SAFE",
+              "CHANGED",
+              "BROKEN"
+            ],
+            "title": "Final"
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id",
+          "rule_id",
+          "initial",
+          "final"
+        ],
+        "title": "PlacementChange",
+        "description": "A verdict whose status changed between the initial and final pass."
+      },
+      "PlacementDecision": {
+        "properties": {
+          "relationship_id": {
+            "type": "string",
+            "title": "Relationship Id"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "EMBED",
+              "REFERENCE",
+              "REF_ARRAY"
+            ],
+            "title": "Decision"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score",
+            "default": 0.0
+          },
+          "top_factors": {
+            "items": {
+              "$ref": "#/components/schemas/Factor"
+            },
+            "type": "array",
+            "title": "Top Factors",
+            "default": []
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "overridden": {
+            "type": "boolean",
+            "title": "Overridden",
+            "default": false
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host"
+          },
+          "ai": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AIOpinion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "agree": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agree"
+          }
+        },
+        "type": "object",
+        "required": [
+          "relationship_id",
+          "decision"
+        ],
+        "title": "PlacementDecision"
+      },
+      "ProbeOutcome": {
+        "properties": {
+          "verdict_id": {
+            "type": "string",
+            "title": "Verdict Id"
+          },
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "postgres": {
+            "type": "string",
+            "title": "Postgres"
+          },
+          "mongo": {
+            "type": "string",
+            "title": "Mongo"
+          },
+          "demonstrates": {
+            "type": "boolean",
+            "title": "Demonstrates"
+          },
+          "tables_differing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tables Differing",
+            "default": []
+          },
+          "examples": {
+            "items": {
+              "$ref": "#/components/schemas/RowDiff"
+            },
+            "type": "array",
+            "title": "Examples",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "verdict_id",
+          "rule_id",
+          "status",
+          "description",
+          "postgres",
+          "mongo",
+          "demonstrates"
+        ],
+        "title": "ProbeOutcome"
+      },
+      "QueryOutcome": {
+        "properties": {
+          "query_id": {
+            "type": "string",
+            "title": "Query Id"
+          },
+          "sql": {
+            "type": "string",
+            "title": "Sql"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "MATCH",
+              "MISMATCH",
+              "ERROR",
+              "NOT_TRANSLATED",
+              "SKIPPED"
+            ],
+            "title": "Status"
+          },
+          "pg_rows": {
+            "type": "integer",
+            "title": "Pg Rows",
+            "default": 0
+          },
+          "mongo_rows": {
+            "type": "integer",
+            "title": "Mongo Rows",
+            "default": 0
+          },
+          "differing": {
+            "items": {
+              "$ref": "#/components/schemas/RowDiff"
+            },
+            "type": "array",
+            "title": "Differing",
+            "default": []
+          },
+          "hypothesis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hypothesis"
+          },
+          "explained_by": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Explained By",
+            "default": []
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "pg_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pg Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query_id",
+          "sql",
+          "kind",
+          "status"
+        ],
+        "title": "QueryOutcome"
+      },
+      "QueryTranslation": {
+        "properties": {
+          "query_id": {
+            "type": "string",
+            "title": "Query Id"
+          },
+          "sql": {
+            "type": "string",
+            "title": "Sql"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "collection": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collection"
+          },
+          "output_columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Output Columns",
+            "default": []
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes",
+            "default": []
+          },
+          "mongosh": {
+            "type": "string",
+            "title": "Mongosh",
+            "default": ""
+          },
+          "python": {
+            "type": "string",
+            "title": "Python",
+            "default": ""
+          },
+          "transaction_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transaction Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query_id",
+          "sql",
+          "kind"
+        ],
+        "title": "QueryTranslation"
+      },
+      "RowDiff": {
+        "properties": {
+          "side": {
+            "type": "string",
+            "enum": [
+              "postgres",
+              "mongo",
+              "both"
+            ],
+            "title": "Side"
+          },
+          "index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index"
+          },
+          "postgres": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postgres"
+          },
+          "mongo": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mongo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "side"
+        ],
+        "title": "RowDiff"
+      },
+      "RunCreated": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id"
+        ],
+        "title": "RunCreated"
+      },
+      "RunDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "verify": {
+            "type": "boolean",
+            "title": "Verify"
+          },
+          "schema_sql": {
+            "type": "string",
+            "title": "Schema Sql"
+          },
+          "queries_sql": {
+            "type": "string",
+            "title": "Queries Sql"
+          },
+          "seed_sql": {
+            "type": "string",
+            "title": "Seed Sql"
+          },
+          "options": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Options"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "overall_verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overall Verdict"
+          },
+          "counts": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counts"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompileResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verification": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerificationReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "status",
+          "verify",
+          "schema_sql",
+          "queries_sql",
+          "seed_sql",
+          "options",
+          "seed",
+          "overall_verdict",
+          "counts",
+          "duration_ms",
+          "error",
+          "result",
+          "verification"
+        ],
+        "title": "RunDetail"
+      },
+      "RunPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RunSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "RunPage"
+      },
+      "RunRequest": {
+        "properties": {
+          "schema_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Schema Sql"
+          },
+          "queries_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Queries Sql",
+            "default": ""
+          },
+          "seed_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Seed Sql",
+            "default": ""
+          },
+          "options": {
+            "$ref": "#/components/schemas/CompileOptions",
+            "default": {
+              "target_mongo_version": "7.0",
+              "transactions_available": true,
+              "preserve_integer_ids": false,
+              "uuid_as": "binary",
+              "rows_per_table": 50,
+              "relationship_overrides": {},
+              "access_hints": {}
+            }
+          },
+          "verify": {
+            "type": "boolean",
+            "title": "Verify",
+            "default": false
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "schema_sql"
+        ],
+        "title": "RunRequest"
+      },
+      "RunSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "done",
+              "failed"
+            ],
+            "title": "Status"
+          },
+          "overall_verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overall Verdict"
+          },
+          "counts": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counts"
+          },
+          "verify": {
+            "type": "boolean",
+            "title": "Verify"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "schema_preview": {
+            "type": "string",
+            "title": "Schema Preview"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "status",
+          "overall_verdict",
+          "counts",
+          "verify",
+          "duration_ms",
+          "schema_preview"
+        ],
+        "title": "RunSummary"
+      },
+      "SampleDetail": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          },
+          "schema_sql": {
+            "type": "string",
+            "title": "Schema Sql"
+          },
+          "queries_sql": {
+            "type": "string",
+            "title": "Queries Sql"
+          },
+          "options": {
+            "$ref": "#/components/schemas/CompileOptions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "schema_sql",
+          "queries_sql",
+          "options"
+        ],
+        "title": "SampleDetail"
+      },
+      "SampleInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "SampleInfo"
+      },
+      "SourceSpan": {
+        "properties": {
+          "line_start": {
+            "type": "integer",
+            "title": "Line Start"
+          },
+          "col_start": {
+            "type": "integer",
+            "title": "Col Start"
+          },
+          "line_end": {
+            "type": "integer",
+            "title": "Line End"
+          },
+          "col_end": {
+            "type": "integer",
+            "title": "Col End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line_start",
+          "col_start",
+          "line_end",
+          "col_end"
+        ],
+        "title": "SourceSpan",
+        "description": "1-based line/column range. ``col_end`` is exclusive."
+      },
+      "UntranslatedCheckDTO": {
+        "properties": {
+          "table": {
+            "type": "string",
+            "title": "Table"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sql": {
+            "type": "string",
+            "title": "Sql"
+          },
+          "fragment": {
+            "type": "string",
+            "title": "Fragment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "table",
+          "name",
+          "sql",
+          "fragment"
+        ],
+        "title": "UntranslatedCheckDTO"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Verdict": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "ir_node_type": {
+            "type": "string",
+            "title": "Ir Node Type"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SAFE",
+              "CHANGED",
+              "BROKEN"
+            ],
+            "title": "Status"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "mitigation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mitigation"
+          },
+          "mongo_feature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mongo Feature"
+          },
+          "conditions_evaluated": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionTrace"
+            },
+            "type": "array",
+            "title": "Conditions Evaluated",
+            "default": []
+          },
+          "source_span": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceSpan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id",
+          "rule_id",
+          "ir_node_type",
+          "status",
+          "outcome",
+          "reason"
+        ],
+        "title": "Verdict"
+      },
+      "VerificationReport": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed"
+          },
+          "rows": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Rows"
+          },
+          "migrated": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Migrated"
+          },
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/QueryOutcome"
+            },
+            "type": "array",
+            "title": "Queries"
+          },
+          "probes": {
+            "items": {
+              "$ref": "#/components/schemas/ProbeOutcome"
+            },
+            "type": "array",
+            "title": "Probes",
+            "default": []
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "default": []
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "seed",
+          "rows",
+          "migrated",
+          "queries"
+        ],
+        "title": "VerificationReport"
+      }
+    }
+  }
+}

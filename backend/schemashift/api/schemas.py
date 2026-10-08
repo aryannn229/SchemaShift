@@ -12,6 +12,7 @@ from schemashift.equivalence.checker import PlacementChange
 from schemashift.models import PlacementDecision, Verdict
 from schemashift.models.source import Diagnostic
 from schemashift.pipeline import CompileOptions
+from schemashift.verification import VerificationReport
 
 MAX_SQL_CHARS = 200_000
 
@@ -128,9 +129,20 @@ class RunDetail(BaseModel):
     duration_ms: int | None
     error: str | None
     result: CompileResponse | None
-    verification: dict[str, Any] | None
+    verification: VerificationReport | None
 
 
 class MetricsResponse(BaseModel):
     available: bool
     data: dict[str, Any] | None = None
+
+
+class SampleInfo(BaseModel):
+    name: str
+    description: str = ""
+
+
+class SampleDetail(SampleInfo):
+    schema_sql: str
+    queries_sql: str
+    options: CompileOptions
