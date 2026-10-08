@@ -124,7 +124,15 @@ def verify(
 def evaluate(
     corpus: Path = typer.Option(None, help="Corpus directory (default: tests/corpus)"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="List every mismatch"),
-    write_docs: bool = typer.Option(False, "--write-docs", help="Update docs/METRICS.md"),
+    write_docs: bool = typer.Option(
+        False, "--write-docs", help="Update docs/METRICS.md and docs/metrics.json"
+    ),
+    verify_samples: bool = typer.Option(
+        False, "--verify", help="Also measure result-set correctness (needs PostgreSQL + MongoDB)"
+    ),
+    with_ai: bool = typer.Option(
+        False, "--ai", help="Also measure AI agreement (needs ANTHROPIC_API_KEY)"
+    ),
 ) -> None:
     """Evaluate the equivalence checker against the labeled corpus."""
     from schemashift.metrics.evaluate import (
@@ -136,9 +144,37 @@ def evaluate(
 
     metrics, _ = evaluate_equivalence(load_corpus(corpus or DEFAULT_CORPUS))
     typer.echo(format_report(metrics))
-    if write_docs:
-        from schemashift.metrics.evaluate import write_metrics_doc
+    system = None
+    if verify_samples or with_ai:
+        import os
 
+        from schemashift.ai import AnthropicAdvisor
+        from schemashift.metrics.evaluate import evaluate_system
+        from schemashift.verification import SandboxConfig
+
+        sandbox = None
+        if verify_samples:
+            sandbox = SandboxConfig(
+                pg_admin_dsn=os.environ["SANDBOX_ADMIN_DATABASE_URL"],
+                mongo_url=os.environ["MONGO_URL"],
+            )
+        advisor = None
+        if with_ai:
+            key = os.environ.get("ANTHROPIC_API_KEY", "")
+            if not key:
+                typer.echo("--ai needs ANTHROPIC_API_KEY", err=True)
+                raise typer.Exit(2)
+            advisor = AnthropicAdvisor(api_key=key)
+        system = evaluate_system(sandbox=sandbox, advisor=advisor)
+        rs, ai = system["result_set"], system["ai"]
+        if rs["computed"]:
+            typer.echo(f"result-set correctness: {rs['rate']:.1%} ({rs['match']}/{rs['verified']})")
+        if ai["computed"]:
+            typer.echo(f"AI agreement          : {ai['agreement']} over {ai['judged']} placements")
+    if write_docs:
+        from schemashift.metrics.evaluate import write_metrics_doc, write_metrics_json
+
+        typer.echo(f"wrote {write_metrics_json(metrics, system)}")
         typer.echo(f"wrote {write_metrics_doc(metrics)}")
     if verbose:
         for m in metrics.mismatches:

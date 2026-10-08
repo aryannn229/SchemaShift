@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-08",
+  "commit": "30f85d8",
+  "equivalence": {
+    "corpus_schemas": 32,
+    "labeled_nodes": 883,
+    "detection_rate": 1.0,
+    "false_positive_rate": 0.0,
+    "severity_accuracy": 1.0,
+    "tp": 225,
+    "fn": 0,
+    "fp": 0,
+    "tn": 658,
+    "confusion": {
+      "SAFE": {
+        "SAFE": 658,
+        "CHANGED": 0,
+        "BROKEN": 0
+      },
+      "CHANGED": {
+        "SAFE": 0,
+        "CHANGED": 196,
+        "BROKEN": 0
+      },
+      "BROKEN": {
+        "SAFE": 0,
+        "CHANGED": 0,
+        "BROKEN": 29
+      }
+    }
+  },
+  "result_set": {
+    "computed": true,
+    "match": 21,
+    "verified": 21,
+    "rate": 1.0
+  },
+  "ai": {
+    "computed": false,
+    "judged": 0,
+    "agreement": null
+  },
+  "samples": {
+    "banking": {
+      "match": 7,
+      "verified": 7,
+      "unexplained": []
+    },
+    "blog": {
+      "match": 4,
+      "verified": 4,
+      "unexplained": []
+    },
+    "ecommerce": {
+      "match": 5,
+      "verified": 5,
+      "unexplained": []
+    },
+    "university": {
+      "match": 5,
+      "verified": 5,
+      "unexplained": []
+    }
+  }
+}

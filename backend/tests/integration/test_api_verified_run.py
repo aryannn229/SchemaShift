@@ -15,7 +15,9 @@ SCHEMA = """
 CREATE TABLE users (id SERIAL PRIMARY KEY, email TEXT NOT NULL UNIQUE);
 CREATE TABLE orders (id SERIAL PRIMARY KEY, user_id INT NOT NULL REFERENCES users(id), total NUMERIC(10,2));
 """
-QUERIES = "SELECT u.email, o.total FROM users u JOIN orders o ON o.user_id = u.id WHERE o.total > 10;"
+QUERIES = (
+    "SELECT u.email, o.total FROM users u JOIN orders o ON o.user_id = u.id WHERE o.total > 10;"
+)
 
 
 def test_verified_run_end_to_end(mongo_client: object, pg_dsn: str, tmp_path: Path) -> None:

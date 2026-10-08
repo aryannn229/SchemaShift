@@ -3,7 +3,7 @@
 Computed by `schemashift evaluate` over the labeled corpus in `backend/tests/corpus/`.
 
 - **Date:** 2026-10-08
-- **Commit:** 3f854fc
+- **Commit:** 30f85d8
 
 ## Equivalence checker
 
@@ -19,6 +19,11 @@ confusion matrix (rows = label, cols = predicted):
   CHANGED           0      196        0
   BROKEN            0        0       29
 ```
+
+## System metrics (bundled samples)
+
+- **Result-set correctness:** 100.0% (21/21 queries MATCH between PostgreSQL and MongoDB on the ecommerce, blog, university and banking samples).
+- **AI agreement:** not measured (needs `ANTHROPIC_API_KEY`; run `evaluate --ai`). The mock advisor never counts toward this metric.
 
 ## Definitions
 

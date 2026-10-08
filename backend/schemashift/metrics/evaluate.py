@@ -245,6 +245,34 @@ def _git_commit() -> str:
         return "unknown"
 
 
+def _system_section() -> str:
+    import json
+
+    f = DOCS_DIR / "metrics.json"
+    data: dict[str, Any] = json.loads(f.read_text("utf-8")) if f.exists() else {}
+    rs = data.get("result_set") or {}
+    ai = data.get("ai") or {}
+    lines = []
+    if rs.get("rate") is not None:
+        lines.append(
+            f"- **Result-set correctness:** {rs['rate']:.1%} ({rs['match']}/{rs['verified']} "
+            "queries MATCH between PostgreSQL and MongoDB on the ecommerce, blog, university "
+            "and banking samples)."
+        )
+    else:
+        lines.append("- **Result-set correctness:** not measured (run `evaluate --verify`).")
+    if ai.get("agreement") is not None:
+        lines.append(
+            f"- **AI agreement:** {ai['agreement']:.1%} over {ai['judged']} placements with a real model."
+        )
+    else:
+        lines.append(
+            "- **AI agreement:** not measured (needs `ANTHROPIC_API_KEY`; run `evaluate --ai`). "
+            "The mock advisor never counts toward this metric."
+        )
+    return "\n".join(lines)
+
+
 def write_metrics_doc(metrics: EquivalenceMetrics, path: Path | None = None) -> Path:
     """Write docs/METRICS.md with the latest numbers, date and commit."""
     from datetime import date
@@ -262,6 +290,10 @@ Computed by `schemashift evaluate` over the labeled corpus in `backend/tests/cor
 ```
 {format_report(metrics)}
 ```
+
+## System metrics (bundled samples)
+
+{_system_section()}
 
 ## Definitions
 
@@ -284,4 +316,107 @@ is sensitive (deliberately broken rules make detection/FPR fail), that every non
 is labeled, and that expected diagnostics match exactly.
 """
     target.write_text(text, encoding="utf-8", newline="\n")
+    return target
+
+
+# ----------------------------------------------------------------- system metrics (Phases 7-8)
+SAMPLES_DIR = Path(__file__).resolve().parents[3] / "samples"
+
+
+def _sample_options(folder: Path) -> Any:
+    import json
+
+    from schemashift.pipeline import CompileOptions
+
+    f = folder / "options.json"
+    raw = json.loads(f.read_text("utf-8")) if f.exists() else {}
+    raw.pop("description", None)
+    return CompileOptions.model_validate(raw)
+
+
+def evaluate_system(
+    samples: Path = SAMPLES_DIR,
+    sandbox: Any = None,
+    advisor: Any = None,
+) -> dict[str, Any]:
+    """Result-set correctness (needs ``sandbox``) and AI agreement (needs a real ``advisor``)."""
+    from schemashift.ai import InMemoryCache, agreement_rate
+    from schemashift.pipeline import compile_sql
+
+    per_sample: dict[str, Any] = {}
+    matched = total = 0
+    judged: list[bool] = []
+    for folder in sorted(p for p in samples.iterdir() if (p / "schema.sql").exists()):
+        options = _sample_options(folder)
+        queries = (
+            (folder / "queries.sql").read_text("utf-8") if (folder / "queries.sql").exists() else ""
+        )
+        schema = (folder / "schema.sql").read_text("utf-8")
+        result = compile_sql(
+            schema, queries, "", options, advisor, InMemoryCache() if advisor else None
+        )
+        entry: dict[str, Any] = {}
+        if advisor is not None:
+            judged += [d.agree for d in result.plan.decisions.values() if d.agree is not None]
+            rate = agreement_rate(result.plan)
+            entry["ai_agreement"] = rate
+        if sandbox is not None:
+            from schemashift.verification import verify
+
+            report = verify(result, options, sandbox, seed=1)
+            done = report.verified
+            ok = sum(o.status == "MATCH" for o in done)
+            matched += ok
+            total += len(done)
+            entry["match"] = ok
+            entry["verified"] = len(done)
+            entry["unexplained"] = [o.query_id for o in report.unexplained]
+        per_sample[folder.name] = entry
+    return {
+        "result_set": {
+            "computed": sandbox is not None,
+            "match": matched,
+            "verified": total,
+            "rate": matched / total if total else None,
+        },
+        "ai": {
+            "computed": advisor is not None,
+            "judged": len(judged),
+            "agreement": sum(judged) / len(judged) if judged else None,
+        },
+        "samples": per_sample,
+    }
+
+
+def write_metrics_json(
+    metrics: EquivalenceMetrics, system: dict[str, Any] | None, path: Path | None = None
+) -> Path:
+    """Write docs/metrics.json (served by GET /metrics). Sections not recomputed keep old values."""
+    import json
+    from datetime import date
+
+    target = path or DOCS_DIR / "metrics.json"
+    previous: dict[str, Any] = json.loads(target.read_text("utf-8")) if target.exists() else {}
+    system = system or {}
+    out: dict[str, Any] = {
+        "date": date.today().isoformat(),
+        "commit": _git_commit(),
+        "equivalence": {
+            "corpus_schemas": metrics.cases,
+            "labeled_nodes": metrics.total,
+            "detection_rate": metrics.detection_rate,
+            "false_positive_rate": metrics.false_positive_rate,
+            "severity_accuracy": metrics.severity_accuracy,
+            "tp": metrics.tp,
+            "fn": metrics.fn,
+            "fp": metrics.fp,
+            "tn": metrics.tn,
+            "confusion": metrics.confusion,
+        },
+    }
+    for key in ("result_set", "ai"):
+        fresh = system.get(key)
+        out[key] = fresh if fresh and fresh.get("computed") else previous.get(key, fresh)
+    out["samples"] = system.get("samples") or previous.get("samples", {})
+    target.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8", newline="\n")
     return target
