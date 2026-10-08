@@ -1,0 +1,27 @@
+description: 1:1 child embedded as a sub-document
+placements:
+  fk:profiles.user_id->users.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:users.id:
+    status: SAFE
+    why: _id
+  unique:users.email:
+    status: SAFE
+    why: NOT NULL unique index
+  pk:profiles.user_id:
+    status: SAFE
+    why: sub-document keyed by the parent _id; no array involved
+  fk:profiles.user_id->users.id:
+    status: SAFE
+    why: embedded
+  cascade_delete:profiles.user_id->users.id:
+    status: SAFE
+    why: sub-document deleted with the document

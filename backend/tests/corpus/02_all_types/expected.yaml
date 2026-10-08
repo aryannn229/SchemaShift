@@ -1,0 +1,74 @@
+description: every column type in the type map
+diagnostics:
+- SEM008
+bulk: []
+verdicts:
+  type:everything.a:
+    status: SAFE
+    why: int with range bounds
+  type:everything.b:
+    status: SAFE
+    why: int
+  type:everything.c:
+    status: SAFE
+    why: long
+  type:everything.d:
+    status: CHANGED
+    why: Decimal128 does not enforce scale 2
+  type:everything.e:
+    status: SAFE
+    why: 'scale 0: Decimal128 holds integers exactly'
+  type:everything.f:
+    status: SAFE
+    why: double
+  type:everything.g:
+    status: SAFE
+    why: double
+  type:everything.h:
+    status: SAFE
+    why: bool
+  type:everything.i:
+    status: SAFE
+    why: string
+  type:everything.j:
+    status: SAFE
+    why: string with maxLength
+  type:everything.k:
+    status: CHANGED
+    why: CHAR padding semantics are not preserved
+  type:everything.l:
+    status: CHANGED
+    why: BSON date adds a midnight UTC time component
+  type:everything.m:
+    status: SAFE
+    why: BSON date at ms precision
+  type:everything.n:
+    status: CHANGED
+    why: UTC offset is lost
+  type:everything.o:
+    status: CHANGED
+    why: no BSON time-of-day type
+  type:everything.p:
+    status: SAFE
+    why: binData subtype 4
+  type:everything.q:
+    status: SAFE
+    why: embedded document
+  type:everything.r:
+    status: SAFE
+    why: embedded document
+  type:everything.s:
+    status: SAFE
+    why: binData
+  type:everything.t:
+    status: CHANGED
+    why: no BSON interval type
+  type:everything.u:
+    status: SAFE
+    why: array of int
+  type:everything.v:
+    status: SAFE
+    why: array of string
+  type:everything.w:
+    status: SAFE
+    why: unconstrained numeric maps to Decimal128

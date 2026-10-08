@@ -1,0 +1,20 @@
+CREATE TABLE items (
+  id INT PRIMARY KEY,
+  price NUMERIC(8,2) NOT NULL,
+  qty INT NOT NULL,
+  lo INT NOT NULL,
+  hi INT NOT NULL,
+  status TEXT NOT NULL,
+  name TEXT NOT NULL,
+  code TEXT NOT NULL,
+  d DATE,
+  CONSTRAINT ck_price CHECK (price >= 0),
+  CONSTRAINT ck_status CHECK (status IN ('new', 'used')),
+  CONSTRAINT ck_range CHECK (lo <= hi),
+  CONSTRAINT ck_qty CHECK (qty BETWEEN 0 AND 1000),
+  CONSTRAINT ck_len CHECK (LENGTH(name) >= 3),
+  CONSTRAINT ck_combo CHECK (price > 0 AND (qty > 0 OR status = 'new')),
+  CONSTRAINT ck_like CHECK (name LIKE 'A%'),
+  CONSTRAINT ck_upper CHECK (UPPER(code) = code),
+  CONSTRAINT ck_year CHECK (EXTRACT(YEAR FROM d) > 2000)
+);

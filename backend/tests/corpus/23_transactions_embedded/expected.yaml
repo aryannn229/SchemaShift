@@ -1,0 +1,33 @@
+description: multi-table transactions, replica set available
+placements:
+  fk:orders.customer_id->customers.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:customers.id:
+    status: SAFE
+    why: _id
+  pk:audit_log.id:
+    status: SAFE
+    why: _id
+  pk:orders.id:
+    status: CHANGED
+    why: embedded array element
+  fk:orders.customer_id->customers.id:
+    status: SAFE
+    why: embedded
+  restrict_delete:orders.customer_id->customers.id:
+    status: CHANGED
+    why: children always deleted with parent
+  txn:t1:
+    status: SAFE
+    why: 'customers+orders live in one document: single-document atomicity'
+  txn:t2:
+    status: CHANGED
+    why: 'customers and audit_log are separate collections: needs a transaction'

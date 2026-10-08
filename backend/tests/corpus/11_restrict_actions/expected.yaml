@@ -1,0 +1,42 @@
+description: RESTRICT / NO ACTION
+placements:
+  fk:c3.p_id->p.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:p.id:
+    status: SAFE
+    why: _id
+  pk:c1.id:
+    status: SAFE
+    why: _id
+  pk:c2.id:
+    status: SAFE
+    why: _id
+  pk:c3.id:
+    status: CHANGED
+    why: embedded array element
+  fk:c1.p_id->p.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:c2.p_id->p.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:c3.p_id->p.id:
+    status: SAFE
+    why: embedded
+  restrict_delete:c1.p_id->p.id:
+    status: CHANGED
+    why: app must check for children
+  restrict_delete:c2.p_id->p.id:
+    status: CHANGED
+    why: app must check for children
+  restrict_delete:c3.p_id->p.id:
+    status: CHANGED
+    why: embedded children are always deleted with the parent

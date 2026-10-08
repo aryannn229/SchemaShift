@@ -1,0 +1,27 @@
+description: 1:N child embedded in parent
+placements:
+  fk:orders.customer_id->customers.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:customers.id:
+    status: SAFE
+    why: _id
+  pk:orders.id:
+    status: CHANGED
+    why: unique index cannot enforce uniqueness inside one document's array
+  fk:orders.customer_id->customers.id:
+    status: SAFE
+    why: embedded child cannot be orphaned
+  restrict_delete:orders.customer_id->customers.id:
+    status: CHANGED
+    why: deleting the parent always removes the children
+  type:orders.total:
+    status: CHANGED
+    why: 'NUMERIC(10,2): Decimal128 does not enforce scale 2'

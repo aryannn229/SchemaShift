@@ -1,0 +1,37 @@
+description: M:N junction kept as its own collection
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:students.id:
+    status: SAFE
+    why: _id
+  pk:courses.id:
+    status: SAFE
+    why: _id
+  fk:enrollments.student_id->students.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:enrollments.course_id->courses.id:
+    status: CHANGED
+    why: no foreign keys
+  restrict_delete:enrollments.student_id->students.id:
+    status: CHANGED
+    why: app must check
+  restrict_delete:enrollments.course_id->courses.id:
+    status: CHANGED
+    why: app must check
+  type:enrollments.grade:
+    status: CHANGED
+    why: CHAR padding
+  pk:enrollments.student_id,course_id:
+    status: SAFE
+    why: compound unique index on the junction collection
+  cross_unique:enrollments.student_id,course_id:
+    status: SAFE
+    why: 'pair lives in one collection: compound unique index'

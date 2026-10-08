@@ -1,0 +1,36 @@
+description: child with two parents, embedded in only one
+placements:
+  fk:reviews.product_id->products.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:customers.id:
+    status: SAFE
+    why: _id
+  pk:products.id:
+    status: SAFE
+    why: _id
+  pk:reviews.id:
+    status: CHANGED
+    why: embedded in products as an array
+  fk:reviews.customer_id->customers.id:
+    status: CHANGED
+    why: reference to the other parent, no foreign keys
+  fk:reviews.product_id->products.id:
+    status: SAFE
+    why: embedded
+  restrict_delete:reviews.customer_id->customers.id:
+    status: CHANGED
+    why: app must check
+  cascade_delete:reviews.product_id->products.id:
+    status: SAFE
+    why: deleting the product deletes its reviews
+  check:reviews.ck_stars:
+    status: SAFE
+    why: BETWEEN on the nested path

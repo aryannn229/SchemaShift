@@ -1,0 +1,167 @@
+description: 'banking: 8 tables; embedded KYC and cards, referenced transactions'
+placements:
+  fk:kyc_profiles.customer_id->customers.id: EMBED
+  fk:cards.account_id->accounts.id: EMBED
+  m2n:beneficiaries: REF_ARRAY
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+- match: pk:*
+  status: SAFE
+  why: primary key becomes _id or a unique index
+- match: auto_increment:*
+  status: CHANGED
+  why: SERIAL/IDENTITY becomes ObjectId
+- match: restrict_delete:*
+  status: CHANGED
+  why: RESTRICT/NO ACTION must be checked in the app (or children vanish when embedded)
+verdicts:
+  pk:cards.id:
+    status: CHANGED
+    why: embedded array element
+  pk:beneficiaries.customer_id,account_id:
+    status: CHANGED
+    why: 'junction folded into an array: pair unique only per array'
+  type:customers.created_at:
+    status: CHANGED
+    why: TIMESTAMPTZ offset lost
+  type:kyc_profiles.verified_at:
+    status: CHANGED
+    why: TIMESTAMPTZ offset lost
+  type:accounts.balance:
+    status: CHANGED
+    why: scale 2
+  type:accounts.opened_at:
+    status: CHANGED
+    why: TIMESTAMPTZ offset lost
+  type:transactions.amount:
+    status: CHANGED
+    why: scale 2
+  type:transactions.created_at:
+    status: CHANGED
+    why: TIMESTAMPTZ offset lost
+  type:cards.number:
+    status: CHANGED
+    why: CHAR padding
+  type:cards.expires:
+    status: CHANGED
+    why: DATE gains a time component
+  type:loans.principal:
+    status: CHANGED
+    why: scale 2
+  unique:branches.name:
+    status: SAFE
+    why: NOT NULL unique index
+  unique:customers.email:
+    status: SAFE
+    why: NOT NULL unique index
+  unique:customers.phone:
+    status: CHANGED
+    why: 'nullable unique: one null only in Mongo'
+  unique:kyc_profiles.national_id:
+    status: SAFE
+    why: 1:1 sub-document, NOT NULL unique index on nested path
+  unique:cards.number:
+    status: CHANGED
+    why: 'embedded array: not enforced across the array'
+  default:customers.created_at:
+    status: CHANGED
+    why: now() not applied
+  default:kyc_profiles.verified:
+    status: CHANGED
+    why: no server-side defaults
+  default:accounts.balance:
+    status: CHANGED
+    why: no server-side defaults
+  default:accounts.opened_at:
+    status: CHANGED
+    why: now() not applied
+  default:transactions.created_at:
+    status: CHANGED
+    why: now() not applied
+  enum:accounts.kind:
+    status: SAFE
+    why: $jsonSchema enum
+  enum:transactions.kind:
+    status: SAFE
+    why: $jsonSchema enum
+  check:accounts.ck_balance:
+    status: SAFE
+    why: comparison
+  check:transactions.ck_amount:
+    status: SAFE
+    why: comparison
+  check:loans.ck_rate:
+    status: SAFE
+    why: BETWEEN
+  fk:customers.home_branch_id->branches.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:kyc_profiles.customer_id->customers.id:
+    status: SAFE
+    why: embedded
+  fk:accounts.customer_id->customers.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:accounts.branch_id->branches.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:transactions.account_id->accounts.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:cards.account_id->accounts.id:
+    status: SAFE
+    why: embedded
+  fk:loans.customer_id->customers.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:beneficiaries.customer_id->customers.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:beneficiaries.account_id->accounts.id:
+    status: CHANGED
+    why: no foreign keys
+  set_null:customers.home_branch_id->branches.id:
+    status: BROKEN
+    why: dangling branch id
+  cascade_delete:kyc_profiles.customer_id->customers.id:
+    status: SAFE
+    why: embedded
+  cascade_delete:transactions.account_id->accounts.id:
+    status: BROKEN
+    why: 'transactions are referenced (unbounded growth): orphaned'
+  cascade_delete:cards.account_id->accounts.id:
+    status: SAFE
+    why: embedded
+  cascade_delete:beneficiaries.customer_id->customers.id:
+    status: BROKEN
+    why: no native cascade
+  cascade_delete:beneficiaries.account_id->accounts.id:
+    status: BROKEN
+    why: no native cascade
+  cross_unique:beneficiaries.customer_id,account_id:
+    status: BROKEN
+    why: pair spans two collections
+  join:q1#0:
+    status: SAFE
+    why: inner join of references
+  join:q2#0:
+    status: SAFE
+    why: 'inner join on embedded KYC: $unwind'
+  join:q3#0:
+    status: CHANGED
+    why: unmatched customers get a missing balance instead of NULL
+  aggregate:q1:
+    status: SAFE
+    why: grouped COUNT/SUM
+  aggregate:q4:
+    status: CHANGED
+    why: 'SUM over a possibly empty set: NULL vs 0'
+  txn:t1:
+    status: CHANGED
+    why: accounts and transactions are separate collections

@@ -1,0 +1,8 @@
+CREATE TABLE p (id INT PRIMARY KEY);
+CREATE TABLE c (
+  id INT PRIMARY KEY,
+  p_id INT NOT NULL REFERENCES p(id),
+  sku TEXT NOT NULL UNIQUE,
+  code TEXT NOT NULL,
+  UNIQUE (p_id, code)
+);

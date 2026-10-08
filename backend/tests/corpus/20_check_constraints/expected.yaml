@@ -1,0 +1,46 @@
+description: translatable and untranslatable CHECKs
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:items.id:
+    status: SAFE
+    why: _id
+  type:items.price:
+    status: CHANGED
+    why: scale 2 not enforced
+  type:items.d:
+    status: CHANGED
+    why: DATE gains a time component
+  check:items.ck_price:
+    status: SAFE
+    why: comparison, $jsonSchema minimum
+  check:items.ck_status:
+    status: SAFE
+    why: IN list, $jsonSchema enum
+  check:items.ck_range:
+    status: SAFE
+    why: same-row column comparison, $expr
+  check:items.ck_qty:
+    status: SAFE
+    why: BETWEEN, $jsonSchema min/max
+  check:items.ck_len:
+    status: SAFE
+    why: LENGTH, $jsonSchema minLength
+  check:items.ck_combo:
+    status: SAFE
+    why: AND/OR of comparisons, $jsonSchema or $expr
+  check:items.ck_like:
+    status: SAFE
+    why: prefix LIKE, $jsonSchema pattern
+  check:items.ck_upper:
+    status: CHANGED
+    why: UPPER() cannot be expressed in a validator
+  check:items.ck_year:
+    status: CHANGED
+    why: EXTRACT() cannot be expressed in a validator

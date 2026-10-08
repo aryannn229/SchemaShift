@@ -1,0 +1,2 @@
+CREATE TABLE customers (id INT PRIMARY KEY, name TEXT NOT NULL);
+CREATE TABLE orders (id INT PRIMARY KEY, customer_id INT NOT NULL REFERENCES customers(id), total NUMERIC(10,2) NOT NULL);

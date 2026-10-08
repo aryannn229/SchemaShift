@@ -1,0 +1,33 @@
+description: 'b embedded in a but c referenced from b: the chain still breaks'
+placements:
+  fk:b.a_id->a.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:a.id:
+    status: SAFE
+    why: _id
+  pk:b.id:
+    status: CHANGED
+    why: embedded array element
+  pk:c.id:
+    status: SAFE
+    why: _id
+  fk:b.a_id->a.id:
+    status: SAFE
+    why: embedded
+  fk:c.b_id->b.id:
+    status: CHANGED
+    why: no foreign keys
+  cascade_delete:b.a_id->a.id:
+    status: BROKEN
+    why: deleting a removes b but leaves c documents behind
+  cascade_delete:c.b_id->b.id:
+    status: BROKEN
+    why: no native cascade

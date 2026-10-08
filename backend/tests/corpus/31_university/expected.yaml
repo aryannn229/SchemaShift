@@ -1,0 +1,144 @@
+description: 'university: 8 tables, junction, SET NULL, multi-level cascades'
+placements:
+  fk:office_hours.professor_id->professors.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+- match: pk:*
+  status: SAFE
+  why: primary key becomes _id or a unique index
+- match: auto_increment:*
+  status: CHANGED
+  why: SERIAL/IDENTITY becomes ObjectId
+- match: restrict_delete:*
+  status: CHANGED
+  why: RESTRICT/NO ACTION must be checked in the app (or children vanish when embedded)
+verdicts:
+  pk:office_hours.id:
+    status: CHANGED
+    why: embedded array element
+  type:departments.budget:
+    status: CHANGED
+    why: scale 2
+  type:students.enrolled_on:
+    status: CHANGED
+    why: DATE gains a time component
+  type:students.gpa:
+    status: CHANGED
+    why: scale 2
+  type:office_hours.starts:
+    status: CHANGED
+    why: TIME stored as string
+  type:office_hours.ends:
+    status: CHANGED
+    why: TIME stored as string
+  unique:departments.name:
+    status: SAFE
+    why: NOT NULL unique index
+  unique:professors.email:
+    status: SAFE
+    why: NOT NULL unique index
+  unique:students.email:
+    status: SAFE
+    why: NOT NULL unique index
+  unique:courses.code:
+    status: SAFE
+    why: NOT NULL unique index
+  unique:sections.course_id,term:
+    status: SAFE
+    why: NOT NULL compound unique index
+  default:students.enrolled_on:
+    status: CHANGED
+    why: CURRENT_DATE not applied by MongoDB
+  enum:enrollments.grade:
+    status: SAFE
+    why: $jsonSchema enum
+  check:students.ck_gpa:
+    status: SAFE
+    why: BETWEEN
+  check:courses.ck_credits:
+    status: SAFE
+    why: BETWEEN
+  check:prerequisites.ck_not_self:
+    status: SAFE
+    why: same-row column comparison, $expr
+  check:office_hours.ck_weekday:
+    status: SAFE
+    why: BETWEEN on the nested path
+  fk:professors.department_id->departments.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:students.advisor_id->professors.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:courses.department_id->departments.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:prerequisites.course_id->courses.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:prerequisites.requires_id->courses.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:sections.course_id->courses.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:sections.professor_id->professors.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:enrollments.student_id->students.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:enrollments.section_id->sections.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:office_hours.professor_id->professors.id:
+    status: SAFE
+    why: embedded
+  cascade_delete:courses.department_id->departments.id:
+    status: BROKEN
+    why: multi-level cascade by reference
+  cascade_delete:prerequisites.course_id->courses.id:
+    status: BROKEN
+    why: no native cascade
+  cascade_delete:sections.course_id->courses.id:
+    status: BROKEN
+    why: cascade continues to enrollments by reference
+  cascade_delete:enrollments.student_id->students.id:
+    status: BROKEN
+    why: no native cascade
+  cascade_delete:enrollments.section_id->sections.id:
+    status: BROKEN
+    why: no native cascade
+  cascade_delete:office_hours.professor_id->professors.id:
+    status: SAFE
+    why: embedded
+  set_null:students.advisor_id->professors.id:
+    status: BROKEN
+    why: dangling advisor id
+  set_null:sections.professor_id->professors.id:
+    status: BROKEN
+    why: dangling professor id
+  cross_unique:enrollments.student_id,section_id:
+    status: SAFE
+    why: junction is its own collection
+  join:q1#0:
+    status: SAFE
+    why: inner join of references
+  join:q2#0:
+    status: SAFE
+    why: left join; only COUNT(*) projected
+  aggregate:q2:
+    status: SAFE
+    why: COUNT(*) is identical
+  aggregate:q3:
+    status: CHANGED
+    why: 'AVG of NUMERIC: exact vs double'
+  txn:t1:
+    status: CHANGED
+    why: enrollments and sections are separate collections

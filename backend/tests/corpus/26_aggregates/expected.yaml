@@ -1,0 +1,55 @@
+description: aggregate semantics
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:customers.id:
+    status: SAFE
+    why: _id
+  pk:orders.id:
+    status: SAFE
+    why: _id
+  fk:orders.customer_id->customers.id:
+    status: CHANGED
+    why: no foreign keys
+  restrict_delete:orders.customer_id->customers.id:
+    status: CHANGED
+    why: app must check
+  aggregate:q1:
+    status: SAFE
+    why: COUNT(*) is identical
+  aggregate:q2:
+    status: CHANGED
+    why: 'SUM over an empty set: NULL in Postgres, 0 in Mongo'
+  aggregate:q3:
+    status: SAFE
+    why: grouped SUM has no empty groups
+  aggregate:q4:
+    status: CHANGED
+    why: 'AVG of integers: NUMERIC vs double'
+  aggregate:q5:
+    status: SAFE
+    why: AVG of doubles is identical
+  aggregate:q6:
+    status: SAFE
+    why: COUNT(col) skips nulls via $cond
+  aggregate:q7:
+    status: SAFE
+    why: MIN/MAX are identical
+  aggregate:q8:
+    status: CHANGED
+    why: 'SUM over a LEFT-joined table: NULL vs 0 for customers without orders'
+  aggregate:q9:
+    status: CHANGED
+    why: 'AVG of NUMERIC: exact vs double'
+  aggregate:q10:
+    status: SAFE
+    why: GROUP BY without aggregates
+  join:q8#0:
+    status: SAFE
+    why: left join keeps unmatched rows; right side only aggregated

@@ -1,0 +1,33 @@
+description: multi-table transactions, standalone server without transactions
+options:
+  transactions_available: false
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:customers.id:
+    status: SAFE
+    why: _id
+  pk:audit_log.id:
+    status: SAFE
+    why: _id
+  pk:orders.id:
+    status: SAFE
+    why: _id
+  fk:orders.customer_id->customers.id:
+    status: CHANGED
+    why: no foreign keys
+  restrict_delete:orders.customer_id->customers.id:
+    status: CHANGED
+    why: app must check
+  txn:t1:
+    status: BROKEN
+    why: 'two collections and no transactions: partial failure possible'
+  txn:t2:
+    status: BROKEN
+    why: 'two collections and no transactions: partial failure possible'

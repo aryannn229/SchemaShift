@@ -1,0 +1,15 @@
+description: rejected constructs produce diagnostics and the rest still compiles
+diagnostics:
+- UNSUPPORTED_VIEW
+- UNSUPPORTED_TRIGGER
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:t.id:
+    status: SAFE
+    why: _id

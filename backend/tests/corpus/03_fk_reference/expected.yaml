@@ -1,0 +1,25 @@
+description: 1:N stored by reference
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:customers.id:
+    status: SAFE
+    why: _id
+  pk:orders.id:
+    status: SAFE
+    why: _id of its own collection
+  fk:orders.customer_id->customers.id:
+    status: CHANGED
+    why: no foreign keys in MongoDB; validate in the app
+  restrict_delete:orders.customer_id->customers.id:
+    status: CHANGED
+    why: app must check children before delete
+  type:orders.total:
+    status: CHANGED
+    why: 'NUMERIC(10,2): Decimal128 does not enforce scale 2'

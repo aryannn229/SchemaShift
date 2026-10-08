@@ -1,0 +1,30 @@
+description: unique constraints on an embedded array child
+placements:
+  fk:c.p_id->p.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:p.id:
+    status: SAFE
+    why: _id
+  pk:c.id:
+    status: CHANGED
+    why: array element uniqueness is not enforced
+  fk:c.p_id->p.id:
+    status: SAFE
+    why: embedded
+  restrict_delete:c.p_id->p.id:
+    status: CHANGED
+    why: children always deleted with parent
+  unique:c.sku:
+    status: CHANGED
+    why: unique index does not cover duplicates inside one array
+  unique:c.p_id,code:
+    status: CHANGED
+    why: uniqueness within one parent's array is not enforced

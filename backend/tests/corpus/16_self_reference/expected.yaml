@@ -1,0 +1,20 @@
+description: employee -> manager hierarchy
+diagnostics:
+- SEM011
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:employees.id:
+    status: SAFE
+    why: _id
+  fk:employees.manager_id->employees.id:
+    status: CHANGED
+    why: no foreign keys
+  set_null:employees.manager_id->employees.id:
+    status: BROKEN
+    why: reports keep a dangling manager id

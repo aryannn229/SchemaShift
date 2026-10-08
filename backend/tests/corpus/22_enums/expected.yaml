@@ -1,0 +1,25 @@
+description: ENUM columns
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:tickets.id:
+    status: SAFE
+    why: _id
+  enum:tickets.st:
+    status: SAFE
+    why: $jsonSchema enum
+  enum:tickets.prev:
+    status: SAFE
+    why: $jsonSchema enum (null allowed)
+  enum:tickets.st2:
+    status: SAFE
+    why: $jsonSchema enum
+  default:tickets.st2:
+    status: CHANGED
+    why: no server-side defaults

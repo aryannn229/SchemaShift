@@ -1,0 +1,23 @@
+description: semantic errors; only the valid nodes are labeled
+diagnostics:
+- SEM001
+- SEM002
+- SEM004
+- SEM005
+- SEM008
+- SEM012
+skip_coverage: true
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:a.id:
+    status: SAFE
+    why: _id
+  pk:b.id:
+    status: SAFE
+    why: _id

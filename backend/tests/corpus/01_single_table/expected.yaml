@@ -1,0 +1,16 @@
+description: one table with SERIAL key
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:users.id:
+    status: SAFE
+    why: single column PK becomes _id
+  auto_increment:users.id:
+    status: CHANGED
+    why: SERIAL becomes ObjectId, no gap-free sequence

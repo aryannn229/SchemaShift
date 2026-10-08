@@ -1,0 +1,45 @@
+description: inner and left joins over embedded and referenced relationships
+placements:
+  fk:orders.customer_id->customers.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:customers.id:
+    status: SAFE
+    why: _id
+  pk:notes.id:
+    status: SAFE
+    why: _id
+  pk:orders.id:
+    status: CHANGED
+    why: embedded array element
+  fk:orders.customer_id->customers.id:
+    status: SAFE
+    why: embedded
+  fk:notes.order_id->orders.id:
+    status: CHANGED
+    why: no foreign keys
+  restrict_delete:orders.customer_id->customers.id:
+    status: CHANGED
+    why: children always deleted with parent
+  restrict_delete:notes.order_id->orders.id:
+    status: CHANGED
+    why: app must check
+  join:q1#0:
+    status: SAFE
+    why: inner join on embedded data is $unwind
+  join:q2#0:
+    status: SAFE
+    why: inner join on references is $lookup + $unwind
+  join:q3#0:
+    status: CHANGED
+    why: unmatched rows project missing fields instead of NULL
+  join:q4#0:
+    status: SAFE
+    why: left join keeps unmatched rows; no right column projected

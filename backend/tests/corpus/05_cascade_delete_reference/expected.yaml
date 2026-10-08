@@ -1,0 +1,25 @@
+description: ON DELETE CASCADE with the child in its own collection
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:customers.id:
+    status: SAFE
+    why: _id
+  pk:orders.id:
+    status: SAFE
+    why: _id
+  fk:orders.customer_id->customers.id:
+    status: CHANGED
+    why: no foreign keys
+  cascade_delete:orders.customer_id->customers.id:
+    status: BROKEN
+    why: MongoDB has no native cascade; orders are orphaned
+  type:orders.total:
+    status: CHANGED
+    why: 'NUMERIC(10,2): Decimal128 does not enforce scale 2'

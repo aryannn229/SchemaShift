@@ -1,0 +1,37 @@
+description: defaults and auto-increment columns
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:events.id:
+    status: SAFE
+    why: _id
+  auto_increment:events.id:
+    status: CHANGED
+    why: BIGSERIAL becomes ObjectId
+  auto_increment:events.seq:
+    status: CHANGED
+    why: IDENTITY becomes ObjectId
+  default:events.level:
+    status: CHANGED
+    why: no server-side defaults
+  default:events.retries:
+    status: CHANGED
+    why: no server-side defaults
+  default:events.created_at:
+    status: CHANGED
+    why: now() not applied by MongoDB
+  default:events.updated_at:
+    status: CHANGED
+    why: CURRENT_TIMESTAMP not applied by MongoDB
+  default:events.token:
+    status: CHANGED
+    why: gen_random_uuid() not applied by MongoDB
+  default:events.active:
+    status: CHANGED
+    why: no server-side defaults

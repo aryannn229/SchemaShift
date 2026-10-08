@@ -1,0 +1,171 @@
+description: 'e-commerce: 9 tables, embedded items/payments/addresses'
+placements:
+  fk:addresses.customer_id->customers.id: EMBED
+  fk:order_items.order_id->orders.id: EMBED
+  fk:payments.order_id->orders.id: EMBED
+diagnostics:
+- SEM011
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+- match: pk:*
+  status: SAFE
+  why: primary key becomes _id or a unique index
+- match: auto_increment:*
+  status: CHANGED
+  why: SERIAL/IDENTITY becomes ObjectId
+- match: restrict_delete:*
+  status: CHANGED
+  why: RESTRICT/NO ACTION must be checked in the app (or children vanish when embedded)
+verdicts:
+  pk:addresses.id:
+    status: CHANGED
+    why: embedded array element
+  pk:order_items.id:
+    status: CHANGED
+    why: embedded array element
+  type:customers.created_at:
+    status: CHANGED
+    why: TIMESTAMPTZ offset lost
+  type:products.price:
+    status: CHANGED
+    why: scale 2
+  type:orders.placed_at:
+    status: CHANGED
+    why: TIMESTAMPTZ offset lost
+  type:orders.total:
+    status: CHANGED
+    why: scale 2
+  type:order_items.unit_price:
+    status: CHANGED
+    why: scale 2
+  type:payments.amount:
+    status: CHANGED
+    why: scale 2
+  type:payments.paid_at:
+    status: CHANGED
+    why: TIMESTAMPTZ offset lost
+  unique:customers.email:
+    status: SAFE
+    why: NOT NULL unique index
+  unique:customers.phone:
+    status: CHANGED
+    why: 'nullable unique: one null only in Mongo'
+  unique:categories.name:
+    status: SAFE
+    why: NOT NULL unique index
+  unique:products.sku:
+    status: SAFE
+    why: NOT NULL unique index
+  unique:order_items.order_id,product_id:
+    status: CHANGED
+    why: 'embedded array: pair uniqueness not enforced'
+  unique:payments.order_id:
+    status: SAFE
+    why: 1:1 sub-document keyed by the order
+  default:customers.created_at:
+    status: CHANGED
+    why: now() not applied by MongoDB
+  default:products.stock:
+    status: CHANGED
+    why: no server-side defaults
+  default:orders.status:
+    status: CHANGED
+    why: no server-side defaults
+  default:orders.placed_at:
+    status: CHANGED
+    why: now() not applied by MongoDB
+  enum:orders.status:
+    status: SAFE
+    why: $jsonSchema enum
+  check:products.ck_price:
+    status: SAFE
+    why: comparison
+  check:products.ck_stock:
+    status: SAFE
+    why: comparison
+  check:order_items.ck_qty:
+    status: SAFE
+    why: comparison on the nested path
+  check:reviews.ck_stars:
+    status: SAFE
+    why: BETWEEN
+  fk:addresses.customer_id->customers.id:
+    status: SAFE
+    why: embedded
+  fk:categories.parent_id->categories.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:product_categories.product_id->products.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:product_categories.category_id->categories.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:orders.customer_id->customers.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:order_items.order_id->orders.id:
+    status: SAFE
+    why: embedded
+  fk:order_items.product_id->products.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:payments.order_id->orders.id:
+    status: SAFE
+    why: embedded
+  fk:reviews.product_id->products.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:reviews.customer_id->customers.id:
+    status: CHANGED
+    why: no foreign keys
+  cascade_delete:addresses.customer_id->customers.id:
+    status: SAFE
+    why: embedded
+  cascade_delete:product_categories.product_id->products.id:
+    status: BROKEN
+    why: no native cascade
+  cascade_delete:product_categories.category_id->categories.id:
+    status: BROKEN
+    why: no native cascade
+  cascade_delete:order_items.order_id->orders.id:
+    status: SAFE
+    why: embedded
+  cascade_delete:reviews.product_id->products.id:
+    status: BROKEN
+    why: no native cascade
+  cascade_delete:reviews.customer_id->customers.id:
+    status: BROKEN
+    why: no native cascade
+  set_null:categories.parent_id->categories.id:
+    status: BROKEN
+    why: children keep a dangling parent id
+  cross_unique:product_categories.product_id,category_id:
+    status: SAFE
+    why: junction is its own collection
+  cross_unique:order_items.order_id,product_id:
+    status: CHANGED
+    why: 'order_items is a junction embedded in orders: pair unique only per array'
+  join:q1#0:
+    status: SAFE
+    why: 'inner join of references: $lookup + $unwind'
+  join:q2#0:
+    status: SAFE
+    why: left join, right side only aggregated
+  join:q3#0:
+    status: SAFE
+    why: 'inner join on embedded items: $unwind'
+  aggregate:q1:
+    status: SAFE
+    why: grouped COUNT/SUM, no empty groups
+  aggregate:q2:
+    status: CHANGED
+    why: 'AVG of integers: NUMERIC vs double'
+  txn:t1:
+    status: CHANGED
+    why: 'orders and products are separate collections: needs a transaction'

@@ -1,0 +1,34 @@
+description: single, composite, nullable and partial unique constraints
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:accounts.id:
+    status: SAFE
+    why: _id
+  unique:accounts.email:
+    status: CHANGED
+    why: 'nullable: Mongo unique index allows only one null'
+  unique:accounts.ssn:
+    status: SAFE
+    why: NOT NULL unique index
+  unique:accounts.a,b:
+    status: SAFE
+    why: compound unique index
+  unique:accounts.a,c:
+    status: CHANGED
+    why: composite with a nullable column
+  unique:accounts.code:
+    status: SAFE
+    why: partial unique index, simple predicate
+  unique:accounts.code#2:
+    status: CHANGED
+    why: predicate uses lower(); partialFilterExpression cannot
+  unique:accounts.c:
+    status: CHANGED
+    why: nullable unique index

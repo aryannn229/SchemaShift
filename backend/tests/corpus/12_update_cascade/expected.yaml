@@ -1,0 +1,54 @@
+description: ON UPDATE CASCADE on immutable and mutable keys
+placements:
+  fk:c3.p_id->p.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:p.id:
+    status: SAFE
+    why: _id
+  pk:c1.id:
+    status: SAFE
+    why: _id
+  pk:c2.id:
+    status: SAFE
+    why: _id
+  pk:c3.id:
+    status: CHANGED
+    why: embedded array element
+  unique:p.code:
+    status: SAFE
+    why: NOT NULL unique index
+  fk:c1.p_id->p.id:
+    status: CHANGED
+    why: no foreign keys
+  fk:c2.p_code->p.code:
+    status: CHANGED
+    why: no foreign keys
+  fk:c3.p_id->p.id:
+    status: SAFE
+    why: embedded
+  restrict_delete:c1.p_id->p.id:
+    status: CHANGED
+    why: app must check
+  restrict_delete:c2.p_code->p.code:
+    status: CHANGED
+    why: app must check
+  restrict_delete:c3.p_id->p.id:
+    status: CHANGED
+    why: embedded children always deleted
+  cascade_update:c1.p_id->p.id:
+    status: CHANGED
+    why: PK is the immutable _id, not enforced if it changed
+  cascade_update:c2.p_code->p.code:
+    status: BROKEN
+    why: mutable natural key copied into c2, no propagation
+  cascade_update:c3.p_id->p.id:
+    status: SAFE
+    why: embedded, nothing to propagate

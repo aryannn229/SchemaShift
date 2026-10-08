@@ -1,0 +1,10 @@
+SELECT COUNT(*) FROM orders;
+SELECT SUM(qty) FROM orders;
+SELECT customer_id, SUM(qty) FROM orders GROUP BY customer_id;
+SELECT AVG(qty) FROM orders;
+SELECT AVG(price) FROM orders;
+SELECT COUNT(note) FROM orders;
+SELECT MIN(qty), MAX(qty) FROM orders;
+SELECT c.name, SUM(o.qty) FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.name;
+SELECT AVG(amount) FROM orders;
+SELECT customer_id FROM orders GROUP BY customer_id;

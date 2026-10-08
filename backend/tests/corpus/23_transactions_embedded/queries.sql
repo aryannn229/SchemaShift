@@ -1,0 +1,12 @@
+BEGIN;
+UPDATE customers SET name = 'Ada' WHERE id = 1;
+INSERT INTO orders (id, customer_id, total) VALUES (1, 1, 10);
+COMMIT;
+BEGIN;
+UPDATE customers SET name = 'Bob' WHERE id = 2;
+INSERT INTO audit_log (id, note) VALUES (1, 'renamed');
+COMMIT;
+BEGIN;
+UPDATE orders SET total = 20 WHERE id = 1;
+UPDATE orders SET total = 30 WHERE id = 2;
+COMMIT;

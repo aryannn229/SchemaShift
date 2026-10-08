@@ -1,0 +1,34 @@
+description: 'whole chain embedded: deleting the root deletes everything'
+placements:
+  fk:b.a_id->a.id: EMBED
+  fk:c.b_id->b.id: EMBED
+diagnostics: []
+bulk:
+- match: type:*
+  status: SAFE
+  why: plain types map to exact BSON types
+- match: not_null:*
+  status: SAFE
+  why: NOT NULL maps to $jsonSchema required
+verdicts:
+  pk:a.id:
+    status: SAFE
+    why: _id
+  pk:b.id:
+    status: CHANGED
+    why: embedded array element
+  pk:c.id:
+    status: CHANGED
+    why: embedded array element
+  fk:b.a_id->a.id:
+    status: SAFE
+    why: embedded
+  fk:c.b_id->b.id:
+    status: SAFE
+    why: embedded
+  cascade_delete:b.a_id->a.id:
+    status: SAFE
+    why: single document delete
+  cascade_delete:c.b_id->b.id:
+    status: SAFE
+    why: single document delete
