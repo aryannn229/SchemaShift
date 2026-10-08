@@ -1,0 +1,40 @@
+{
+  "decisions": {
+    "fk:comments.author_id->users.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.27
+    },
+    "fk:comments.parent_comment_id->comments.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.65
+    },
+    "fk:comments.post_id->posts.id": {
+      "decision": "EMBED",
+      "host": "posts",
+      "score": 0.77
+    },
+    "fk:post_tags.post_id->posts.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.32
+    },
+    "fk:post_tags.tag_id->tags.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.82
+    },
+    "fk:posts.author_id->users.id": {
+      "decision": "EMBED",
+      "host": "users",
+      "score": 0.57
+    },
+    "m2n:post_tags": {
+      "decision": "REF_ARRAY",
+      "host": "tags",
+      "score": 0.82
+    }
+  },
+  "warnings": []
+}

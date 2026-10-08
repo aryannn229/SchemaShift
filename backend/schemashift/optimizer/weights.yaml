@@ -1,0 +1,33 @@
+# Embed-vs-reference cost model weights. Every number here is tunable; see docs/OPTIMIZER.md.
+threshold: 0.5            # embed when the normalized score is >= threshold
+
+hard:
+  max_parent_doc_bytes: 4194304   # 4 MB safe ceiling (MongoDB's hard limit is 16 MB)
+  safety_factor: 2                # projected size = parent + children * child_size * factor
+  max_children_per_parent: 1000   # above this a parent array is treated as unbounded
+  small_children: 50              # "small" 1:N fan-out for the shape bonus
+  max_embed_depth: 3              # nested embedding depth limit
+
+soft:                             # weighted sum; negative weights penalise embedding
+  read_together: 0.30
+  shape: 0.20
+  guarantees: 0.20
+  independent_access: -0.20
+  write_frequency: -0.10
+
+shape:
+  one_to_one: 1.0
+  one_to_many_small: 0.6
+  other: 0.0
+
+write_norm:
+  low: 0.0
+  med: 0.5
+  high: 1.0
+
+defaults:
+  child_independent_access: 0.3
+  read_together_ratio: 0.5
+  child_write_frequency: med
+  children_per_parent_one_to_one: 1
+  children_per_parent_one_to_many: 20

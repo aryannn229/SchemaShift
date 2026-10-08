@@ -1,0 +1,55 @@
+{
+  "decisions": {
+    "fk:accounts.branch_id->branches.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.17
+    },
+    "fk:accounts.customer_id->customers.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.34
+    },
+    "fk:beneficiaries.account_id->accounts.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.61
+    },
+    "fk:beneficiaries.customer_id->customers.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.61
+    },
+    "fk:cards.account_id->accounts.id": {
+      "decision": "EMBED",
+      "host": "accounts",
+      "score": 0.61
+    },
+    "fk:customers.home_branch_id->branches.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.32
+    },
+    "fk:kyc_profiles.customer_id->customers.id": {
+      "decision": "EMBED",
+      "host": "customers",
+      "score": 0.9
+    },
+    "fk:loans.customer_id->customers.id": {
+      "decision": "EMBED",
+      "host": "customers",
+      "score": 0.51
+    },
+    "fk:transactions.account_id->accounts.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.75
+    },
+    "m2n:beneficiaries": {
+      "decision": "REF_ARRAY",
+      "host": "accounts",
+      "score": 0.61
+    }
+  },
+  "warnings": []
+}

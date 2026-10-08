@@ -1,0 +1,60 @@
+{
+  "decisions": {
+    "fk:courses.department_id->departments.id": {
+      "decision": "EMBED",
+      "host": "departments",
+      "score": 0.61
+    },
+    "fk:enrollments.section_id->sections.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.37
+    },
+    "fk:enrollments.student_id->students.id": {
+      "decision": "EMBED",
+      "host": "students",
+      "score": 0.77
+    },
+    "fk:office_hours.professor_id->professors.id": {
+      "decision": "EMBED",
+      "host": "professors",
+      "score": 0.61
+    },
+    "fk:prerequisites.course_id->courses.id": {
+      "decision": "EMBED",
+      "host": "courses",
+      "score": 0.61
+    },
+    "fk:prerequisites.requires_id->courses.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.51
+    },
+    "fk:professors.department_id->departments.id": {
+      "decision": "EMBED",
+      "host": "departments",
+      "score": 0.72
+    },
+    "fk:sections.course_id->courses.id": {
+      "decision": "EMBED",
+      "host": "courses",
+      "score": 0.56
+    },
+    "fk:sections.professor_id->professors.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.56
+    },
+    "fk:students.advisor_id->professors.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.32
+    },
+    "m2n:enrollments": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.0
+    }
+  },
+  "warnings": []
+}

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
 import networkx as nx
 
 from schemashift.models.base import FrozenModel
@@ -33,14 +31,14 @@ class Relationship(FrozenModel):
     is_self_reference: bool = False
 
 
-@dataclass
 class SchemaGraph:
     """networkx ``MultiDiGraph`` plus typed relationship metadata."""
 
-    schema: Schema
-    graph: nx.MultiDiGraph[str] = field(default_factory=nx.MultiDiGraph)
-    relationships: dict[str, Relationship] = field(default_factory=dict)
-    junctions: dict[str, JunctionTable] = field(default_factory=dict)
+    def __init__(self, schema: Schema) -> None:
+        self.schema = schema
+        self.graph: nx.MultiDiGraph[str] = nx.MultiDiGraph()
+        self.relationships: dict[str, Relationship] = {}
+        self.junctions: dict[str, JunctionTable] = {}
 
     def parents_of(self, table: str) -> list[Relationship]:
         return [r for r in self.relationships.values() if r.child == table]

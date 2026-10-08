@@ -1,0 +1,9 @@
+{
+  "description": "Demo options: transactions grow without bound; beneficiaries are folded into an array of references.",
+  "access_hints": {
+    "fk:transactions.account_id->accounts.id": {"estimated_child_count_per_parent": 5000}
+  },
+  "relationship_overrides": {
+    "m2n:beneficiaries": "REF_ARRAY"
+  }
+}

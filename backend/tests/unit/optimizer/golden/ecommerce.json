@@ -1,0 +1,65 @@
+{
+  "decisions": {
+    "fk:addresses.customer_id->customers.id": {
+      "decision": "EMBED",
+      "host": "customers",
+      "score": 0.61
+    },
+    "fk:categories.parent_id->categories.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.49
+    },
+    "fk:order_items.order_id->orders.id": {
+      "decision": "EMBED",
+      "host": "orders",
+      "score": 0.82
+    },
+    "fk:order_items.product_id->products.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.22
+    },
+    "fk:orders.customer_id->customers.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.42
+    },
+    "fk:payments.order_id->orders.id": {
+      "decision": "EMBED",
+      "host": "orders",
+      "score": 0.59
+    },
+    "fk:product_categories.category_id->categories.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.61
+    },
+    "fk:product_categories.product_id->products.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.61
+    },
+    "fk:reviews.customer_id->customers.id": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.32
+    },
+    "fk:reviews.product_id->products.id": {
+      "decision": "EMBED",
+      "host": "products",
+      "score": 0.82
+    },
+    "m2n:order_items": {
+      "decision": "REFERENCE",
+      "host": null,
+      "score": 0.0
+    },
+    "m2n:product_categories": {
+      "decision": "REF_ARRAY",
+      "host": "categories",
+      "score": 0.61
+    }
+  },
+  "warnings": []
+}

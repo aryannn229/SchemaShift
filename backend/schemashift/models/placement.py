@@ -20,6 +20,8 @@ class PlacementDecision(FrozenModel):
     score: float = 0.0
     top_factors: tuple[Factor, ...] = ()
     reason: str = ""
+    overridden: bool = False  # forced by the user (relationship_overrides)
+    host: str | None = None  # table whose document hosts the embedding / array of references
 
 
 def junction_key(junction_table: str) -> str:
@@ -31,6 +33,7 @@ class PlacementPlan(FrozenModel):
     """relationship id (``fk:...`` or ``m2n:<junction>``) -> decision. Missing = REFERENCE."""
 
     decisions: dict[str, PlacementDecision] = {}
+    warnings: tuple[str, ...] = ()
 
     def decision(self, relationship_id: str) -> Placement:
         found = self.decisions.get(relationship_id)

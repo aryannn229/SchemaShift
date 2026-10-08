@@ -35,6 +35,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["schemashift*"]
 
+[tool.setuptools.package-data]
+"schemashift.optimizer" = ["weights.yaml"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["integration: needs docker services", "live: needs real LLM key"]

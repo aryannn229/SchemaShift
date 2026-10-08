@@ -1,0 +1,32 @@
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(30) NOT NULL UNIQUE,
+  email TEXT NOT NULL UNIQUE,
+  bio TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE posts (
+  id SERIAL PRIMARY KEY,
+  author_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft' CONSTRAINT ck_status CHECK (status IN ('draft', 'published')),
+  published_at TIMESTAMPTZ
+);
+CREATE TABLE comments (
+  id SERIAL PRIMARY KEY,
+  post_id INT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  author_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  parent_comment_id INT REFERENCES comments(id) ON DELETE CASCADE,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE tags (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(30) NOT NULL UNIQUE
+);
+CREATE TABLE post_tags (
+  post_id INT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+  tag_id INT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (post_id, tag_id)
+);
