@@ -104,11 +104,16 @@ jobs:
       - name: Start API and web server
         run: |
           (cd backend && nohup uvicorn schemashift.api.main:app --port 8000 > ../api.log 2>&1 &)
-          (cd frontend && nohup npm run dev > ../web.log 2>&1 &)
-          npx --yes wait-on http://localhost:8000/api/v1/health http://localhost:5173
-        working-directory: frontend
+          (cd frontend && nohup npm run dev -- --host 127.0.0.1 > ../web.log 2>&1 &)
+          npx --yes wait-on -t 90000 http-get://127.0.0.1:8000/api/v1/health http-get://127.0.0.1:5173
+        timeout-minutes: 5
+      - name: Show server logs on failure
+        if: failure()
+        run: tail -n 50 api.log web.log
       - run: npx playwright test
         working-directory: frontend
+        env:
+          E2E_BASE_URL: http://127.0.0.1:5173
 
   docker:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
