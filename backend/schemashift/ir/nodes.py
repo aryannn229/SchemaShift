@@ -190,6 +190,7 @@ class AggregateSemantics(IRNode):
     group_by: tuple[str, ...] = ()
     aggregates: tuple[AggregateCall, ...] = ()
     has_having: bool = False
+    left_joined_tables: tuple[str, ...] = ()  # right-hand tables of LEFT JOINs
 
 
 AnyIRNode = Annotated[

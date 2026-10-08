@@ -1,3 +1,4 @@
+from schemashift.models.placement import Factor, Placement, PlacementDecision, PlacementPlan
 from schemashift.models.query import Query, QueryKind, TransactionBlock
 from schemashift.models.schema import (
     CheckConstraint,
@@ -14,8 +15,17 @@ from schemashift.models.schema import (
     UniqueConstraint,
 )
 from schemashift.models.source import Diagnostic, Severity, SourceSpan
+from schemashift.models.verdict import ConditionTrace, Status, Verdict, worst
 
 __all__ = [
+    "ConditionTrace",
+    "Factor",
+    "Placement",
+    "PlacementDecision",
+    "PlacementPlan",
+    "Status",
+    "Verdict",
+    "worst",
     "CheckConstraint",
     "Column",
     "DefaultExpr",

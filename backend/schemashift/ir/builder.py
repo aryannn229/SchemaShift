@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 
 from sqlglot import exp
@@ -210,7 +211,7 @@ def _any_nullable(table: Table, cols: Iterable[str]) -> bool:
 
 
 def _slug(sql: str) -> str:
-    return "".join(ch if ch.isalnum() else "_" for ch in sql).strip("_")[:40]
+    return re.sub(r"[^0-9A-Za-z]+", "_", sql).strip("_")[:40]
 
 
 # --------------------------------------------------------------- relationships
@@ -436,11 +437,14 @@ def _single_table(node: exp.Expr | None, scope: dict[str, str]) -> str | None:
 
 
 def _projected_tables(ast: exp.Select, scope: dict[str, str], schema: Schema) -> set[str]:
+    """Tables whose columns are projected *as plain values* (aggregated columns do not count)."""
     tables: set[str] = set()
     for proj in ast.expressions:
         if isinstance(proj, exp.Star):
             return set(scope.values())
         for col in proj.find_all(exp.Column):
+            if col.find_ancestor(exp.AggFunc) is not None:
+                continue
             if isinstance(col.this, exp.Star):
                 if col.table:
                     tables.add(scope.get(col.table.lower(), col.table))
@@ -477,6 +481,16 @@ def _match_fk(
         if wanted and wanted <= pairs:
             return rel.id
     return None
+
+
+def _left_joined(ast: exp.Select, scope: dict[str, str]) -> tuple[str, ...]:
+    tables: list[str] = []
+    for join in ast.args.get("joins") or []:
+        if str(join.args.get("side") or "").upper() == "LEFT":
+            right = _single_table(join.this, scope)
+            if right is not None:
+                tables.append(right)
+    return tuple(dict.fromkeys(tables))
 
 
 def _aggregate_nodes(q: Query, schema: Schema, ids: _Ids, out: list[AnyIRNode]) -> None:
@@ -523,5 +537,6 @@ def _aggregate_nodes(q: Query, schema: Schema, ids: _Ids, out: list[AnyIRNode]) 
             group_by=group_by,
             aggregates=tuple(calls),
             has_having=ast.args.get("having") is not None,
+            left_joined_tables=_left_joined(ast, scope),
         )
     )
