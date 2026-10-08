@@ -19,3 +19,15 @@ test("compile and verify shows MATCH results", async ({ page }) => {
   await page.getByRole("tab", { name: "Verification" }).click();
   await expect(page.getByText("MATCH").first()).toBeVisible({ timeout: 45_000 });
 });
+
+test("demo button loads banking and compiles", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Demo" }).click();
+  await expect(page.getByTestId("overall-verdict")).toBeVisible();
+  await page.getByRole("tab", { name: "Verification" }).click();
+  if (process.env.E2E_VERIFY) {
+    await expect(page.getByText("MATCH").first()).toBeVisible({ timeout: 45_000 });
+  } else {
+    await expect(page.getByRole("alert")).toContainText("verification is not configured");
+  }
+});

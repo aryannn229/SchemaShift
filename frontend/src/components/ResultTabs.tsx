@@ -16,6 +16,7 @@ export function ResultTabs({
   result,
   loading,
   error,
+  verifyError,
   run,
   onSelectVerdict,
   onOverride,
@@ -23,6 +24,7 @@ export function ResultTabs({
   result?: CompileResponse | null;
   loading?: boolean;
   error?: string | null;
+  verifyError?: string | null;
   run?: RunDetail;
   onSelectVerdict?: (v: Verdict) => void;
   onOverride?: (relationshipId: string, decision: "EMBED" | "REFERENCE") => void;
@@ -30,7 +32,8 @@ export function ResultTabs({
   const [tab, setTab] = useState<Tab>("Summary");
 
   let body: React.ReactNode;
-  if (tab === "Verification") body = <VerificationTab run={run} />;
+  if (tab === "Verification")
+    body = verifyError && !run ? <ErrorBox message={verifyError} /> : <VerificationTab run={run} />;
   else if (loading) body = <Loading />;
   else if (error) body = <ErrorBox message={error} />;
   else if (!result) body = <Empty>Compile some SQL to see results.</Empty>;

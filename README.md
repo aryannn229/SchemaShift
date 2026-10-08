@@ -7,6 +7,10 @@ whether MongoDB keeps it (**SAFE**), changes it (**CHANGED**) or loses it (**BRO
 embed vs reference for every relationship, generates the MongoDB code, and proves the result by
 running the SQL on PostgreSQL and the translated queries on MongoDB against the same data.
 
+![SchemaShift verdicts for the banking demo](docs/screenshot.png)
+
+The **Demo** button loads the banking sample, compiles it and starts a verified run.
+
 ## Architecture
 
 ```mermaid

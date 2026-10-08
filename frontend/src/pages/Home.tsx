@@ -57,7 +57,7 @@ export default function Home() {
   }, [doCompile]);
 
   const loadSample = async (name: string) => {
-    if (!name) return;
+    if (!name) return null;
     const s = await fetchSample(name);
     const opts = (s.options ?? {}) as CompileRequest["options"];
     setFiles({ schema: s.schema_sql, queries: s.queries_sql, seed: "" });
@@ -65,6 +65,15 @@ export default function Home() {
     setOptionsText(JSON.stringify(opts, null, 2));
     setRunId(undefined);
     compile.reset();
+    return { schema_sql: s.schema_sql, queries_sql: s.queries_sql, seed_sql: "", options: opts };
+  };
+
+  /** Class demo: load the banking sample, compile it, and start a verified run when available. */
+  const runDemo = async () => {
+    const req = await loadSample("banking");
+    if (!req) return;
+    compile.mutate(req);
+    startRun.mutate({ ...req, verify: true, seed: 1 }, { onSuccess: (r) => setRunId(r.run_id) });
   };
 
   const selectVerdict = (v: Verdict) => {
@@ -137,6 +146,12 @@ export default function Home() {
             ))}
           </select>
           <button
+            onClick={() => void runDemo()}
+            className="rounded bg-emerald-600 px-2 py-1 text-sm font-semibold text-white"
+          >
+            Demo
+          </button>
+          <button
             onClick={() => setOptionsOpen(!optionsOpen)}
             className="rounded border px-2 py-1 text-sm dark:border-slate-600"
           >
@@ -190,9 +205,8 @@ export default function Home() {
         <ResultTabs
           result={result}
           loading={compile.isPending}
-          error={
-            (compile.error as Error | null)?.message ?? (startRun.error as Error | null)?.message
-          }
+          error={(compile.error as Error | null)?.message}
+          verifyError={(startRun.error as Error | null)?.message}
           run={verifyRun}
           onSelectVerdict={selectVerdict}
           onOverride={override}
