@@ -94,6 +94,20 @@ docker run --rm -p 8000:8000 -e APP_DATABASE_URL=sqlite:////tmp/app.db schemashi
 - [ ] `ANTHROPIC_API_KEY` set only on the backend; seed data is never sent to the model.
 - [ ] Health check green: `GET /api/v1/health` returns `status: ok` with `database: up`.
 
+### Verification of the code-level items (SPEC section 11)
+
+| Item | Where it is enforced and tested |
+|---|---|
+| No raw user SQL executed | `verification/ddl.py` re-emits DDL from the AST with a statement and function whitelist; seed rows use bound parameters. Tests: `tests/unit/verification/test_ddl_sqleval.py`, `tests/integration/test_verification.py`. |
+| Sandbox role limits | `verification/sandbox.py`: NOSUPERUSER NOCREATEDB NOCREATEROLE, own schema only, `statement_timeout` 5 s, idle-in-transaction 10 s, connection limit. Integration tests cover the limit and cleanup. |
+| Size limits | Body 200 KB (413), 50 tables / 30 queries (422), rows per table capped. Tests: `tests/unit/api/test_api.py`. |
+| Rate limit, CORS, headers | `api/middleware.py`, `api/main.py`; tested in `test_api.py`. |
+| Secrets | `.env` is git-ignored and absent from history; `.env.example` lists every variable. |
+| LLM sees structure only | `ai/prompts.py` builds prompts from schema excerpts; tests assert seed data is absent. The UI footer warns users not to paste confidential schemas. |
+
+The deployed-environment items in the checklist above (separate Neon roles, Atlas user scope, CORS
+origin, health check) can only be ticked after deploying.
+
 ## Known limits
 
 - Rate limits are per worker and in memory; with two workers the effective limit is up to twice

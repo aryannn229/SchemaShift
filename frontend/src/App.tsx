@@ -38,6 +38,10 @@ function Layout() {
       <main>
         <Outlet context={{ dark }} />
       </main>
+      <footer className="border-t px-4 py-2 text-xs text-slate-500 dark:border-slate-700">
+        Do not paste confidential schemas: compiled runs are stored so they can be shared by link,
+        and schema structure (never seed data) may be sent to an AI model for advisory opinions.
+      </footer>
     </div>
   );
 }
