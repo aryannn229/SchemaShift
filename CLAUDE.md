@@ -40,6 +40,9 @@ Frontend: `cd frontend; npm test | npm run lint | npm run typecheck | npm run bu
   validators, indexes, query translation and migration; `runtime_migrate.py` / `runtime_helpers.py` are embedded
   verbatim in the generated scripts. Integration tests need `docker compose -f docker-compose.test.yml up -d --wait`
   and `pytest -m integration`. See docs/CODEGEN.md.
+- Phase 7 verification (`verification/`): `verify(result, options, SandboxConfig)`; sandbox role+schema and Mongo db per run,
+  seed -> generated schema/indexes/migrate -> SQL vs pipeline diff -> probes. Needs the docker-compose.test.yml services.
+  See docs/VERIFICATION.md. Never execute user SQL strings: only AST re-emission and bound parameters.
 - Never patch a file with `s[:i] + new + s[j:]` without asserting `j > i` (it silently duplicated a file once).
 - Corpus (`backend/tests/corpus/*/expected.yaml`): hand-labeled ground truth; `schemashift evaluate` prints metrics
   (`--write-docs` updates `docs/METRICS.md`).

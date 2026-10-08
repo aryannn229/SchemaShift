@@ -223,7 +223,6 @@ def insert_post_tags(db, values, session=None):
     # Mitigates:
     #   pk:post_tags.post_id,tag_id (CHANGED): EQ-ENTITY-UNIQ
     #   fk:post_tags.post_id->posts.id (CHANGED): EQ-REF-INTEGRITY
-    #   fk:post_tags.tag_id->tags.id (CHANGED): EQ-REF-INTEGRITY
     #   cross_unique:post_tags.post_id,tag_id (BROKEN): EQ-CROSS-UNIQ
     """INSERT INTO post_tags: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'post_tags', values, session)
@@ -273,8 +272,6 @@ def insert_tags(db, values, session=None):
 
 
 def delete_tags(client, db, **match):
-    # Mitigates:
-    #   cascade_delete:post_tags.tag_id->tags.id (BROKEN): EQ-CASCADE-DEL
     """DELETE FROM tags WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
         client, lambda session: delete_row(db, PLAN, 'tags', match, session)

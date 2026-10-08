@@ -371,7 +371,6 @@ def insert_categories(db, values, session=None):
 def delete_categories(client, db, **match):
     # Mitigates:
     #   set_null:categories.parent_id->categories.id (BROKEN): EQ-SET-NULL
-    #   cascade_delete:product_categories.category_id->categories.id (BROKEN): EQ-CASCADE-DEL
     """DELETE FROM categories WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
         client, lambda session: delete_row(db, PLAN, 'categories', match, session)
@@ -482,7 +481,6 @@ def insert_product_categories(db, values, session=None):
     # Mitigates:
     #   pk:product_categories.product_id,category_id (CHANGED): EQ-ENTITY-UNIQ
     #   fk:product_categories.product_id->products.id (CHANGED): EQ-REF-INTEGRITY
-    #   fk:product_categories.category_id->categories.id (CHANGED): EQ-REF-INTEGRITY
     #   cross_unique:product_categories.product_id,category_id (BROKEN): EQ-CROSS-UNIQ
     """INSERT INTO product_categories: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'product_categories', values, session)

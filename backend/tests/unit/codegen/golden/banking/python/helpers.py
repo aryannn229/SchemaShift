@@ -327,7 +327,6 @@ def insert_accounts(db, values, session=None):
 def delete_accounts(client, db, **match):
     # Mitigates:
     #   cascade_delete:transactions.account_id->accounts.id (BROKEN): EQ-CASCADE-DEL
-    #   cascade_delete:beneficiaries.account_id->accounts.id (BROKEN): EQ-CASCADE-DEL
     """DELETE FROM accounts WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
         client, lambda session: delete_row(db, PLAN, 'accounts', match, session)
@@ -348,7 +347,6 @@ def insert_beneficiaries(db, values, session=None):
     # Mitigates:
     #   pk:beneficiaries.customer_id,account_id (CHANGED): EQ-ENTITY-UNIQ
     #   fk:beneficiaries.customer_id->customers.id (CHANGED): EQ-REF-INTEGRITY
-    #   fk:beneficiaries.account_id->accounts.id (CHANGED): EQ-REF-INTEGRITY
     #   cross_unique:beneficiaries.customer_id,account_id (BROKEN): EQ-CROSS-UNIQ
     """INSERT INTO beneficiaries: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'beneficiaries', values, session)

@@ -62,6 +62,65 @@ def compile(  # noqa: A001 (CLI verb)
 
 
 @app.command()
+def verify(
+    schema: Path = typer.Argument(..., exists=True, readable=True, help="PostgreSQL DDL file"),
+    queries: Path = typer.Option(None, "--queries", "-q", help="Optional SQL queries file"),
+    seed_file: Path = typer.Option(None, "--seed-file", help="Optional INSERT seed file"),
+    options: Path = typer.Option(None, "--options", "-o", help="JSON file with CompileOptions"),
+    seed: int = typer.Option(0, help="Seed of the synthetic data generator"),
+    rows: int = typer.Option(50, help="Rows per table (max 500)"),
+    probes: bool = typer.Option(True, help="Run guarantee probes for CHANGED/BROKEN verdicts"),
+    admin_dsn: str = typer.Option(
+        None,
+        envvar="SANDBOX_ADMIN_DATABASE_URL",
+        help="PostgreSQL role allowed to CREATE ROLE/SCHEMA",
+    ),
+    mongo_url: str = typer.Option(None, envvar="MONGO_URL", help="MongoDB URI (replica set)"),
+) -> None:
+    """Run the SQL on PostgreSQL and the generated code on MongoDB with identical seed data."""
+    from schemashift.pipeline import CompileOptions, compile_sql
+    from schemashift.verification import SandboxConfig
+    from schemashift.verification import verify as run_verify
+
+    if not admin_dsn or not mongo_url:
+        raise typer.BadParameter(
+            "set SANDBOX_ADMIN_DATABASE_URL and MONGO_URL (or pass the options)"
+        )
+    opts = (
+        CompileOptions.model_validate_json(options.read_text(encoding="utf-8"))
+        if options
+        else CompileOptions()
+    )
+    opts = opts.model_copy(update={"rows_per_table": rows})
+    seed_sql = seed_file.read_text(encoding="utf-8") if seed_file else ""
+    result = compile_sql(
+        schema.read_text(encoding="utf-8"),
+        queries.read_text(encoding="utf-8") if queries else "",
+        seed_sql,
+        opts,
+    )
+    report = run_verify(
+        result,
+        opts,
+        SandboxConfig(pg_admin_dsn=admin_dsn, mongo_url=mongo_url),
+        seed_sql=seed_sql,
+        seed=seed,
+        run_probes=probes,
+    )
+    for o in report.queries:
+        detail = o.hypothesis or o.error or o.pg_error or ""
+        typer.echo(f"{o.query_id:>4} {o.status:<14} {o.kind:<7} {detail}")
+    for p in report.probes:
+        flag = "demonstrated" if p.demonstrates else "no difference"
+        typer.echo(f"probe {p.verdict_id} ({p.status}): {flag} - {p.description}")
+    typer.echo(
+        f"result-set correctness: {report.correctness:.1%} "
+        f"({len(report.verified)} verified, {len(report.unexplained)} unexplained mismatch(es))"
+    )
+    raise typer.Exit(1 if report.correctness < 0.95 or report.unexplained else 0)
+
+
+@app.command()
 def evaluate(
     corpus: Path = typer.Option(None, help="Corpus directory (default: tests/corpus)"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="List every mismatch"),
