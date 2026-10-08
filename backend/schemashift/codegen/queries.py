@@ -59,6 +59,8 @@ class TranslatedQuery(FrozenModel):
     operations: list[WriteOp] = []
     output_columns: list[str] = []
     ordered: bool = False
+    order_positions: list[int] | None = None  # output positions of the ORDER BY keys
+    global_aggregate: bool = False  # aggregate without GROUP BY
     notes: list[str] = []
     error: str | None = None
     transaction_id: str | None = None
@@ -147,6 +149,8 @@ class _Select:
         self.aggs: dict[str, tuple[str, dict[str, Any], Any]] = {}  # sql -> (name, accs, proj)
         self.in_group = False
         self.select_items: list[tuple[str, exp.Expr]] = []
+        self.order_positions: list[int] | None = None
+        self.global_aggregate = False
 
     # ------------------------------------------------------------------ scope
     def _layout(self, table: str) -> TableLayout:
@@ -685,7 +689,40 @@ class _Select:
             self._project_flow(stages, outputs)
         else:
             stages.append({"$project": {"_id": 0, **{n: 1 for n in outputs}}})
+        self.order_positions = self._order_positions(order_items, outputs)
+        self.global_aggregate = is_agg and group is None
         return self.source_collection, stages, outputs, bool(order_items)
+
+    def _order_positions(self, order_items: list[exp.Expr], outputs: list[str]) -> list[int] | None:
+        positions: list[int] = []
+        for item in order_items:
+            node = item.this if isinstance(item, exp.Ordered) else item
+            pos: int | None = None
+            if isinstance(node, exp.Literal) and not node.is_string:
+                pos = int(node.this) - 1
+            elif (
+                isinstance(node, exp.Column)
+                and not _col_qualifier(node)
+                and _col_name(node) in outputs
+            ):
+                pos = outputs.index(_col_name(node))
+            if pos is None:
+                key = node.sql(dialect="postgres")
+                for i, (_, e) in enumerate(self.select_items):
+                    if e.sql(dialect="postgres") == key:
+                        pos = i
+                        break
+                    if isinstance(node, exp.Column) and isinstance(e, exp.Column):
+                        try:
+                            if self._col_key(node) == self._col_key(e):
+                                pos = i
+                                break
+                        except TranslationError:
+                            pass
+            if pos is None:
+                return None
+            positions.append(pos)
+        return positions
 
     @staticmethod
     def _int_arg(node: exp.Expr | None) -> int | None:
@@ -1282,6 +1319,8 @@ def translate_query(
                 pipeline=pipeline,
                 output_columns=outputs,
                 ordered=ordered,
+                order_positions=sel.order_positions,
+                global_aggregate=sel.global_aggregate,
                 notes=sel.notes,
             )
         dml = _Dml(q, ctx)

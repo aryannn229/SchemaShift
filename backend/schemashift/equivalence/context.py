@@ -24,14 +24,25 @@ class RuleContext:
     options: RuleOptions = field(default_factory=RuleOptions)
 
     # ---- placement helpers ---------------------------------------------------------
+    def folded_host(self, junction: str) -> str | None:
+        """Host table when a junction is folded into an array of references, else None."""
+        decision = self.plan.decisions.get(junction_key(junction))
+        if junction in self.graph.junctions and decision is not None:
+            if decision.decision == "REF_ARRAY" and decision.host:
+                return decision.host
+        return None
+
     def is_embedded(self, rel_id: str) -> bool:
         """True when the child of this relationship lives inside its parent document."""
-        return self.plan.is_embedded(rel_id)
+        if self.plan.is_embedded(rel_id):
+            return True
+        rel = self.graph.relationships.get(rel_id)
+        return rel is not None and self.folded_host(rel.child) == rel.parent
 
     def embedding_relationship(self, table: str) -> Relationship | None:
         """The relationship through which ``table`` is embedded into a parent, if any."""
         for rel in self.graph.parents_of(table):
-            if not rel.is_self_reference and self.plan.is_embedded(rel.id):
+            if not rel.is_self_reference and self.is_embedded(rel.id):
                 return rel
         return None
 
