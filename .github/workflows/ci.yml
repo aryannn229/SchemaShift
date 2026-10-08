@@ -19,7 +19,13 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy schemashift
-      - run: pytest --cov=schemashift
+      - run: python -m schemashift.equivalence.rules_doc --check
+      - run: >
+          pytest
+          --cov=schemashift.parser --cov=schemashift.semantic --cov=schemashift.ir
+          --cov=schemashift.equivalence --cov=schemashift.optimizer --cov=schemashift.codegen
+          --cov-fail-under=85
+      - run: python -m schemashift.cli evaluate
 
   frontend:
     runs-on: ubuntu-latest

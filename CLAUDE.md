@@ -25,3 +25,15 @@ Frontend: `cd frontend; npm test | npm run lint | npm run typecheck | npm run bu
 - Tests mandatory; never weaken a test to pass. Rules are data (registries), not if/else sprawl.
 - Never execute raw user SQL (SPEC Section 11).
 - LF line endings (`.gitattributes`).
+
+## Pipeline status (update as phases land)
+- Phase 1 parser (`parser/`): `parse(sql) -> ParseResult(schema_, queries, diagnostics)`; never raises on bad SQL.
+- Phase 2 semantic (`semantic/`): `analyze(schema, queries) -> AnalysisResult(graph, diagnostics)`; SEM001-SEM012.
+- Phase 3 IR (`ir/`): `build_ir(graph, queries) -> IRProgram`; node docs in `docs/IR.md`.
+- Phase 4 equivalence (`equivalence/`): rules are registered with `@rule(...)` + declarative `Outcome`s;
+  `check_program` / `check_both`. `docs/RULES.md` is generated: `python -m schemashift.equivalence.rules_doc`
+  (CI fails if stale). Add a rule => add outcomes, a branch case in `tests/unit/equivalence/test_rule_branches.py`,
+  and regenerate RULES.md.
+- Corpus (`backend/tests/corpus/*/expected.yaml`): hand-labeled ground truth; `schemashift evaluate` prints metrics
+  (`--write-docs` updates `docs/METRICS.md`).
+- Shell gotcha: do not run Python from inside `backend/schemashift/parser/` (its `types.py` shadows stdlib `types`).

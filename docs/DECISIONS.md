@@ -18,3 +18,13 @@
 | 2026-10-08 | `CrossEntityUniqueness` is emitted for the key of a detected junction table (tables = the two related entities) | Spec text is vague ("unique across a junction/derived shape"); a pair-uniqueness over two entities is the only SQL constraint that naturally spans entities. Verdict depends on whether the junction keeps its own collection. |
 | 2026-10-08 | Every FK without an explicit ON DELETE yields `RestrictDelete(action="NO ACTION")` | Spec maps `RESTRICT`/`NO ACTION` to RestrictDelete and NO ACTION is SQL's default. |
 | 2026-10-08 | Test files exempt from ruff E501 | Long SQL literals in tests are clearer unwrapped. |
+| 2026-10-08 | Rule functions return `(outcome_key, vars)`; verdict text lives in declarative `Outcome` templates in the registry | Spec asks for rules as data and a generated RULES.md; the wrapper builds the `Verdict`. |
+| 2026-10-08 | The "initial" equivalence pass uses an all-REFERENCE plan | Placement-independent baseline; the final pass uses the real plan and flags changed verdicts. |
+| 2026-10-08 | `SetNullOnDelete`/`SetDefaultOnDelete` embedded -> CHANGED (child is deleted, not nulled) | The spec row contradicts itself (SAFE then "actually CHANGED"). |
+| 2026-10-08 | A 1:1 child embedded as a sub-document keeps EntityUniqueness/ValueUniqueness enforceable (SAFE); only array (1:N) embedding is CHANGED | Unique indexes work on nested paths of a single sub-document but not across array elements. |
+| 2026-10-08 | Composite PKs are enforced with a compound unique index (documents keep a generated ObjectId `_id`); single-column PKs become `_id` | Keeps references by natural key simple; spec asked to record the choice. |
+| 2026-10-08 | New outcome `EQ-ENTITY-UNIQ/PK_FOLDED` (junction folded into an array of refs -> CHANGED) | The key of a folded junction is not enforceable by an index. |
+| 2026-10-08 | `LIKE 'literal%'` on a column is treated as translatable (`$jsonSchema pattern`) | MongoDB can express it; the spec list was not exhaustive. Other functions stay untranslatable. |
+| 2026-10-08 | `JoinSemantics.right_columns_projected` ignores columns that only appear inside aggregate functions | Aggregated right-side columns do not expose missing-vs-NULL fields. |
+| 2026-10-08 | Corpus labels live in `expected.yaml` with `bulk` glob patterns plus per-node entries; `type:*`/`not_null:*` labels are optional, all other guarantee nodes must be labeled | Keeps ~880 labels maintainable while forcing the interesting nodes to be labeled. |
+| 2026-10-08 | Junction detection also matches tables with a surrogate PK + UNIQUE(fk1, fk2) (e.g. `order_items`) | Follows the spec's definition literally; Phase 5 must allow embedding such junctions into one parent. |

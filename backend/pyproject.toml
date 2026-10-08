@@ -53,6 +53,8 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.ruff.lint.per-file-ignores]
 "schemashift/api/routes/*" = ["B008"]
 "tests/*" = ["E501"]
+"schemashift/cli.py" = ["B008"]
+"schemashift/metrics/evaluate.py" = ["E501"]
 
 [tool.mypy]
 strict = true
