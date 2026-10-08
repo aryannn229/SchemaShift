@@ -18,3 +18,4 @@ frontend/src/api/schema.d.ts
 *.log
 install.log
 npm.log
+compose.log
