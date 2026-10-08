@@ -8,7 +8,7 @@ test("load the banking sample, compile, and see a verdict", async ({ page }) => 
   await page.getByRole("tab", { name: "Verdicts" }).click();
   await expect(page.getByRole("table")).toBeVisible();
   await page.getByRole("tab", { name: "Generated Code" }).click();
-  await expect(page.getByText("Validators")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Validators" })).toBeVisible();
 });
 
 test("compile and verify shows MATCH results", async ({ page }) => {
