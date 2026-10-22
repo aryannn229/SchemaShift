@@ -1,3 +1,4 @@
+import { STAGES } from "../src/pages/About";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -20,7 +21,7 @@ test("renders the title and nav", () => {
   renderAt("/about");
   expect(screen.getByRole("heading", { name: "SchemaShift" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /how schemashift works/i })).toBeInTheDocument();
-  expect(screen.getByRole("list", { name: "Pipeline" }).children).toHaveLength(7);
+  expect(screen.getByRole("list", { name: "Pipeline" }).children).toHaveLength(STAGES.length);
 });
 
 test("home shows empty result state and disabled compile", () => {

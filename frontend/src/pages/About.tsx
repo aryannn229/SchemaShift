@@ -12,13 +12,29 @@ export const STAGES = [
   ],
   [
     "Equivalence",
-    "Declarative rules decide whether each guarantee is SAFE, CHANGED or BROKEN in MongoDB.",
+    "Declarative rules decide whether each guarantee is SAFE, CHANGED or BROKEN in MongoDB, with an evidence level.",
+  ],
+  [
+    "Proof",
+    "Z3 checks that the generated validators accept exactly what the SQL constraints accept, inside a documented fragment, and returns a concrete row when they do not.",
   ],
   [
     "Optimizer",
     "Weighted features decide EMBED or REFERENCE per relationship; an LLM only offers a second opinion.",
   ],
+  [
+    "Pipeline optimizer",
+    "Rewrite rules with preconditions and a cost model choose the cheapest aggregation pipeline; explain() checks the estimates.",
+  ],
   ["Codegen", "Validators, indexes, query pipelines, a migration script and enforcement helpers."],
+  [
+    "Risk and simulator",
+    "A rule-based risk score, and a what-if simulator for embed/reference, workload and constraint changes.",
+  ],
+  [
+    "Evolution and safe migration",
+    "Two schema versions become an ordered, reversible migration plan; runs checkpoint, resume and quarantine bad records.",
+  ],
   [
     "Verification",
     "Run the SQL in a sandbox PostgreSQL and the generated code in MongoDB, then diff the results.",
@@ -69,6 +85,10 @@ function Metrics() {
   const mock = obj(agreement.mock);
   const real = obj(agreement.real);
   const mutation = obj(d.mutation);
+  const evaluation = obj(d.evaluation);
+  const smt = obj(evaluation.smt_soundness);
+  const fuzz = obj(evaluation.fuzz);
+  const bench = obj(evaluation.bench);
   const kappa = (r: Obj) => (typeof r.kappa === "number" ? r.kappa.toFixed(2) : "n/a");
   return (
     <div className="space-y-4 p-4">
@@ -110,6 +130,31 @@ function Metrics() {
           hint="equivalence and optimizer"
         />
       </div>
+      {Object.keys(evaluation).length > 0 && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="evaluation-cards">
+          <StatCard
+            label="Z3 counterexamples confirmed"
+            value={num(obj(smt.stats).counterexamples_confirmed)}
+            hint={`${num(obj(smt.stats).proofs)} proofs, ${num(obj(smt.stats).rows_agreeing)} rows agreeing`}
+          />
+          <StatCard
+            label="Fuzz failures"
+            value={num(fuzz.failures)}
+            hint={`${num(fuzz.queries)} queries, seed ${num(fuzz.seed)}`}
+          />
+          <StatCard
+            label="Pipeline cost vs explain (rho)"
+            value={num(evaluation.pooled_pipeline_rho)}
+            hint={`${num(evaluation.pooled_points)} candidate pipelines`}
+          />
+          <StatCard
+            label="Chosen plan fastest"
+            value={typeof bench.chosen_fastest_overall === "string" ? bench.chosen_fastest_overall : "n/a"}
+            hint="timed queries, 3 plans"
+            tone="changed"
+          />
+        </div>
+      )}
       <p className="text-xs text-muted">
         Computed {typeof d.date === "string" ? d.date : "n/a"} at commit{" "}
         <span className="font-mono">{typeof d.commit === "string" ? d.commit : "n/a"}</span>. Details:

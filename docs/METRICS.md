@@ -2,8 +2,8 @@
 
 Computed by `schemashift corpus report` (see `docs/EVALUATION.md` for methodology).
 
-- **Date:** 2026-10-22
-- **Commit:** 5312da9
+- **Date:** 2026-10-23
+- **Commit:** 2c8bcbd
 
 The two label groups are scored **separately and never merged into one headline number**: the
 self-labeled corpus is written by the author of the rules, so agreement shows internal consistency,
@@ -69,7 +69,7 @@ the inventory of real-world constructs SchemaShift does not support yet.
 
 | Advisor | Relationships | Raw agreement | Cohen's κ | Disagreements |
 |---|---|---|---|---|
-| mock (deterministic rule of thumb, **not** an AI signal) | 165 | 72.1% | 0.42 | 46 |
+| mock (deterministic rule of thumb, **not** an AI signal) | 165 | 71.5% | 0.41 | 47 |
 | Anthropic model | not measured | | | |
 
 Disagreements (mock), optimizer vs advisor, both rationales:
@@ -89,6 +89,8 @@ Disagreements (mock), optimizer vs advisor, both rationales:
 | corpus/12_update_cascade | `fk:c3.p_id->p.id` | **REFERENCE**: hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding (read_together_ratio +0.15; relationship_shape +0.12; child_independent_access -0.06) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
 | corpus/17_multi_parent_child | `fk:reviews.product_id->products.id` | **EMBED**: embed score 0.56 >= threshold 0.50 (read_together_ratio +0.15; relationship_shape +0.12; guarantees_needing_embedding +0.10) | **REFERENCE** (0.60): mock advisor: default to a reference |
 | corpus/19_unique_embedded_child | `fk:c.p_id->p.id` | **REFERENCE**: embed score 0.46 < threshold 0.50 (read_together_ratio +0.15; relationship_shape +0.12; child_independent_access -0.06) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
+| corpus/23_transactions_embedded | `fk:orders.customer_id->customers.id` | **REFERENCE**: embed score 0.46 < threshold 0.50 (read_together_ratio +0.15; relationship_shape +0.12; child_write_frequency -0.10) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
+| corpus/24_transactions_unavailable | `fk:orders.customer_id->customers.id` | **REFERENCE**: embed score 0.46 < threshold 0.50 (read_together_ratio +0.15; relationship_shape +0.12; child_write_frequency -0.10) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
 | corpus/25_joins | `fk:notes.order_id->orders.id` | **REFERENCE**: hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding (read_together_ratio +0.30; relationship_shape +0.12) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
 | corpus/27_circular_fk | `fk:a.b_id->b.id` | **REFERENCE**: hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding (read_together_ratio +0.15; relationship_shape +0.12; child_independent_access -0.06) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
 | corpus/27_circular_fk | `fk:b.a_id->a.id` | **REFERENCE**: hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding (read_together_ratio +0.15; relationship_shape +0.12; child_independent_access -0.06) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
@@ -96,17 +98,15 @@ Disagreements (mock), optimizer vs advisor, both rationales:
 | corpus/28_semantic_errors | `fk:b.a_txt->a.id` | **REFERENCE**: hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding (read_together_ratio +0.15; relationship_shape +0.12; child_independent_access -0.06) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
 | corpus/28_semantic_errors | `fk:b.a_x->a.x` | **REFERENCE**: hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding (read_together_ratio +0.15; relationship_shape +0.12; child_independent_access -0.06) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
 | corpus/30_ecommerce | `fk:order_items.order_id->orders.id` | **EMBED**: embed score 0.82 >= threshold 0.50 (read_together_ratio +0.30; relationship_shape +0.12; guarantees_needing_embedding +0.10) | **REFERENCE** (0.60): mock advisor: default to a reference |
-| corpus/30_ecommerce | `fk:orders.customer_id->customers.id` | **REFERENCE**: embed score 0.42 < threshold 0.50 (read_together_ratio +0.15; relationship_shape +0.12; child_independent_access -0.10) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
+| corpus/30_ecommerce | `fk:orders.customer_id->customers.id` | **REFERENCE**: embed score 0.40 < threshold 0.50 (read_together_ratio +0.15; relationship_shape +0.12; child_independent_access -0.10) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
 | corpus/30_ecommerce | `fk:reviews.product_id->products.id` | **EMBED**: embed score 0.82 >= threshold 0.50 (read_together_ratio +0.30; relationship_shape +0.12; guarantees_needing_embedding +0.10) | **REFERENCE** (0.60): mock advisor: default to a reference |
-| corpus/31_university | `fk:enrollments.student_id->students.id` | **EMBED**: embed score 0.77 >= threshold 0.50 (read_together_ratio +0.30; relationship_shape +0.12; guarantees_needing_embedding +0.10) | **REFERENCE** (0.60): mock advisor: default to a reference |
-| corpus/31_university | `fk:prerequisites.requires_id->courses.id` | **REFERENCE**: prerequisites is embedded in courses instead (at most one parent) (read_together_ratio +0.15; relationship_shape +0.12; child_independent_access -0.06) | **EMBED** (0.60): mock advisor: small single-parent child read together with its parent |
-| corpus/31_university | `fk:sections.course_id->courses.id` | **EMBED**: embed score 0.56 >= threshold 0.50 (read_together_ratio +0.15; relationship_shape +0.12; guarantees_needing_embedding +0.10) | **REFERENCE** (0.60): mock advisor: default to a reference |
+| corpus/31_university | `fk:enrollments.student_id->students.id` | **EMBED**: embed score 0.75 >= threshold 0.50 (read_together_ratio +0.30; relationship_shape +0.12; guarantees_needing_embedding +0.10) | **REFERENCE** (0.60): mock advisor: default to a reference |
 
-… and 21 more in docs/metrics.json.
+… and 22 more in docs/metrics.json.
 
 ## Mutation testing
 
-Mutation score 89.1%: 1446 of 1622 mutants killed (163 survived, 13 timed out) in schemashift/equivalence/, schemashift/optimizer/. Command: `scripts/mutation.sh 8`.
+Mutation score 89.1%: 1446 of 1622 mutants killed (163 survived, 13 timed out) in schemashift/equivalence/, schemashift/optimizer/. Command: `scripts/mutation.sh 8`. The first run scored 83.3%; tests were added for the survivors (exact reasons, scores, type map, predicate analysis, RULES.md). Mutants in code that runs at import time (the rule definitions) are not re-evaluated per mutant by mutmut's fork model, so most of the remaining survivors cannot be killed by unit tests; the exact RULES.md test covers that wording.
 
 ## Failure cases
 

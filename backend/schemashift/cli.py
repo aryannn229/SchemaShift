@@ -175,8 +175,41 @@ def evaluate(
     with_ai: bool = typer.Option(
         False, "--ai", help="Also measure AI agreement (needs ANTHROPIC_API_KEY)"
     ),
+    run_everything: bool = typer.Option(
+        False, "--all", help="Reproduce every reported number (see docs/EVALUATION.md)"
+    ),
+    fuzz_cases: int = typer.Option(100, help="--all: fuzz cases"),
+    fuzz_seed: int = typer.Option(52, help="--all: fuzz seed"),
+    smt_examples: int = typer.Option(200, help="--all: random schemas for the Z3 soundness test"),
+    bench_scale: int = typer.Option(1000, help="--all: benchmark rows per table"),
+    skip: list[str] = typer.Option([], "--skip", help="--all: sections to skip"),
 ) -> None:
     """Evaluate the equivalence checker against the labeled corpus."""
+    if run_everything:
+        import os
+
+        from schemashift.evaluation import run_all, write_outputs
+        from schemashift.verification import SandboxConfig
+
+        dsn, mongo = os.environ.get("SANDBOX_ADMIN_DATABASE_URL"), os.environ.get("MONGO_URL")
+        box = SandboxConfig(pg_admin_dsn=dsn, mongo_url=mongo) if dsn and mongo else None
+        data = run_all(
+            box,
+            fuzz_cases=fuzz_cases,
+            fuzz_seed=fuzz_seed,
+            smt_examples=smt_examples,
+            bench_scale=bench_scale,
+            skip=frozenset(skip),
+            log=typer.echo,
+        )
+        from schemashift.metrics import report as metrics_report
+
+        if data.get("corpus", {}).get("equivalence"):
+            for path in metrics_report.write_docs(data["corpus"]):
+                typer.echo(f"wrote {path}")
+        for path in write_outputs(data):
+            typer.echo(f"wrote {path}")
+        raise typer.Exit(0)
     from schemashift.metrics.evaluate import (
         DEFAULT_CORPUS,
         evaluate_equivalence,

@@ -1,6 +1,6 @@
 {
-  "date": "2026-10-22",
-  "commit": "5312da9",
+  "date": "2026-10-23",
+  "commit": "2c8bcbd",
   "equivalence": {
     "corpus_schemas": 32,
     "labeled_nodes": 883,
@@ -202,9 +202,9 @@
       "advisor": "mock",
       "real_model": false,
       "pairs": 165,
-      "agreed": 119,
-      "rate": 0.7212121212121212,
-      "kappa": 0.42211055276381904,
+      "agreed": 118,
+      "rate": 0.7151515151515152,
+      "kappa": 0.4056104851690045,
       "disagreements": [
         {
           "case": "corpus/03_fk_reference",
@@ -389,6 +389,34 @@
           "advisor_justification": "mock advisor: small single-parent child read together with its parent"
         },
         {
+          "case": "corpus/23_transactions_embedded",
+          "relationship_id": "fk:orders.customer_id->customers.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "embed score 0.46 < threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_write_frequency -0.10"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/24_transactions_unavailable",
+          "relationship_id": "fk:orders.customer_id->customers.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "embed score 0.46 < threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_write_frequency -0.10"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
           "case": "corpus/25_joins",
           "relationship_id": "fk:notes.order_id->orders.id",
           "optimizer": "REFERENCE",
@@ -489,7 +517,7 @@
           "case": "corpus/30_ecommerce",
           "relationship_id": "fk:orders.customer_id->customers.id",
           "optimizer": "REFERENCE",
-          "optimizer_reason": "embed score 0.42 < threshold 0.50",
+          "optimizer_reason": "embed score 0.40 < threshold 0.50",
           "optimizer_factors": [
             "read_together_ratio +0.15",
             "relationship_shape +0.12",
@@ -517,7 +545,7 @@
           "case": "corpus/31_university",
           "relationship_id": "fk:enrollments.student_id->students.id",
           "optimizer": "EMBED",
-          "optimizer_reason": "embed score 0.77 >= threshold 0.50",
+          "optimizer_reason": "embed score 0.75 >= threshold 0.50",
           "optimizer_factors": [
             "read_together_ratio +0.30",
             "relationship_shape +0.12",
@@ -545,7 +573,7 @@
           "case": "corpus/31_university",
           "relationship_id": "fk:sections.course_id->courses.id",
           "optimizer": "EMBED",
-          "optimizer_reason": "embed score 0.56 >= threshold 0.50",
+          "optimizer_reason": "embed score 0.54 >= threshold 0.50",
           "optimizer_factors": [
             "read_together_ratio +0.15",
             "relationship_shape +0.12",
@@ -557,7 +585,7 @@
         },
         {
           "case": "corpus/32_banking",
-          "relationship_id": "fk:beneficiaries.account_id->accounts.id",
+          "relationship_id": "fk:beneficiaries.customer_id->customers.id",
           "optimizer": "EMBED",
           "optimizer_reason": "embed score 0.61 >= threshold 0.50",
           "optimizer_factors": [
@@ -573,7 +601,7 @@
           "case": "samples/blog",
           "relationship_id": "fk:comments.post_id->posts.id",
           "optimizer": "EMBED",
-          "optimizer_reason": "embed score 0.77 >= threshold 0.50",
+          "optimizer_reason": "embed score 0.75 >= threshold 0.50",
           "optimizer_factors": [
             "read_together_ratio +0.30",
             "relationship_shape +0.12",
@@ -601,7 +629,7 @@
           "case": "samples/ecommerce",
           "relationship_id": "fk:orders.customer_id->customers.id",
           "optimizer": "REFERENCE",
-          "optimizer_reason": "embed score 0.42 < threshold 0.50",
+          "optimizer_reason": "embed score 0.40 < threshold 0.50",
           "optimizer_factors": [
             "read_together_ratio +0.15",
             "relationship_shape +0.12",
@@ -629,7 +657,7 @@
           "case": "samples/university",
           "relationship_id": "fk:enrollments.student_id->students.id",
           "optimizer": "EMBED",
-          "optimizer_reason": "embed score 0.77 >= threshold 0.50",
+          "optimizer_reason": "embed score 0.75 >= threshold 0.50",
           "optimizer_factors": [
             "read_together_ratio +0.30",
             "relationship_shape +0.12",
@@ -657,7 +685,7 @@
           "case": "samples/university",
           "relationship_id": "fk:sections.course_id->courses.id",
           "optimizer": "EMBED",
-          "optimizer_reason": "embed score 0.56 >= threshold 0.50",
+          "optimizer_reason": "embed score 0.54 >= threshold 0.50",
           "optimizer_factors": [
             "read_together_ratio +0.15",
             "relationship_shape +0.12",
@@ -828,20 +856,6 @@
             "read_together_ratio +0.15",
             "relationship_shape +0.12",
             "child_independent_access -0.06"
-          ],
-          "advisor": "REFERENCE",
-          "advisor_confidence": 0.6,
-          "advisor_justification": "mock advisor: default to a reference"
-        },
-        {
-          "case": "external/supabase_slack_clone",
-          "relationship_id": "fk:messages.user_id->users.id",
-          "optimizer": "EMBED",
-          "optimizer_reason": "embed score 0.50 >= threshold 0.50",
-          "optimizer_factors": [
-            "read_together_ratio +0.20",
-            "relationship_shape +0.12",
-            "child_independent_access -0.07"
           ],
           "advisor": "REFERENCE",
           "advisor_confidence": 0.6,
