@@ -49,7 +49,12 @@ def q3(db):
     # columns: avg
     result = list(db['students'].aggregate([
             {'$replaceRoot': {'newRoot': {'students': '$$ROOT'}}},
-            {'$group': {'_id': None, '__a0': {'$avg': '$students.gpa'}}},
+            {'$facet': {'g': [{'$group': {'_id': None, '__a0': {'$avg': '$students.gpa'}}}]}},
+            {
+                '$replaceRoot': {
+                    'newRoot': {'$ifNull': [{'$arrayElemAt': ['$g', 0]}, {'$literal': {'_id': None, '__a0': None}}]},
+                },
+            },
             {'$addFields': {'avg': {'$ifNull': ['$__a0', None]}}},
             {'$project': {'_id': 0, 'avg': 1}},
         ]))

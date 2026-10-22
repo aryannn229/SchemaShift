@@ -13,13 +13,10 @@ from bson.regex import Regex
 def ensure_collection(db, name, options):
     """Create the collection, or update its validator when it already exists."""
     if name not in db.list_collection_names():
-        db.create_collection(name, **{
-            "validator": options["validator"],
-            "validationLevel": options["validationLevel"],
-            "validationAction": options["validationAction"],
-        })
+        db.create_collection(name, **options)
     else:
-        db.command("collMod", name, **options)
+        modifiable = {k: v for k, v in options.items() if k != "collation"}
+        db.command("collMod", name, **modifiable)
 
 
 def create_collections(db):
@@ -136,6 +133,7 @@ def create_collections(db):
         },
         'validationLevel': 'strict',
         'validationAction': 'error',
+        'collation': {'locale': 'en'},
     })
     # students: SQL table students; _id = students.id
     ensure_collection(db, 'students', {
@@ -168,4 +166,5 @@ def create_collections(db):
         },
         'validationLevel': 'strict',
         'validationAction': 'error',
+        'collation': {'locale': 'en'},
     })

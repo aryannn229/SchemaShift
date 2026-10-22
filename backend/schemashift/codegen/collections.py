@@ -22,6 +22,7 @@ from schemashift.codegen.predicate import (
     PLike,
     Pred,
     Untranslatable,
+    enum_values_of,
     like_to_regex,
     literal_value,
     parse_predicate,
@@ -40,6 +41,7 @@ class CollectionSpec(FrozenModel):
     validation_level: str = "strict"
     validation_action: str = "error"
     id_description: str = ""
+    collation: dict[str, Any] | None = None  # default string collation (createCollection only)
 
 
 @dataclass
@@ -201,12 +203,20 @@ def _merge_keywords(target: dict[str, Any], new: dict[str, Any]) -> None:
 
 
 # ----------------------------------------------------------------------- build
+EN_COLLATION: dict[str, Any] = {"locale": "en"}
+
+
 def build_collections(
-    schema: Schema, layouts: dict[str, TableLayout], uuid_as: str = "binary"
+    schema: Schema,
+    layouts: dict[str, TableLayout],
+    uuid_as: str = "binary",
+    string_collation: str = "en",
 ) -> CollectionsResult:
     result = CollectionsResult()
     for root in roots(layouts):
         spec, untranslated = _collection(schema, layouts, root, uuid_as)
+        if string_collation == "en":
+            spec = spec.model_copy(update={"collation": EN_COLLATION})
         result.collections.append(spec)
         result.untranslated.extend(untranslated)
     return result
@@ -334,7 +344,7 @@ def _apply_checks(
         if not remaining:
             continue
         try:
-            expr_checks.append(_expr_validator(remaining, table, layout, chain, layouts))
+            expr_checks.append(_expr_validator(remaining, table, layout, chain, layouts, schema))
         except Untranslatable as exc:
             untranslated.append(
                 UntranslatedCheck(table.name, check.name, check.expression_sql, exc.fragment)
@@ -347,6 +357,7 @@ def _expr_validator(
     layout: TableLayout,
     chain: list[TableLayout],
     layouts: dict[str, TableLayout],
+    schema: Schema,
 ) -> Any:
     """Null-tolerant ``$expr`` evaluated per root document, iterating through array levels."""
 
@@ -362,11 +373,19 @@ def _expr_validator(
                     host = layouts[layout.host]
                     hcol = layout.host_columns[layout.dropped_columns.index(name)]
                     return ColRef(
-                        path=parent[1] + host.fields[hcol], type=column.sql_type, var=parent[0]
+                        path=parent[1] + host.fields[hcol],
+                        type=column.sql_type,
+                        var=parent[0],
+                        enum_values=enum_values_of(schema, column.sql_type),
                     )
                 if name not in layout.fields:
                     raise Untranslatable(col.sql(dialect="postgres"))
-                return ColRef(path=prefix + layout.fields[name], type=column.sql_type, var=var)
+                return ColRef(
+                    path=prefix + layout.fields[name],
+                    type=column.sql_type,
+                    var=var,
+                    enum_values=enum_values_of(schema, column.sql_type),
+                )
 
             parts = [to_expr(p, resolve, "check") for p in preds]
             return parts[0] if len(parts) == 1 else {"$and": parts}

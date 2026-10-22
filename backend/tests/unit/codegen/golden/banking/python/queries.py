@@ -83,10 +83,23 @@ def q4(db):
     result = list(db['accounts'].aggregate([
             {'$replaceRoot': {'newRoot': {'accounts': '$$ROOT'}}},
             {
-                '$group': {
-                    '_id': None,
-                    '__a0': {'$sum': '$accounts.balance'},
-                    '__a0_n': {'$sum': {'$cond': [{'$gt': ['$accounts.balance', None]}, 1, 0]}},
+                '$facet': {
+                    'g': [
+                        {
+                            '$group': {
+                                '_id': None,
+                                '__a0': {'$sum': '$accounts.balance'},
+                                '__a0_n': {'$sum': {'$cond': [{'$gt': ['$accounts.balance', None]}, 1, 0]}},
+                            },
+                        },
+                    ],
+                },
+            },
+            {
+                '$replaceRoot': {
+                    'newRoot': {
+                        '$ifNull': [{'$arrayElemAt': ['$g', 0]}, {'$literal': {'_id': None, '__a0': 0, '__a0_n': 0}}],
+                    },
                 },
             },
             {

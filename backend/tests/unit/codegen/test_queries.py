@@ -27,6 +27,16 @@ def one(queries: str, plan: dict[str, Any] | None = None):  # type: ignore[no-un
     return out[0]
 
 
+def group_of(pipeline: list[dict[str, Any]]) -> dict[str, Any]:
+    """The $group stage, directly or inside the $facet used for global aggregates."""
+    for s in pipeline:
+        if "$group" in s:
+            return s["$group"]  # type: ignore[no-any-return]
+        if "$facet" in s:
+            return s["$facet"]["g"][0]["$group"]  # type: ignore[no-any-return]
+    raise AssertionError("no $group stage")
+
+
 def stages(queries: str, plan: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     q = one(queries, plan)
     assert q.error is None, q.error
@@ -159,14 +169,14 @@ def test_group_by_with_aggregates_and_having() -> None:
 
 def test_count_column_skips_nulls() -> None:
     p = stages("SELECT COUNT(note) FROM orders;")
-    group = next(s for s in p if "$group" in s)["$group"]
+    group = group_of(p)
     assert group["__a0"] == {"$sum": {"$cond": [{"$gt": ["$orders.note", None]}, 1, 0]}}
     assert group["_id"] is None
 
 
 def test_count_distinct() -> None:
     p = stages("SELECT COUNT(DISTINCT customer_id) AS c FROM orders;")
-    group = next(s for s in p if "$group" in s)["$group"]
+    group = group_of(p)
     assert "$addToSet" in group["__a0"]
     assert next(s for s in p if "$addFields" in s)["$addFields"]["c"] == {
         "$ifNull": [{"$size": "$__a0"}, None]

@@ -251,7 +251,10 @@ def test_value_expressions() -> None:
     n = lambda s: sqlglot.parse_one(s, dialect="postgres")  # noqa: E731
     assert value_expr(n("a + 1"), resolve) == {"$add": ["$a", 1]}
     assert value_expr(n("a * b - 2"), resolve) == {"$subtract": [{"$multiply": ["$a", "$b"]}, 2]}
-    assert value_expr(n("a / 2"), resolve) == {"$divide": ["$a", 2]}
+    # integer / integer truncates (a is INTEGER); a floating operand divides exactly (f is DOUBLE)
+    assert value_expr(n("a / 2"), resolve) == {"$trunc": [{"$divide": ["$a", 2]}]}
+    assert value_expr(n("f / 2"), resolve) == {"$divide": ["$f", 2]}
+    assert value_expr(n("a / 2.0"), resolve) == {"$divide": ["$a", 2.0]}
     assert value_expr(n("-a"), resolve) == {"$multiply": [-1, "$a"]}
     assert value_expr(n("LENGTH(a)"), resolve) == {"$strLenCP": "$a"}
     assert value_expr(n("'$x'"), resolve) == {"$literal": "$x"}

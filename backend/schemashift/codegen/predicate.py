@@ -21,7 +21,7 @@ from typing import Any, Literal
 from sqlglot import exp
 
 from schemashift.codegen.values import DateValue, RegexValue, UuidValue
-from schemashift.models.schema import NormalizedType
+from schemashift.models.schema import NormalizedType, Schema
 
 Mode = Literal["where", "check"]
 
@@ -41,13 +41,28 @@ class ColRef:
     path: str  # dotted path without a leading "$", relative to ``var``
     type: NormalizedType | None = None
     var: str = "$"  # "$" for the document, "$$el." inside array-element lambdas
+    enum_values: tuple[str, ...] | None = None  # declaration order, for ENUM columns
+    # Path of an optional (LEFT-joined) embedded document this value belongs to: when that document
+    # is absent the SQL value is NULL even though the column is stored on the host.
+    present: str | None = None
 
     @property
-    def expr(self) -> str:
-        return f"{self.var}{self.path}"
+    def expr(self) -> Any:
+        value = f"{self.var}{self.path}"
+        if self.present is None:
+            return value
+        return {"$cond": [{"$gt": [f"{self.var}{self.present}", None]}, value, None]}
 
 
 Resolver = Callable[[exp.Column], ColRef]
+
+
+def enum_values_of(schema: Schema, t: NormalizedType | None) -> tuple[str, ...] | None:
+    """Declared values of an ENUM type (PostgreSQL orders enums by declaration)."""
+    if t is None or t.base != "ENUM" or t.enum_name not in schema.enums:
+        return None
+    return schema.enums[t.enum_name].values
+
 
 # ---------------------------------------------------------------------- predicate tree
 
@@ -101,7 +116,16 @@ class PConst:
     value: bool | None  # None = SQL NULL (unknown)
 
 
-Pred = PAnd | POr | PCmp | PIn | PLike | PNull | PBool | PConst
+@dataclass(frozen=True)
+class PUnknown:
+    """``(p) IS NULL`` over a boolean expression: p is neither TRUE nor FALSE (3-valued logic)."""
+
+    when_true: Pred  # p
+    when_false: Pred  # NOT p
+    neg: bool  # True = IS NOT NULL
+
+
+Pred = PAnd | POr | PCmp | PIn | PLike | PNull | PBool | PConst | PUnknown
 
 _CMP_NEGATE = {"eq": "ne", "ne": "eq", "lt": "gte", "gte": "lt", "lte": "gt", "gt": "lte"}
 _CMP_OF: dict[type[exp.Expr], str] = {
@@ -113,6 +137,18 @@ _CMP_OF: dict[type[exp.Expr], str] = {
     exp.GTE: "gte",
 }
 _CMP_MQL = {"eq": "$eq", "ne": "$ne", "lt": "$lt", "lte": "$lte", "gt": "$gt", "gte": "$gte"}
+
+
+_BOOLEAN_NODES = (
+    exp.And, exp.Or, exp.Not, exp.EQ, exp.NEQ, exp.LT, exp.LTE, exp.GT, exp.GTE,
+    exp.In, exp.Between, exp.Like, exp.ILike, exp.Is,
+)  # fmt: skip
+
+
+def _is_boolean_expr(node: exp.Expr) -> bool:
+    while isinstance(node, exp.Paren):
+        node = node.this
+    return isinstance(node, _BOOLEAN_NODES)
 
 
 def parse_predicate(node: exp.Expr, negate: bool = False) -> Pred:
@@ -146,6 +182,10 @@ def parse_predicate(node: exp.Expr, negate: bool = False) -> Pred:
         return PLike(node.this, node.expression, negate, isinstance(node, exp.ILike))
     if isinstance(node, exp.Is):
         if isinstance(node.expression, exp.Null):
+            if _is_boolean_expr(node.this):
+                return PUnknown(
+                    parse_predicate(node.this), parse_predicate(node.this, True), negate
+                )
             return PNull(node.this, negate)
         raise Untranslatable(node.sql(dialect="postgres"))
     if isinstance(node, exp.Boolean):
@@ -263,12 +303,19 @@ def value_expr(
     for cls, op in binary.items():
         if type(node) is cls:
             inner_hint = hint or _hint_for(node.this, node.expression, resolve=resolve)
-            return {
+            result: Any = {
                 op: [
                     value_expr(node.this, resolve, inner_hint, hook),
                     value_expr(node.expression, resolve, inner_hint, hook),
                 ]
             }
+            if (
+                cls is exp.Div
+                and _is_integer(node.this, resolve)
+                and _is_integer(node.expression, resolve)
+            ):
+                return {"$trunc": [result]}  # integer / integer truncates toward zero in SQL
+            return result
     if isinstance(node, exp.Neg):
         return {"$multiply": [-1, value_expr(node.this, resolve, hint, hook)]}
     if isinstance(node, exp.Length):
@@ -301,6 +348,14 @@ def to_expr(pred: Pred, resolve: Resolver, mode: Mode, hook: Hook | None = None)
         left = value_expr(pred.left, resolve, hint, hook)
         right = value_expr(pred.right, resolve, hint, hook)
         core = {_CMP_MQL[pred.op]: [left, right]}
+        order = _enum_order(pred, resolve)
+        if order is not None:  # <, <=, >, >= on an enum compare declaration positions
+            core = {
+                _CMP_MQL[pred.op]: [
+                    _enum_rank(pred.left, left, order),
+                    _enum_rank(pred.right, right, order),
+                ]
+            }
         operands = [(pred.left, left), (pred.right, right)]
         if any(isinstance(n, exp.Null) for n, _ in operands):
             return unknown_passes
@@ -334,6 +389,14 @@ def to_expr(pred: Pred, resolve: Resolver, mode: Mode, hook: Hook | None = None)
         if unknown_passes:
             return {"$or": [_isnull(left), match]}
         return {"$and": [_notnull(left), match]} if pred.neg else match
+    if isinstance(pred, PUnknown):
+        decided = {
+            "$or": [
+                to_expr(pred.when_true, resolve, "where", hook),
+                to_expr(pred.when_false, resolve, "where", hook),
+            ]
+        }
+        return decided if pred.neg else {"$not": [decided]}
     if isinstance(pred, PNull):
         left = value_expr(pred.left, resolve, None, hook)
         return _notnull(left) if pred.neg else _isnull(left)
@@ -385,6 +448,19 @@ def _column(node: exp.Expr) -> exp.Column | None:
 
 
 def _simple_leaf(pred: Pred, resolve: Resolver) -> dict[str, Any] | None:
+    guarded = False
+
+    def checked(col: exp.Column) -> ColRef:
+        nonlocal guarded
+        ref = resolve(col)
+        guarded = guarded or ref.present is not None
+        return ref
+
+    leaf = _simple_leaf_unguarded(pred, checked)
+    return None if guarded else leaf  # conditional values need the expression form
+
+
+def _simple_leaf_unguarded(pred: Pred, resolve: Resolver) -> dict[str, Any] | None:
     if isinstance(pred, PCmp):
         col, other, op = _column(pred.left), pred.right, pred.op
         if col is None:
@@ -393,6 +469,18 @@ def _simple_leaf(pred: Pred, resolve: Resolver) -> dict[str, Any] | None:
             return None
         ref = resolve(col)
         value = literal_value(other, ref.type)
+        if ref.enum_values and op not in ("eq", "ne"):
+            if value not in ref.enum_values:
+                return None
+            at = ref.enum_values.index(value)
+            keep: dict[str, Callable[[int], bool]] = {
+                "lt": lambda i: i < at,
+                "lte": lambda i: i <= at,
+                "gt": lambda i: i > at,
+                "gte": lambda i: i >= at,
+            }
+            allowed = [v for i, v in enumerate(ref.enum_values) if keep[op](i)]
+            return {ref.path: {"$in": allowed}}
         if op == "eq":
             return {ref.path: value}
         if op == "ne":
@@ -439,6 +527,48 @@ def _strip(node: exp.Expr) -> exp.Expr:
     while isinstance(node, exp.Paren):
         node = node.this
     return node
+
+
+_INTEGER_BASES = ("SMALLINT", "INTEGER", "BIGINT")
+
+
+def _is_integer(node: exp.Expr, resolve: Resolver) -> bool:
+    """Does the SQL expression have an integer type (so ``/`` is integer division)?"""
+    if isinstance(node, exp.Paren):
+        return _is_integer(node.this, resolve)
+    if isinstance(node, exp.Neg):
+        return _is_integer(node.this, resolve)
+    if isinstance(node, exp.Column):
+        t = resolve(node).type
+        return t is not None and t.base in _INTEGER_BASES and not t.is_array
+    if isinstance(node, exp.Literal):
+        return not node.is_string and re.fullmatch(r"-?\d+", str(node.this)) is not None
+    if isinstance(node, (exp.Add, exp.Sub, exp.Mul, exp.Div)):
+        return _is_integer(node.this, resolve) and _is_integer(node.expression, resolve)
+    return False
+
+
+def _enum_order(pred: PCmp, resolve: Resolver) -> tuple[str, ...] | None:
+    """Declared enum values when an ordering comparison involves an ENUM column."""
+    if pred.op in ("eq", "ne"):
+        return None
+    for node in (pred.left, pred.right):
+        col = _column(node)
+        if col is not None:
+            values = resolve(col).enum_values
+            if values:
+                return values
+    return None
+
+
+def _enum_rank(node: exp.Expr, expr: Any, order: tuple[str, ...]) -> Any:
+    """Position of an enum value in its declaration (a literal is ranked at translation time)."""
+    if is_literal(node):
+        value = literal_value(node, None)
+        if value not in order:
+            raise Untranslatable(node.sql(dialect="postgres"))
+        return order.index(value)
+    return {"$indexOfArray": [list(order), expr]}
 
 
 def _flip(op: str) -> str:

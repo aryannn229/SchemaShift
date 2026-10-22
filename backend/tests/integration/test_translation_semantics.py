@@ -127,17 +127,21 @@ def test_every_select_matches_postgres(plan_name: str, pg_schema: Any, mongo_db:
     assert not failures, "\n".join(failures)
 
 
-def test_known_gap_global_aggregate_over_an_empty_set(pg_schema: Any, mongo_db: Any) -> None:
-    """PostgreSQL returns one row (NULL); MongoDB's $group over nothing returns none."""
+def test_global_aggregate_over_an_empty_set_returns_one_row(pg_schema: Any, mongo_db: Any) -> None:
+    """The former known gap (closed in Phase 14): one row, SUM NULL / COUNT 0, on both sides."""
     conn, schema_name = pg_schema
-    _, translated = setup_and_migrate(
-        SCHEMA,
-        DATA,
-        "SELECT SUM(total) FROM orders WHERE total > 1000;",
-        PLANS["all-referenced"],
-        conn,
-        schema_name,
-        mongo_db,
+    queries = (
+        "SELECT SUM(total) FROM orders WHERE total > 1000;"
+        "SELECT COUNT(*), COUNT(total), AVG(total), MIN(total) FROM orders WHERE total > 1000;"
     )
-    outcome = run_select(conn, mongo_db, translated[0])
-    assert outcome.pg == [(None,)] and outcome.mongo == [] and not outcome.ok
+    _, translated = setup_and_migrate(
+        SCHEMA, DATA, queries, PLANS["all-referenced"], conn, schema_name, mongo_db
+    )
+    assert len(translated) == 2
+    for t in translated:
+        outcome = run_select(conn, mongo_db, t)
+        assert len(outcome.pg) == 1 and outcome.ok, (outcome.pg, outcome.mongo)
+    first = run_select(conn, mongo_db, translated[0])
+    assert first.pg == [(None,)] and first.mongo == [(None,)]
+    second = run_select(conn, mongo_db, translated[1])
+    assert second.pg == [(0, 0, None, None)]

@@ -7,7 +7,8 @@ function ensureCollection(name, options) {
   if (db.getCollectionInfos({ name: name }).length === 0) {
     db.createCollection(name, options);
   } else {
-    db.runCommand(Object.assign({ collMod: name }, options));
+    const { collation, ...modifiable } = options; // collation cannot be changed
+    db.runCommand(Object.assign({ collMod: name }, modifiable));
   }
 }
 
@@ -27,7 +28,8 @@ ensureCollection("categories", {
     }
   },
   validationLevel: "strict",
-  validationAction: "error"
+  validationAction: "error",
+  collation: {locale: "en"}
 });
 
 // customers: SQL table customers; _id = customers.id
@@ -61,7 +63,8 @@ ensureCollection("customers", {
     }
   },
   validationLevel: "strict",
-  validationAction: "error"
+  validationAction: "error",
+  collation: {locale: "en"}
 });
 
 // orders: SQL table orders; _id = orders.id
@@ -101,7 +104,8 @@ ensureCollection("orders", {
     }
   },
   validationLevel: "strict",
-  validationAction: "error"
+  validationAction: "error",
+  collation: {locale: "en"}
 });
 
 // products: SQL table products; _id = products.id
@@ -135,5 +139,6 @@ ensureCollection("products", {
     }
   },
   validationLevel: "strict",
-  validationAction: "error"
+  validationAction: "error",
+  collation: {locale: "en"}
 });

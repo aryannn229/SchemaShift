@@ -62,7 +62,7 @@ def generate_code(
     options = options or CompileOptions()
     header = make_header(run_id, timestamp)
     layouts = build_layouts(result.graph, result.plan)
-    cols = build_collections(result.schema_, layouts, options.uuid_as)
+    cols = build_collections(result.schema_, layouts, options.uuid_as, options.string_collation)
     indexes = build_indexes(result.schema_, result.graph, layouts)
     ctx = QueryContext(
         result.schema_, result.graph, layouts, options.uuid_as, options.preserve_integer_ids

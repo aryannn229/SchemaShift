@@ -15,6 +15,7 @@ from schemashift.codegen.predicate import (
     ColRef,
     Untranslatable,
     conjuncts,
+    enum_values_of,
     literal_value,
     parse_predicate,
     to_expr,
@@ -131,6 +132,15 @@ class _Step:
     provides: set[str] = field(default_factory=set)  # aliases made available by this step
 
 
+def _empty_group_row(accumulators: dict[str, Any]) -> dict[str, Any]:
+    """What ``$group`` would have produced for an empty input: counts/sums 0, the rest NULL."""
+    row: dict[str, Any] = {"_id": None}
+    for name, spec in accumulators.items():
+        op = next(iter(spec))
+        row[name] = 0 if op == "$sum" else [] if op == "$addToSet" else None
+    return row
+
+
 class _Select:
     def __init__(self, q: Query, ctx: QueryContext) -> None:
         if not isinstance(q.ast, exp.Select):
@@ -141,6 +151,7 @@ class _Select:
         self.steps: list[_Step] = []
         self.root_ns: dict[str, str] = {}  # collection -> namespace holding its root document
         self.pseudo_ns: str | None = None
+        self.optional_aliases: set[str] = set()  # aliases that a LEFT JOIN may leave absent
         self.source_ns = ""
         self.source_collection = ""
         self.notes: list[str] = []
@@ -252,15 +263,27 @@ class _Select:
         layout = self._layout(table)
         left = str(join.args.get("side") or "").upper() == "LEFT"
         eqs = self._equalities(join.args["on"])
+        if left:
+            self.optional_aliases.add(alias)
         if self._is_host_of_bound(table):
             # the joined table is the (already unwound) host of an embedded alias in scope
             child_alias = self._embedded_alias_for(table)
-            ns = self.bindings[child_alias].ns
+            child = self.bindings[child_alias]
+            ns = child.ns
             leftover = self._drop_fk_equalities(alias, eqs, embedded_alias=child_alias)
             self._bind(alias, table, ns)
             if self.pseudo_ns == ns and layout.is_root:
                 self.pseudo_ns = None
             self._extra_on(leftover, left, alias)
+            if left:
+                self.optional_aliases.add(child_alias)
+            elif child_alias in self.optional_aliases:
+                # INNER JOIN on the child's key: rows without the (LEFT-joined) child drop out
+                path = ".".join((ns, *child.layout.path))
+                self.steps.append(
+                    _Step({"$match": {"$expr": {"$gt": [f"${path}", None]}}}, {alias, child_alias})
+                )
+                self.optional_aliases.discard(child_alias)
             self.steps.append(_Step(None, {alias}))
             return
         if not layout.is_root:
@@ -372,6 +395,11 @@ class _Select:
         local = self._expr(other)
         if not isinstance(local, str) or not local.startswith("$"):
             raise TranslationError("join conditions on embedded tables must compare plain columns")
+        # MongoDB equality matches null with a missing field, SQL NULL = x is never true: a
+        # nullable local key must not match host documents that merely lack the embedded field.
+        guard_nulls = self._nullable(other)
+        if guard_nulls and not left:
+            self.steps.append(_Step({"$match": {local[1:]: {"$ne": None}}}, {alias}))
         self.steps.append(
             _Step(
                 {
@@ -385,6 +413,17 @@ class _Select:
                 {alias},
             )
         )
+        if guard_nulls and left:
+            self.steps.append(
+                _Step(
+                    {
+                        "$addFields": {
+                            host_ns: {"$cond": [{"$gt": [local, None]}, f"${host_ns}", []]}
+                        }
+                    },
+                    {alias},
+                )
+            )
         self.steps.append(
             _Step({"$unwind": {"path": f"${host_ns}", "preserveNullAndEmptyArrays": left}}, {alias})
         )
@@ -494,6 +533,8 @@ class _Select:
         if not isinstance(node, exp.Column):
             return True
         b = self._binding_of(node)
+        if b.alias in self.optional_aliases:
+            return True  # a LEFT JOIN may have left the whole row absent
         col = self.ctx.schema.tables[b.table].column(_col_name(node))
         return col is None or col.nullable
 
@@ -526,7 +567,15 @@ class _Select:
             dotted = host_layout.dotted(host_col)
         else:
             dotted = layout.dotted(name)
-        return ColRef(path=f"{b.ns}.{dotted}" if prefix else dotted, type=column.sql_type)
+        present = None
+        if name in layout.dropped_columns and b.alias in self.optional_aliases and layout.path:
+            present = f"{b.ns}.{'.'.join(layout.path)}"
+        return ColRef(
+            path=f"{b.ns}.{dotted}" if prefix else dotted,
+            type=column.sql_type,
+            enum_values=enum_values_of(self.ctx.schema, column.sql_type),
+            present=present,
+        )
 
     def _expr(self, node: exp.Expr) -> Any:
         try:
@@ -579,6 +628,12 @@ class _Select:
         if distinct:
             arg = arg.expressions[0] if arg.expressions else None
         value = None if arg is None or isinstance(arg, exp.Star) else self._row_expr(arg)
+        if isinstance(arg, exp.Column) and isinstance(node, (exp.Min, exp.Max)):
+            if self._path(arg).enum_values:
+                raise TranslationError(
+                    f"{node.sql(dialect='postgres')}: MIN/MAX over an enum follows declaration "
+                    "order in PostgreSQL and is not translated"
+                )
         accs: dict[str, Any] = {}
         func = type(node)
         if func is exp.Count:
@@ -683,7 +738,9 @@ class _Select:
             self._sort_stage(stages, order_items, outputs, post=False)
         if offset:
             stages.append({"$skip": offset})
-        if limit is not None:
+        if limit == 0:
+            stages.append({"$match": {"$expr": False}})  # MongoDB rejects $limit: 0
+        elif limit is not None:
             stages.append({"$limit": limit})
         if not distinct and not is_agg:
             self._project_flow(stages, outputs)
@@ -819,7 +876,25 @@ class _Select:
         for _, accs, _ in self.aggs.values():
             accumulators.update(accs)
         group_id: Any = {f"g{i}": expr for i, (_, expr) in enumerate(self.group_exprs)} or None
-        stages.append({"$group": {"_id": group_id, **accumulators}})
+        group_stage = {"$group": {"_id": group_id, **accumulators}}
+        if group_id is None:
+            # A global aggregate returns one row even over an empty input (COUNT 0, others NULL),
+            # whereas $group over zero documents returns nothing: substitute the empty-input row.
+            stages.append({"$facet": {"g": [group_stage]}})
+            stages.append(
+                {
+                    "$replaceRoot": {
+                        "newRoot": {
+                            "$ifNull": [
+                                {"$arrayElemAt": ["$g", 0]},
+                                {"$literal": _empty_group_row(accumulators)},
+                            ]
+                        }
+                    }
+                }
+            )
+        else:
+            stages.append(group_stage)
         add: dict[str, Any] = {}
         for name, e in self.select_items:
             add[name] = {"$ifNull": [self._expr(e), None]}
@@ -855,7 +930,8 @@ class _Select:
     ) -> None:
         if not order_items:
             return
-        add: dict[str, Any] = {}
+        add: dict[str, Any] = {}  # computed sort keys (_k<i>)
+        flags: dict[str, Any] = {}  # NULL flags (_n<i>); they read the keys, so a later stage
         sort: dict[str, int] = {}
         for i, item in enumerate(order_items):
             assert isinstance(item, exp.Ordered)
@@ -864,11 +940,33 @@ class _Select:
             nulls_first = item.args.get("nulls_first")
             nulls_first = desc if nulls_first is None else bool(nulls_first)
             key_expr, key_field = self._order_key(node, outputs, post, i, add)
-            add[f"_n{i}"] = {"$cond": [{"$lte": [key_expr, None]}, 1, 0]}
+            if key_field in sort:
+                continue  # a repeated key never changes the order; the first direction wins
+            flags[f"_n{i}"] = {"$cond": [{"$lte": [key_expr, None]}, 1, 0]}
             sort[f"_n{i}"] = -1 if nulls_first else 1
             sort[key_field] = -1 if desc else 1
-        stages.append({"$addFields": add})
+        if add:
+            stages.append({"$addFields": add})  # $addFields cannot see fields it adds itself
+        stages.append({"$addFields": flags})
         stages.append({"$sort": sort})
+
+    def _enum_rank_key(
+        self, output: str, expr: str, i: int, add: dict[str, Any]
+    ) -> tuple[Any, str]:
+        """Sort key for an output column; ENUM columns sort by declaration order (PostgreSQL)."""
+        for name, e in self.select_items:
+            if name == output and isinstance(e, exp.Column):
+                values = self._path(e).enum_values
+                if values:
+                    add[f"_k{i}"] = {
+                        "$cond": [
+                            {"$gt": [expr, None]},
+                            {"$indexOfArray": [list(values), expr]},
+                            None,
+                        ]
+                    }
+                    return f"$_k{i}", f"_k{i}"
+        return expr, expr[1:]
 
     def _order_key(
         self, node: exp.Expr, outputs: list[str], post: bool, i: int, add: dict[str, Any]
@@ -882,13 +980,22 @@ class _Select:
             name = _col_name(node)
             real = any(self.ctx.schema.tables[b.table].column(name) for b in self.bindings.values())
             if name in outputs and (post or not real):
-                return f"${name}", name
+                return self._enum_rank_key(name, f"${name}", i, add)
         key = node.sql(dialect="postgres")
         for out, e in self.select_items:
             if e.sql(dialect="postgres") == key and post:
-                return f"${out}", out
+                return self._enum_rank_key(out, f"${out}", i, add)
         if isinstance(node, exp.Column) and not self.in_group:
             ref = self._path(node)
+            if ref.enum_values:  # PostgreSQL sorts enums by declaration order
+                add[f"_k{i}"] = {
+                    "$cond": [
+                        {"$gt": [f"${ref.path}", None]},
+                        {"$indexOfArray": [list(ref.enum_values), f"${ref.path}"]},
+                        None,
+                    ]
+                }
+                return f"$_k{i}", f"_k{i}"
             return f"${ref.path}", ref.path
         value = self._expr(node)
         add[f"_k{i}"] = value
@@ -1107,7 +1214,11 @@ class _Dml:
             col = table.column(cname)
             if col is None or cname not in layout.fields:
                 raise TranslationError(f"unknown or implied column '{cname}'")
-            return ColRef(path=prefix + layout.fields[cname], type=col.sql_type)
+            return ColRef(
+                path=prefix + layout.fields[cname],
+                type=col.sql_type,
+                enum_values=enum_values_of(self.ctx.schema, col.sql_type),
+            )
 
         return resolve
 

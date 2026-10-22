@@ -61,11 +61,20 @@ const q3 = db.getCollection("customers").aggregate([
 const q4 = db.getCollection("accounts").aggregate([
   {$replaceRoot: {newRoot: {accounts: "$$ROOT"}}},
   {
-    $group: {
-      _id: null,
-      __a0: {$sum: "$accounts.balance"},
-      __a0_n: {$sum: {$cond: [{$gt: ["$accounts.balance", null]}, 1, 0]}}
+    $facet: {
+      g: [
+        {
+          $group: {
+            _id: null,
+            __a0: {$sum: "$accounts.balance"},
+            __a0_n: {$sum: {$cond: [{$gt: ["$accounts.balance", null]}, 1, 0]}}
+          }
+        }
+      ]
     }
+  },
+  {
+    $replaceRoot: {newRoot: {$ifNull: [{$arrayElemAt: ["$g", 0]}, {$literal: {_id: null, __a0: 0, __a0_n: 0}}]}}
   },
   {$addFields: {sum: {$ifNull: [{$cond: [{$eq: ["$__a0_n", 0]}, null, "$__a0"]}, null]}}},
   {$project: {_id: 0, sum: 1}}

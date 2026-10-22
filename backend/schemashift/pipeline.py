@@ -24,6 +24,10 @@ class CompileOptions(FrozenModel):
     transactions_available: bool = True
     preserve_integer_ids: bool = False
     uuid_as: Literal["binary", "string"] = "binary"
+    # How MongoDB compares strings. "en" gives the collections an ICU English collation, which
+    # matches PostgreSQL databases created with an en_US-style locale (the common default); use
+    # "binary" when the PostgreSQL database uses the C / POSIX collation (byte order).
+    string_collation: Literal["en", "binary"] = "en"
     rows_per_table: int = 50
     relationship_overrides: dict[str, Placement] = {}
     access_hints: dict[str, AccessHint] = {}

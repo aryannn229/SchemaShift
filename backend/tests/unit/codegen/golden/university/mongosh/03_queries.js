@@ -28,7 +28,10 @@ const q2 = db.getCollection("departments").aggregate([
 // columns: avg
 const q3 = db.getCollection("students").aggregate([
   {$replaceRoot: {newRoot: {students: "$$ROOT"}}},
-  {$group: {_id: null, __a0: {$avg: "$students.gpa"}}},
+  {$facet: {g: [{$group: {_id: null, __a0: {$avg: "$students.gpa"}}}]}},
+  {
+    $replaceRoot: {newRoot: {$ifNull: [{$arrayElemAt: ["$g", 0]}, {$literal: {_id: null, __a0: null}}]}}
+  },
   {$addFields: {avg: {$ifNull: ["$__a0", null]}}},
   {$project: {_id: 0, avg: 1}}
 ]).toArray();

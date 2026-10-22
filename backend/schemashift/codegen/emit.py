@@ -55,11 +55,14 @@ class Emitter(Protocol):
 
 
 def _create_options(spec: CollectionSpec) -> dict[str, object]:
-    return {
+    options: dict[str, object] = {
         "validator": spec.validator,
         "validationLevel": spec.validation_level,
         "validationAction": spec.validation_action,
     }
+    if spec.collation:
+        options["collation"] = spec.collation  # honoured by createCollection only
+    return options
 
 
 def _index_options(spec: IndexSpec) -> dict[str, object]:
@@ -98,7 +101,8 @@ class MongoshEmitter:
                   if (db.getCollectionInfos({ name: name }).length === 0) {
                     db.createCollection(name, options);
                   } else {
-                    db.runCommand(Object.assign({ collMod: name }, options));
+                    const { collation, ...modifiable } = options; // collation cannot be changed
+                    db.runCommand(Object.assign({ collMod: name }, modifiable));
                   }
                 }
                 """
@@ -217,13 +221,10 @@ class PymongoEmitter:
                 def ensure_collection(db, name, options):
                     """Create the collection, or update its validator when it already exists."""
                     if name not in db.list_collection_names():
-                        db.create_collection(name, **{
-                            "validator": options["validator"],
-                            "validationLevel": options["validationLevel"],
-                            "validationAction": options["validationAction"],
-                        })
+                        db.create_collection(name, **options)
                     else:
-                        db.command("collMod", name, **options)
+                        modifiable = {k: v for k, v in options.items() if k != "collation"}
+                        db.command("collMod", name, **modifiable)
 
                 '''
             )

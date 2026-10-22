@@ -13,13 +13,10 @@ from bson.regex import Regex
 def ensure_collection(db, name, options):
     """Create the collection, or update its validator when it already exists."""
     if name not in db.list_collection_names():
-        db.create_collection(name, **{
-            "validator": options["validator"],
-            "validationLevel": options["validationLevel"],
-            "validationAction": options["validationAction"],
-        })
+        db.create_collection(name, **options)
     else:
-        db.command("collMod", name, **options)
+        modifiable = {k: v for k, v in options.items() if k != "collation"}
+        db.command("collMod", name, **modifiable)
 
 
 def create_collections(db):
@@ -40,6 +37,7 @@ def create_collections(db):
         },
         'validationLevel': 'strict',
         'validationAction': 'error',
+        'collation': {'locale': 'en'},
     })
     # customers: SQL table customers; _id = customers.id
     ensure_collection(db, 'customers', {
@@ -73,6 +71,7 @@ def create_collections(db):
         },
         'validationLevel': 'strict',
         'validationAction': 'error',
+        'collation': {'locale': 'en'},
     })
     # orders: SQL table orders; _id = orders.id
     ensure_collection(db, 'orders', {
@@ -116,6 +115,7 @@ def create_collections(db):
         },
         'validationLevel': 'strict',
         'validationAction': 'error',
+        'collation': {'locale': 'en'},
     })
     # products: SQL table products; _id = products.id
     ensure_collection(db, 'products', {
@@ -149,4 +149,5 @@ def create_collections(db):
         },
         'validationLevel': 'strict',
         'validationAction': 'error',
+        'collation': {'locale': 'en'},
     })

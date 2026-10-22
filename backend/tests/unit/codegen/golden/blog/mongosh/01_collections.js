@@ -7,7 +7,8 @@ function ensureCollection(name, options) {
   if (db.getCollectionInfos({ name: name }).length === 0) {
     db.createCollection(name, options);
   } else {
-    db.runCommand(Object.assign({ collMod: name }, options));
+    const { collation, ...modifiable } = options; // collation cannot be changed
+    db.runCommand(Object.assign({ collMod: name }, modifiable));
   }
 }
 
@@ -26,7 +27,8 @@ ensureCollection("tags", {
     }
   },
   validationLevel: "strict",
-  validationAction: "error"
+  validationAction: "error",
+  collation: {locale: "en"}
 });
 
 // users: SQL table users; _id = users.id
@@ -76,5 +78,6 @@ ensureCollection("users", {
     }
   },
   validationLevel: "strict",
-  validationAction: "error"
+  validationAction: "error",
+  collation: {locale: "en"}
 });
