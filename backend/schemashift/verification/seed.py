@@ -157,12 +157,14 @@ def derive_hints(table: Table) -> dict[str, dict[str, Any]]:
 
 
 class Generator:
-    def __init__(self, schema: Schema, seed: int, rows_per_table: int) -> None:
+    def __init__(
+        self, schema: Schema, seed: int, rows_per_table: int, cap: int = MAX_ROWS_PER_TABLE
+    ) -> None:
         self.schema = schema
         self.rng = random.Random(seed)
         self.faker = Faker()
         self.faker.seed_instance(seed)
-        self.rows_per_table = max(1, min(rows_per_table, MAX_ROWS_PER_TABLE))
+        self.rows_per_table = max(1, min(rows_per_table, cap))
         self.rows: dict[str, list[dict[str, Any]]] = {}
         self.omitted: dict[str, list[list[str]]] = {}
         self.warnings: list[str] = []
@@ -402,11 +404,14 @@ class Generator:
 
 
 def generate_seed(
-    schema: Schema, seed: int = 0, rows_per_table: int = DEFAULT_ROWS_PER_TABLE
+    schema: Schema,
+    seed: int = 0,
+    rows_per_table: int = DEFAULT_ROWS_PER_TABLE,
+    cap: int = MAX_ROWS_PER_TABLE,
 ) -> SeedData:
-    """Reproducible synthetic data (same ``seed`` => same rows)."""
+    """Reproducible synthetic data (same ``seed`` => same rows); ``cap`` lifts the row limit."""
     order, deferred_fks = insertion_order(schema)
-    gen = Generator(schema, seed, rows_per_table)
+    gen = Generator(schema, seed, rows_per_table, cap)
     gen.generate({(t, fk.columns) for t, fk in deferred_fks}, order)
     return SeedData(seed=seed, rows=gen.rows, omitted=gen.omitted, warnings=tuple(gen.warnings))
 
@@ -458,8 +463,10 @@ def seed_from_inserts(
 
 
 def _coerce(value: Any, t: NormalizedType) -> Any:
-    from schemashift.codegen.values import DateValue, UuidValue
+    from schemashift.codegen.values import DateValue, DecimalValue, UuidValue
 
+    if isinstance(value, DecimalValue):
+        return Decimal(value.text)
     if isinstance(value, DateValue):
         parsed = dt.datetime.fromisoformat(value.iso)
         return parsed.date() if t.base == "DATE" else parsed

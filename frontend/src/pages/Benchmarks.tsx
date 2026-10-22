@@ -1,21 +1,26 @@
 import { Upload } from "lucide-react";
 import { useState } from "react";
 
+import { BenchmarkView, parseBench, type BenchResults } from "../components/BenchmarkView";
 import { CodeBlock, EmptyState, ErrorState } from "../components/ui";
 
-/** Renders an uploaded benchmark results file. Phase 20 replaces the raw view with charts. */
+/** Renders an uploaded benchmark results file. Unknown JSON falls back to a raw view. */
 export default function Benchmarks() {
   const [text, setText] = useState<string | null>(null);
+  const [data, setData] = useState<BenchResults | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     try {
       const raw = await file.text();
-      setText(JSON.stringify(JSON.parse(raw), null, 2));
+      const parsed: unknown = JSON.parse(raw);
+      setData(parseBench(parsed));
+      setText(JSON.stringify(parsed, null, 2));
       setError(null);
     } catch {
       setText(null);
+      setData(null);
       setError(`${file.name} is not valid JSON.`);
     }
   };
@@ -40,7 +45,9 @@ export default function Benchmarks() {
         />
       </label>
       {error && <ErrorState message={error} title="Could not read file" />}
-      {text ? (
+      {data ? (
+        <BenchmarkView data={data} />
+      ) : text ? (
         <CodeBlock code={text} title="results.json" maxHeight="36rem" />
       ) : (
         !error && (
