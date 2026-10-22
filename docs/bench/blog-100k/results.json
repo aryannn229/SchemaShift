@@ -1,0 +1,359 @@
+{
+  "meta": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_count": 20,
+    "python": "3.13.0",
+    "postgres": "PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on x86_64-pc-linux-gnu",
+    "mongodb": "7.0.43",
+    "psycopg": "3.3.6",
+    "pymongo": "4.19.0",
+    "note": "both databases run in local Docker containers on the same machine",
+    "scale_rows_per_table": 100000,
+    "seed": 0,
+    "warmups": 3,
+    "reps": 10,
+    "generated_at": "2026-10-22T20:43:53+00:00",
+    "rows": {
+      "tags": 100000,
+      "users": 100000,
+      "posts": 100000,
+      "comments": 100000,
+      "post_tags": 100000
+    }
+  },
+  "plans": [
+    {
+      "name": "chosen",
+      "decisions": {
+        "fk:comments.author_id->users.id": "REFERENCE",
+        "fk:comments.parent_comment_id->comments.id": "REFERENCE",
+        "fk:comments.post_id->posts.id": "EMBED",
+        "fk:post_tags.post_id->posts.id": "REFERENCE",
+        "fk:post_tags.tag_id->tags.id": "REFERENCE",
+        "fk:posts.author_id->users.id": "EMBED",
+        "m2n:post_tags": "REF_ARRAY"
+      },
+      "collections": [
+        "tags",
+        "users"
+      ],
+      "load_seconds": 461.43,
+      "queries": [
+        {
+          "query_id": "q1",
+          "sql": "SELECT p.title, u.username FROM posts p JOIN users u ON p.author_id = u.id WHERE p.status = 'published' ORDER BY p.id DESC LIMIT 10",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 10,
+          "postgres": {
+            "p50_ms": 0.326,
+            "p95_ms": 0.795,
+            "p99_ms": 0.795,
+            "mean_ms": 0.389,
+            "throughput_qps": 2573.41,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 162.852,
+            "p95_ms": 181.754,
+            "p99_ms": 181.754,
+            "mean_ms": 164.587,
+            "throughput_qps": 6.08,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 100000,
+          "postgres_index_used": true,
+          "rewrites": []
+        },
+        {
+          "query_id": "q2",
+          "sql": "SELECT p.title, COUNT(*) AS comment_count FROM posts p LEFT JOIN comments c ON c.post_id = p.id GROUP BY p.title",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 91478,
+          "postgres": {
+            "p50_ms": 113.643,
+            "p95_ms": 131.224,
+            "p99_ms": 131.224,
+            "mean_ms": 115.009,
+            "throughput_qps": 8.69,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 452.562,
+            "p95_ms": 509.674,
+            "p99_ms": 509.674,
+            "mean_ms": 458.681,
+            "throughput_qps": 2.18,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 100000,
+          "postgres_index_used": false,
+          "rewrites": []
+        },
+        {
+          "query_id": "q3",
+          "sql": "SELECT t.name, COUNT(*) AS uses FROM tags t JOIN post_tags pt ON pt.tag_id = t.id GROUP BY t.name ORDER BY uses DESC",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 63254,
+          "postgres": {
+            "p50_ms": 81.951,
+            "p95_ms": 120.124,
+            "p99_ms": 120.124,
+            "mean_ms": 89.57,
+            "throughput_qps": 11.16,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 339.652,
+            "p95_ms": 437.003,
+            "p99_ms": 437.003,
+            "mean_ms": 351.707,
+            "throughput_qps": 2.84,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 100000,
+          "postgres_index_used": false,
+          "rewrites": []
+        }
+      ],
+      "storage": {
+        "postgres_data_bytes": 40763392,
+        "postgres_index_bytes": 26968064,
+        "mongo_data_bytes": 45603711,
+        "mongo_storage_bytes": 26361856,
+        "mongo_index_bytes": 49500160
+      },
+      "correctness": 1.0
+    },
+    {
+      "name": "all_reference",
+      "decisions": {
+        "fk:comments.author_id->users.id": "REFERENCE",
+        "fk:comments.parent_comment_id->comments.id": "REFERENCE",
+        "fk:comments.post_id->posts.id": "REFERENCE",
+        "fk:post_tags.post_id->posts.id": "REFERENCE",
+        "fk:post_tags.tag_id->tags.id": "REFERENCE",
+        "fk:posts.author_id->users.id": "REFERENCE",
+        "m2n:post_tags": "REFERENCE"
+      },
+      "collections": [
+        "comments",
+        "post_tags",
+        "posts",
+        "tags",
+        "users"
+      ],
+      "load_seconds": 447.59,
+      "queries": [
+        {
+          "query_id": "q1",
+          "sql": "SELECT p.title, u.username FROM posts p JOIN users u ON p.author_id = u.id WHERE p.status = 'published' ORDER BY p.id DESC LIMIT 10",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 10,
+          "postgres": {
+            "p50_ms": 0.467,
+            "p95_ms": 0.871,
+            "p99_ms": 0.871,
+            "mean_ms": 0.495,
+            "throughput_qps": 2018.41,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 823.56,
+            "p95_ms": 879.837,
+            "p99_ms": 879.837,
+            "mean_ms": 829.059,
+            "throughput_qps": 1.21,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 134846,
+          "postgres_index_used": true,
+          "rewrites": []
+        },
+        {
+          "query_id": "q2",
+          "sql": "SELECT p.title, COUNT(*) AS comment_count FROM posts p LEFT JOIN comments c ON c.post_id = p.id GROUP BY p.title",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 91478,
+          "postgres": {
+            "p50_ms": 105.239,
+            "p95_ms": 114.929,
+            "p99_ms": 114.929,
+            "mean_ms": 104.607,
+            "throughput_qps": 9.56,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 2628.415,
+            "p95_ms": 2775.971,
+            "p99_ms": 2775.971,
+            "mean_ms": 2604.512,
+            "throughput_qps": 0.38,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 200002,
+          "postgres_index_used": false,
+          "rewrites": []
+        },
+        {
+          "query_id": "q3",
+          "sql": "SELECT t.name, COUNT(*) AS uses FROM tags t JOIN post_tags pt ON pt.tag_id = t.id GROUP BY t.name ORDER BY uses DESC",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 63254,
+          "postgres": {
+            "p50_ms": 88.876,
+            "p95_ms": 117.546,
+            "p99_ms": 117.546,
+            "mean_ms": 91.808,
+            "throughput_qps": 10.89,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 2405.085,
+            "p95_ms": 2446.901,
+            "p99_ms": 2446.901,
+            "mean_ms": 2396.146,
+            "throughput_qps": 0.42,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 200004,
+          "postgres_index_used": false,
+          "rewrites": []
+        }
+      ],
+      "storage": {
+        "postgres_data_bytes": 40763392,
+        "postgres_index_bytes": 26968064,
+        "mongo_data_bytes": 49347811,
+        "mongo_storage_bytes": 34172928,
+        "mongo_index_bytes": 61595648
+      },
+      "correctness": 1.0
+    },
+    {
+      "name": "all_embed",
+      "decisions": {
+        "fk:comments.author_id->users.id": "REFERENCE",
+        "fk:comments.parent_comment_id->comments.id": "REFERENCE",
+        "fk:comments.post_id->posts.id": "EMBED",
+        "fk:post_tags.post_id->posts.id": "REFERENCE",
+        "fk:post_tags.tag_id->tags.id": "EMBED",
+        "fk:posts.author_id->users.id": "EMBED",
+        "m2n:post_tags": "REFERENCE"
+      },
+      "collections": [
+        "tags",
+        "users"
+      ],
+      "load_seconds": 471.3,
+      "queries": [
+        {
+          "query_id": "q1",
+          "sql": "SELECT p.title, u.username FROM posts p JOIN users u ON p.author_id = u.id WHERE p.status = 'published' ORDER BY p.id DESC LIMIT 10",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 10,
+          "postgres": {
+            "p50_ms": 0.444,
+            "p95_ms": 0.967,
+            "p99_ms": 0.967,
+            "mean_ms": 0.496,
+            "throughput_qps": 2015.28,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 152.348,
+            "p95_ms": 173.513,
+            "p99_ms": 173.513,
+            "mean_ms": 157.931,
+            "throughput_qps": 6.33,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 100000,
+          "postgres_index_used": true,
+          "rewrites": []
+        },
+        {
+          "query_id": "q2",
+          "sql": "SELECT p.title, COUNT(*) AS comment_count FROM posts p LEFT JOIN comments c ON c.post_id = p.id GROUP BY p.title",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 91478,
+          "postgres": {
+            "p50_ms": 128.294,
+            "p95_ms": 153.471,
+            "p99_ms": 153.471,
+            "mean_ms": 126.567,
+            "throughput_qps": 7.9,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 421.028,
+            "p95_ms": 464.936,
+            "p99_ms": 464.936,
+            "mean_ms": 430.359,
+            "throughput_qps": 2.32,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 100000,
+          "postgres_index_used": false,
+          "rewrites": []
+        },
+        {
+          "query_id": "q3",
+          "sql": "SELECT t.name, COUNT(*) AS uses FROM tags t JOIN post_tags pt ON pt.tag_id = t.id GROUP BY t.name ORDER BY uses DESC",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 63254,
+          "postgres": {
+            "p50_ms": 92.922,
+            "p95_ms": 113.118,
+            "p99_ms": 113.118,
+            "mean_ms": 95.815,
+            "throughput_qps": 10.44,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 342.616,
+            "p95_ms": 409.772,
+            "p99_ms": 409.772,
+            "mean_ms": 356.872,
+            "throughput_qps": 2.8,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 100000,
+          "postgres_index_used": false,
+          "rewrites": []
+        }
+      ],
+      "storage": {
+        "postgres_data_bytes": 40763392,
+        "postgres_index_bytes": 26968064,
+        "mongo_data_bytes": 47066965,
+        "mongo_storage_bytes": 28270592,
+        "mongo_index_bytes": 45527040
+      },
+      "correctness": 1.0
+    }
+  ],
+  "findings": [
+    "q1: MongoDB p50 chosen 162.85 ms, all_reference 823.56 ms, all_embed 152.35 ms; PostgreSQL 0.33 ms; all_embed beat the chosen plan",
+    "q2: MongoDB p50 chosen 452.56 ms, all_reference 2628.41 ms, all_embed 421.03 ms; PostgreSQL 113.64 ms; all_embed beat the chosen plan",
+    "q3: MongoDB p50 chosen 339.65 ms, all_reference 2405.09 ms, all_embed 342.62 ms; PostgreSQL 81.95 ms; chosen plan is the fastest"
+  ]
+}

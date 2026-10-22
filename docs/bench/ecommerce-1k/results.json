@@ -1,0 +1,385 @@
+{
+  "meta": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "cpu_count": 20,
+    "python": "3.13.0",
+    "postgres": "PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on x86_64-pc-linux-gnu",
+    "mongodb": "7.0.43",
+    "psycopg": "3.3.6",
+    "pymongo": "4.19.0",
+    "note": "both databases run in local Docker containers on the same machine",
+    "scale_rows_per_table": 1000,
+    "seed": 0,
+    "warmups": 3,
+    "reps": 10,
+    "generated_at": "2026-10-22T20:15:18+00:00",
+    "rows": {
+      "categories": 1000,
+      "customers": 1000,
+      "products": 1000,
+      "addresses": 1000,
+      "orders": 1000,
+      "product_categories": 1000,
+      "reviews": 1000,
+      "order_items": 1000,
+      "payments": 1000
+    }
+  },
+  "plans": [
+    {
+      "name": "chosen",
+      "decisions": {
+        "fk:addresses.customer_id->customers.id": "EMBED",
+        "fk:categories.parent_id->categories.id": "REFERENCE",
+        "fk:order_items.order_id->orders.id": "EMBED",
+        "fk:order_items.product_id->products.id": "REFERENCE",
+        "fk:orders.customer_id->customers.id": "REFERENCE",
+        "fk:payments.order_id->orders.id": "EMBED",
+        "fk:product_categories.category_id->categories.id": "REFERENCE",
+        "fk:product_categories.product_id->products.id": "REFERENCE",
+        "fk:reviews.customer_id->customers.id": "REFERENCE",
+        "fk:reviews.product_id->products.id": "EMBED",
+        "m2n:product_categories": "REF_ARRAY",
+        "m2n:order_items": "REFERENCE"
+      },
+      "collections": [
+        "categories",
+        "customers",
+        "orders",
+        "products"
+      ],
+      "load_seconds": 8.13,
+      "queries": [
+        {
+          "query_id": "q1",
+          "sql": "SELECT c.name, COUNT(*) AS n, SUM(o.total) AS spent FROM customers c JOIN orders o ON o.customer_id = c.id GROUP BY c.name ORDER BY spent DESC LIMIT 10",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 10,
+          "postgres": {
+            "p50_ms": 1.019,
+            "p95_ms": 1.762,
+            "p99_ms": 1.762,
+            "mean_ms": 1.118,
+            "throughput_qps": 894.85,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 24.471,
+            "p95_ms": 26.547,
+            "p99_ms": 26.547,
+            "mean_ms": 24.354,
+            "throughput_qps": 41.06,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 2002,
+          "postgres_index_used": false,
+          "rewrites": []
+        },
+        {
+          "query_id": "q2",
+          "sql": "SELECT p.title, AVG(r.stars) AS avg_stars FROM products p LEFT JOIN reviews r ON r.product_id = p.id GROUP BY p.title",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 993,
+          "postgres": {
+            "p50_ms": 1.315,
+            "p95_ms": 1.703,
+            "p99_ms": 1.703,
+            "mean_ms": 1.342,
+            "throughput_qps": 744.97,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 6.796,
+            "p95_ms": 7.292,
+            "p99_ms": 7.292,
+            "mean_ms": 6.552,
+            "throughput_qps": 152.62,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 1000,
+          "postgres_index_used": false,
+          "rewrites": []
+        },
+        {
+          "query_id": "q3",
+          "sql": "SELECT o.id, oi.quantity FROM orders o JOIN order_items oi ON oi.order_id = o.id WHERE o.status = 'paid'",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 155,
+          "postgres": {
+            "p50_ms": 0.426,
+            "p95_ms": 0.835,
+            "p99_ms": 0.835,
+            "mean_ms": 0.478,
+            "throughput_qps": 2091.09,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 2.144,
+            "p95_ms": 2.51,
+            "p99_ms": 2.51,
+            "mean_ms": 2.158,
+            "throughput_qps": 463.4,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 1000,
+          "postgres_index_used": false,
+          "rewrites": []
+        }
+      ],
+      "storage": {
+        "postgres_data_bytes": 917504,
+        "postgres_index_bytes": 745472,
+        "mongo_data_bytes": 712332,
+        "mongo_storage_bytes": 372736,
+        "mongo_index_bytes": 503808
+      },
+      "correctness": 1.0
+    },
+    {
+      "name": "all_reference",
+      "decisions": {
+        "fk:addresses.customer_id->customers.id": "REFERENCE",
+        "fk:categories.parent_id->categories.id": "REFERENCE",
+        "fk:order_items.order_id->orders.id": "REFERENCE",
+        "fk:order_items.product_id->products.id": "REFERENCE",
+        "fk:orders.customer_id->customers.id": "REFERENCE",
+        "fk:payments.order_id->orders.id": "REFERENCE",
+        "fk:product_categories.category_id->categories.id": "REFERENCE",
+        "fk:product_categories.product_id->products.id": "REFERENCE",
+        "fk:reviews.customer_id->customers.id": "REFERENCE",
+        "fk:reviews.product_id->products.id": "REFERENCE",
+        "m2n:product_categories": "REFERENCE",
+        "m2n:order_items": "REFERENCE"
+      },
+      "collections": [
+        "addresses",
+        "categories",
+        "customers",
+        "order_items",
+        "orders",
+        "payments",
+        "product_categories",
+        "products",
+        "reviews"
+      ],
+      "load_seconds": 8.3,
+      "queries": [
+        {
+          "query_id": "q1",
+          "sql": "SELECT c.name, COUNT(*) AS n, SUM(o.total) AS spent FROM customers c JOIN orders o ON o.customer_id = c.id GROUP BY c.name ORDER BY spent DESC LIMIT 10",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 10,
+          "postgres": {
+            "p50_ms": 1.017,
+            "p95_ms": 1.508,
+            "p99_ms": 1.508,
+            "mean_ms": 1.075,
+            "throughput_qps": 930.56,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 23.893,
+            "p95_ms": 28.345,
+            "p99_ms": 28.345,
+            "mean_ms": 24.109,
+            "throughput_qps": 41.48,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 2002,
+          "postgres_index_used": false,
+          "rewrites": []
+        },
+        {
+          "query_id": "q2",
+          "sql": "SELECT p.title, AVG(r.stars) AS avg_stars FROM products p LEFT JOIN reviews r ON r.product_id = p.id GROUP BY p.title",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 993,
+          "postgres": {
+            "p50_ms": 1.323,
+            "p95_ms": 1.658,
+            "p99_ms": 1.658,
+            "mean_ms": 1.352,
+            "throughput_qps": 739.71,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 25.911,
+            "p95_ms": 27.44,
+            "p99_ms": 27.44,
+            "mean_ms": 25.865,
+            "throughput_qps": 38.66,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 2002,
+          "postgres_index_used": false,
+          "rewrites": []
+        },
+        {
+          "query_id": "q3",
+          "sql": "SELECT o.id, oi.quantity FROM orders o JOIN order_items oi ON oi.order_id = o.id WHERE o.status = 'paid'",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 155,
+          "postgres": {
+            "p50_ms": 0.52,
+            "p95_ms": 0.927,
+            "p99_ms": 0.927,
+            "mean_ms": 0.572,
+            "throughput_qps": 1748.28,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 5.632,
+            "p95_ms": 6.869,
+            "p99_ms": 6.869,
+            "mean_ms": 5.776,
+            "throughput_qps": 173.13,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 1155,
+          "postgres_index_used": false,
+          "rewrites": []
+        }
+      ],
+      "storage": {
+        "postgres_data_bytes": 917504,
+        "postgres_index_bytes": 745472,
+        "mongo_data_bytes": 764498,
+        "mongo_storage_bytes": 499712,
+        "mongo_index_bytes": 1081344
+      },
+      "correctness": 1.0
+    },
+    {
+      "name": "all_embed",
+      "decisions": {
+        "fk:addresses.customer_id->customers.id": "EMBED",
+        "fk:categories.parent_id->categories.id": "REFERENCE",
+        "fk:order_items.order_id->orders.id": "EMBED",
+        "fk:order_items.product_id->products.id": "REFERENCE",
+        "fk:orders.customer_id->customers.id": "EMBED",
+        "fk:payments.order_id->orders.id": "EMBED",
+        "fk:product_categories.category_id->categories.id": "EMBED",
+        "fk:product_categories.product_id->products.id": "REFERENCE",
+        "fk:reviews.customer_id->customers.id": "REFERENCE",
+        "fk:reviews.product_id->products.id": "EMBED",
+        "m2n:product_categories": "REFERENCE",
+        "m2n:order_items": "REFERENCE"
+      },
+      "collections": [
+        "categories",
+        "customers",
+        "products"
+      ],
+      "load_seconds": 8.24,
+      "queries": [
+        {
+          "query_id": "q1",
+          "sql": "SELECT c.name, COUNT(*) AS n, SUM(o.total) AS spent FROM customers c JOIN orders o ON o.customer_id = c.id GROUP BY c.name ORDER BY spent DESC LIMIT 10",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 10,
+          "postgres": {
+            "p50_ms": 1.14,
+            "p95_ms": 1.718,
+            "p99_ms": 1.718,
+            "mean_ms": 1.203,
+            "throughput_qps": 831.17,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 4.503,
+            "p95_ms": 6.412,
+            "p99_ms": 6.412,
+            "mean_ms": 4.501,
+            "throughput_qps": 222.2,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 1000,
+          "postgres_index_used": false,
+          "rewrites": []
+        },
+        {
+          "query_id": "q2",
+          "sql": "SELECT p.title, AVG(r.stars) AS avg_stars FROM products p LEFT JOIN reviews r ON r.product_id = p.id GROUP BY p.title",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 993,
+          "postgres": {
+            "p50_ms": 1.558,
+            "p95_ms": 2.068,
+            "p99_ms": 2.068,
+            "mean_ms": 1.592,
+            "throughput_qps": 628.24,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 5.529,
+            "p95_ms": 5.949,
+            "p99_ms": 5.949,
+            "mean_ms": 5.467,
+            "throughput_qps": 182.93,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 1000,
+          "postgres_index_used": false,
+          "rewrites": []
+        },
+        {
+          "query_id": "q3",
+          "sql": "SELECT o.id, oi.quantity FROM orders o JOIN order_items oi ON oi.order_id = o.id WHERE o.status = 'paid'",
+          "status": "MATCH",
+          "detail": null,
+          "rows": 155,
+          "postgres": {
+            "p50_ms": 0.475,
+            "p95_ms": 0.876,
+            "p99_ms": 0.876,
+            "mean_ms": 0.531,
+            "throughput_qps": 1884.73,
+            "reps": 10
+          },
+          "mongo": {
+            "p50_ms": 3.453,
+            "p95_ms": 3.711,
+            "p99_ms": 3.711,
+            "mean_ms": 3.389,
+            "throughput_qps": 295.07,
+            "reps": 10
+          },
+          "mongo_index_used": false,
+          "mongo_docs_examined": 1000,
+          "postgres_index_used": false,
+          "rewrites": []
+        }
+      ],
+      "storage": {
+        "postgres_data_bytes": 917504,
+        "postgres_index_bytes": 745472,
+        "mongo_data_bytes": 727012,
+        "mongo_storage_bytes": 32768,
+        "mongo_index_bytes": 65536
+      },
+      "correctness": 1.0
+    }
+  ],
+  "findings": [
+    "q1: MongoDB p50 chosen 24.47 ms, all_reference 23.89 ms, all_embed 4.50 ms; PostgreSQL 1.02 ms; all_embed beat the chosen plan",
+    "q2: MongoDB p50 chosen 6.80 ms, all_reference 25.91 ms, all_embed 5.53 ms; PostgreSQL 1.31 ms; all_embed beat the chosen plan",
+    "q3: MongoDB p50 chosen 2.14 ms, all_reference 5.63 ms, all_embed 3.45 ms; PostgreSQL 0.43 ms; chosen plan is the fastest"
+  ]
+}

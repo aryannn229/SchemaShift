@@ -678,3 +678,7 @@ applied only when its stated precondition holds and the estimated cost drops; re
 `evolve(old, new | alter)` returns typed changes, placement changes, ordered migration steps with reversibility (REVERSIBLE,
 REVERSIBLE_WITH_SAVED_DATA, IRREVERSIBLE) and a guarantee diff. Acceptance: migrate(v1) then the incremental migration equals
 migrate(v2) on the same data, and the rollback restores v1. See `docs/EVOLUTION.md`.
+
+## 24. Phase 23: Safe migration mode
+Batched, checkpointed, idempotent copy with a manifest, validator-aware quarantine, dry run that writes nothing and post-migration checks.
+See `docs/SAFE_MIGRATION.md`.

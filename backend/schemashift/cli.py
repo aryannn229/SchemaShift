@@ -398,6 +398,10 @@ corpus_app = typer.Typer(
 )
 app.add_typer(corpus_app, name="corpus")
 
+from schemashift.migrate.cli import migrate_app  # noqa: E402
+
+app.add_typer(migrate_app, name="migrate")
+
 
 @corpus_app.command("label-template")
 def corpus_label_template(
