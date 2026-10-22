@@ -29,6 +29,21 @@ class SoftWeights(FrozenModel):
     write_frequency: float = -0.10
 
 
+class WorkloadWeights(FrozenModel):
+    """Workload terms (Phase 18). All are penalties (<= 0) added to the raw score when the workload or the
+    seed data says something the defaults cannot: they never change a plan that has neither."""
+
+    parent_write_amplification: float = (
+        -0.15
+    )  # parent writes rewrite a bigger document when children are embedded
+    child_write_share: float = -0.10  # share of the workload that writes the child
+    fanout_skew: float = -0.10  # a few parents with many more children than the average
+    doc_budget_bytes: int = (
+        262_144  # document size at which rewriting it on every parent write hurts
+    )
+    skew_scale: float = 10.0  # (max - avg) / avg at which the skew penalty saturates
+
+
 class ShapeValues(FrozenModel):
     one_to_one: float = 1.0
     one_to_many_small: float = 0.6
@@ -53,6 +68,7 @@ class Weights(FrozenModel):
     threshold: float = 0.5
     hard: HardLimits = HardLimits()
     soft: SoftWeights = SoftWeights()
+    workload: WorkloadWeights = WorkloadWeights()
     shape: ShapeValues = ShapeValues()
     write_norm: WriteNorm = WriteNorm()
     defaults: Defaults = Defaults()

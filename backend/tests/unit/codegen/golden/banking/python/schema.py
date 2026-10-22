@@ -33,15 +33,6 @@ def create_collections(db):
                     'kind': {'bsonType': 'string', 'enum': ['checking', 'savings', 'business']},
                     'balance': {'bsonType': 'decimal', 'minimum': 0},
                     'opened_at': {'bsonType': 'date'},
-                    'beneficiaries': {
-                        'bsonType': 'array',
-                        'items': {
-                            'bsonType': 'object',
-                            'required': ['customer_id'],
-                            'properties': {'customer_id': {'bsonType': 'int'}, 'nickname': {'bsonType': 'string'}},
-                            'additionalProperties': False,
-                        },
-                    },
                     'cards': {
                         'bsonType': 'array',
                         'items': {
@@ -90,6 +81,15 @@ def create_collections(db):
                     'phone': {'bsonType': 'string'},
                     'home_branch_id': {'bsonType': 'int'},
                     'created_at': {'bsonType': 'date'},
+                    'beneficiaries': {
+                        'bsonType': 'array',
+                        'items': {
+                            'bsonType': 'object',
+                            'required': ['account_id'],
+                            'properties': {'account_id': {'bsonType': 'int'}, 'nickname': {'bsonType': 'string'}},
+                            'additionalProperties': False,
+                        },
+                    },
                     'kyc_profiles': {
                         'bsonType': 'object',
                         'required': ['national_id', 'verified'],

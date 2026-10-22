@@ -3,17 +3,17 @@
     "fk:comments.author_id->users.id": {
       "decision": "REFERENCE",
       "host": null,
-      "score": 0.27
+      "score": 0.24
     },
     "fk:comments.parent_comment_id->comments.id": {
       "decision": "REFERENCE",
       "host": null,
-      "score": 0.65
+      "score": 0.62
     },
     "fk:comments.post_id->posts.id": {
       "decision": "EMBED",
       "host": "posts",
-      "score": 0.77
+      "score": 0.74
     },
     "fk:post_tags.post_id->posts.id": {
       "decision": "REFERENCE",

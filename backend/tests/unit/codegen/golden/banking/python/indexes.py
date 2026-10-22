@@ -41,5 +41,5 @@ def create_indexes(db):
     db['accounts'].create_index([['branch_id', 1]], **{'name': 'idx_accounts_branch_id'})
     # fk:transactions.account_id->accounts.id: supports lookups along the foreign key
     db['transactions'].create_index([['account_id', 1]], **{'name': 'idx_transactions_account_id'})
-    # fk:beneficiaries.customer_id->customers.id: supports lookups along the foreign key
-    db['accounts'].create_index([['beneficiaries.customer_id', 1]], **{'name': 'idx_accounts_beneficiaries_customer_id'})
+    # fk:beneficiaries.account_id->accounts.id: supports lookups along the foreign key
+    db['customers'].create_index([['beneficiaries.account_id', 1]], **{'name': 'idx_customers_beneficiaries_account_id'})

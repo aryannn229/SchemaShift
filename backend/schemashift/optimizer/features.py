@@ -15,6 +15,7 @@ from schemashift.ir.nodes import (
 from schemashift.models.base import FrozenModel
 from schemashift.models.query import Query, TransactionBlock
 from schemashift.models.schema import NormalizedType, Table, TypeBase
+from schemashift.optimizer.stats import fanout_statistics
 from schemashift.optimizer.weights import Weights, load_weights
 from schemashift.optimizer.workload import (
     AccessHint,
@@ -84,6 +85,17 @@ class RelationshipFeatures(FrozenModel):
     guarantees_needing_embedding: int
     is_junction_edge: bool = False
     child_fk_nullable: bool = False  # a child with a NULL foreign key has no parent document
+    max_child_count_per_parent: int = 0  # worst parent in the seed data (0: not measured)
+    fanout_skew: float = 0.0  # (max - avg) / avg fan-out measured from seed data
+    child_write_share: float = 0.0  # frequency-weighted share of the workload writing the child
+    parent_write_share: float = 0.0  # ... writing the parent
+    workload_weighted: bool = False  # query frequencies or writes make the workload terms apply
+
+    @property
+    def worst_child_count(self) -> int:
+        """Children per parent the hard constraints must hold for (the measured maximum, if any)."""
+        return max(self.estimated_child_count_per_parent, self.max_child_count_per_parent)
+
     sources: dict[str, str] = {}  # feature -> "default" | "workload" | "seed" | "hint"
 
 
@@ -130,13 +142,20 @@ def extract_features(
     seed_queries: Iterable[Query | TransactionBlock] = (),
     hints: Mapping[str, AccessHint] | None = None,
     weights: Weights | None = None,
+    query_freq: Mapping[str, float] | None = None,
+    default_freq: float = 1.0,
 ) -> dict[str, RelationshipFeatures]:
-    """Features for every foreign-key relationship, keyed by relationship id."""
+    """Features for every foreign-key relationship, keyed by relationship id.
+
+    ``query_freq`` weights each statement (default 1); ``seed_queries`` give measured fan-out and sizes.
+    """
     w = weights or load_weights()
     hints = hints or {}
     queries = list(queries)
-    stats = analyze_workload(graph, queries)
+    seed_queries = list(seed_queries)
+    stats = analyze_workload(graph, queries, dict(query_freq or {}), default_freq)
     seed_counts = seed_row_counts(seed_queries)
+    fan = fanout_statistics(graph, seed_queries)
     schema = graph.schema
     result: dict[str, RelationshipFeatures] = {}
     for rel in graph.relationships.values():
@@ -172,7 +191,10 @@ def extract_features(
             else w.defaults.children_per_parent_one_to_many
         )
         seeded: int | None = None
-        if seed_counts.get(rel.child) and seed_counts.get(rel.parent):
+        measured = fan.get(rel.id)
+        if measured is not None:
+            seeded = max(1, round(measured.avg))
+        elif seed_counts.get(rel.child) and seed_counts.get(rel.parent):
             seeded = max(1, round(seed_counts[rel.child] / seed_counts[rel.parent]))
         count = _pick(
             src,
@@ -183,6 +205,19 @@ def extract_features(
         )
         if src["estimated_child_count_per_parent"] == "workload":
             src["estimated_child_count_per_parent"] = "seed"
+        child_table = schema.tables[rel.child]
+        child_bytes = estimate_doc_bytes(child_table)
+        if measured is not None and measured.child_row_value_bytes is not None:
+            child_bytes = int(
+                _DOC_OVERHEAD
+                + sum(len(c.name) + _FIELD_OVERHEAD for c in child_table.columns)
+                + measured.child_row_value_bytes
+            )
+            src["estimated_child_doc_size_bytes"] = "seed"
+        if measured is not None:
+            src["max_child_count_per_parent"] = "seed"
+        if wl.weighted:
+            src["workload_terms"] = "workload"
         result[rel.id] = RelationshipFeatures(
             relationship_id=rel.id,
             parent=rel.parent,
@@ -192,7 +227,12 @@ def extract_features(
             read_together_ratio=float(together),
             child_write_frequency=freq,
             estimated_child_count_per_parent=int(count),
-            estimated_child_doc_size_bytes=estimate_doc_bytes(schema.tables[rel.child]),
+            estimated_child_doc_size_bytes=child_bytes,
+            max_child_count_per_parent=measured.max if measured is not None else 0,
+            fanout_skew=measured.skew if measured is not None else 0.0,
+            child_write_share=wl.child_write_share or 0.0,
+            parent_write_share=wl.parent_write_share or 0.0,
+            workload_weighted=wl.weighted,
             parent_doc_size_bytes=estimate_doc_bytes(schema.tables[rel.parent]),
             child_has_other_parents=_other_parents(graph, rel),
             guarantees_needing_embedding=_guarantee_count(rel, program),

@@ -37,6 +37,8 @@ class OptimizerOptions(FrozenModel):
     access_hints: dict[str, AccessHint] = {}
     relationship_overrides: dict[str, Placement] = {}
     weights: Weights | None = None
+    query_freq: dict[str, float] = {}  # statement id -> relative frequency (Phase 18)
+    default_freq: float = 1.0
 
 
 class _State:
@@ -113,7 +115,26 @@ def plan_placement(
 ) -> PlacementPlan:
     options = options or OptimizerOptions()
     w = options.weights or load_weights()
-    feats = extract_features(graph, program, queries, seed_queries, options.access_hints, w)
+    feats = extract_features(
+        graph,
+        program,
+        queries,
+        seed_queries,
+        options.access_hints,
+        w,
+        options.query_freq,
+        options.default_freq,
+    )
+    return plan_from_features(graph, feats, options, w)
+
+
+def plan_from_features(
+    graph: SchemaGraph,
+    feats: dict[str, RelationshipFeatures],
+    options: OptimizerOptions,
+    w: Weights,
+) -> PlacementPlan:
+    """Everything after feature extraction (the sensitivity analysis re-plans with other weights)."""
     costs = {rid: score_relationship(f, w) for rid, f in feats.items()}
     st = _State(graph, feats, costs, w)
 
@@ -316,6 +337,39 @@ def _build_plan(
             reason=st.reasons[rid] if not embedded or rid in st.forced else cost.reason,
             overridden=rid in overrides,
             host=st.parent_of(rid) if embedded else None,
+            explanation=_explain(st, rid, embedded, rid in overrides),
         )
     decisions.update(junctions)
     return PlacementPlan(decisions=decisions, warnings=tuple(st.warnings))
+
+
+def _explain(st: _State, rid: str, embedded: bool, overridden: bool) -> str:
+    """The decision in words: score vs threshold, the strongest contributors, workload and seed facts."""
+    cost, f = st.costs[rid], st.feats[rid]
+    decision = "EMBED" if embedded else "REFERENCE"
+    parts: list[str] = []
+    if overridden and rid in st.forced:
+        parts.append(f"{decision}: forced by a user override ({st.reasons[rid]}).")
+    elif cost.hard_constraint is not None:
+        parts.append(
+            f"REFERENCE: a hard constraint ({cost.hard_constraint}) rules out embedding; the score "
+            f"{cost.score:.2f} is shown for information only."
+        )
+    elif embedded != (cost.decision == "EMBED"):
+        parts.append(
+            f"{decision}: {st.reasons[rid]} (the score {cost.score:.2f} alone would say {cost.decision})."
+        )
+    else:
+        cmp = ">=" if cost.decision == "EMBED" else "<"
+        parts.append(f"{decision}: score {cost.score:.2f} {cmp} threshold {st.w.threshold:.2f}.")
+    if cost.factors:
+        top = ", ".join(f"{x.name} {x.contribution:+.2f}" for x in cost.factors[:4])
+        parts.append(f"Strongest contributors: {top}.")
+    if f.workload_weighted:
+        parts.append("Query frequencies and writes of the workload are applied.")
+    if f.max_child_count_per_parent:
+        parts.append(
+            f"Seed data: {f.estimated_child_count_per_parent} children per parent on average, "
+            f"at most {f.max_child_count_per_parent}."
+        )
+    return " ".join(parts)

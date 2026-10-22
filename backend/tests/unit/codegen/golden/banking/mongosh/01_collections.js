@@ -25,15 +25,6 @@ ensureCollection("accounts", {
         kind: {bsonType: "string", enum: ["checking", "savings", "business"]},
         balance: {bsonType: "decimal", minimum: 0},
         opened_at: {bsonType: "date"},
-        beneficiaries: {
-          bsonType: "array",
-          items: {
-            bsonType: "object",
-            required: ["customer_id"],
-            properties: {customer_id: {bsonType: "int"}, nickname: {bsonType: "string"}},
-            additionalProperties: false
-          }
-        },
         cards: {
           bsonType: "array",
           items: {
@@ -84,6 +75,15 @@ ensureCollection("customers", {
         phone: {bsonType: "string"},
         home_branch_id: {bsonType: "int"},
         created_at: {bsonType: "date"},
+        beneficiaries: {
+          bsonType: "array",
+          items: {
+            bsonType: "object",
+            required: ["account_id"],
+            properties: {account_id: {bsonType: "int"}, nickname: {bsonType: "string"}},
+            additionalProperties: false
+          }
+        },
         kyc_profiles: {
           bsonType: "object",
           required: ["national_id", "verified"],

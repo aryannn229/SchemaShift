@@ -15,6 +15,13 @@ soft:                             # weighted sum; negative weights penalise embe
   independent_access: -0.20
   write_frequency: -0.10
 
+workload:                         # Phase 18: only active when a workload or seed statistics are supplied
+  parent_write_amplification: -0.15   # parent write share x (embedded children bytes / doc_budget_bytes)
+  child_write_share: -0.10             # frequency-weighted share of the workload that writes the child
+  fanout_skew: -0.10                  # (max - avg) / avg fan-out, saturating at skew_scale
+  doc_budget_bytes: 262144
+  skew_scale: 10
+
 shape:
   one_to_one: 1.0
   one_to_many_small: 0.6

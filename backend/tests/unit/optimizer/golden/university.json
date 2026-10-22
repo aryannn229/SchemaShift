@@ -8,12 +8,12 @@
     "fk:enrollments.section_id->sections.id": {
       "decision": "REFERENCE",
       "host": null,
-      "score": 0.37
+      "score": 0.35
     },
     "fk:enrollments.student_id->students.id": {
       "decision": "EMBED",
       "host": "students",
-      "score": 0.77
+      "score": 0.75
     },
     "fk:office_hours.professor_id->professors.id": {
       "decision": "EMBED",
@@ -38,12 +38,12 @@
     "fk:sections.course_id->courses.id": {
       "decision": "EMBED",
       "host": "courses",
-      "score": 0.56
+      "score": 0.54
     },
     "fk:sections.professor_id->professors.id": {
       "decision": "REFERENCE",
       "host": null,
-      "score": 0.56
+      "score": 0.54
     },
     "fk:students.advisor_id->professors.id": {
       "decision": "REFERENCE",

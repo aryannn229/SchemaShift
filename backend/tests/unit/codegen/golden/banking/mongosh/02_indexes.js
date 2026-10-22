@@ -38,5 +38,5 @@ db.getCollection("accounts").createIndex({branch_id: 1}, {name: "idx_accounts_br
 // fk:transactions.account_id->accounts.id: supports lookups along the foreign key
 db.getCollection("transactions").createIndex({account_id: 1}, {name: "idx_transactions_account_id"});
 
-// fk:beneficiaries.customer_id->customers.id: supports lookups along the foreign key
-db.getCollection("accounts").createIndex({"beneficiaries.customer_id": 1}, {name: "idx_accounts_beneficiaries_customer_id"});
+// fk:beneficiaries.account_id->accounts.id: supports lookups along the foreign key
+db.getCollection("customers").createIndex({"beneficiaries.account_id": 1}, {name: "idx_customers_beneficiaries_account_id"});

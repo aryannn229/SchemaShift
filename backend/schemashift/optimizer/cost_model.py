@@ -24,9 +24,7 @@ def projected_parent_bytes(f: RelationshipFeatures, w: Weights) -> float:
     """Parent document size if every child were embedded (with the safety factor)."""
     return (
         f.parent_doc_size_bytes
-        + f.estimated_child_count_per_parent
-        * f.estimated_child_doc_size_bytes
-        * w.hard.safety_factor
+        + f.worst_child_count * f.estimated_child_doc_size_bytes * w.hard.safety_factor
     )
 
 
@@ -43,11 +41,16 @@ def hard_constraint(f: RelationshipFeatures, w: Weights) -> tuple[str, str] | No
             "the foreign key is nullable: a child row without a parent would have no document "
             "to live in and would be lost on embedding",
         )
-    if f.estimated_child_count_per_parent > w.hard.max_children_per_parent:
+    if f.worst_child_count > w.hard.max_children_per_parent:
+        measured = f.max_child_count_per_parent > f.estimated_child_count_per_parent
+        who = (
+            f"one parent has {f.worst_child_count} children, which"
+            if measured
+            else f"about {f.worst_child_count} children per parent"
+        )
         return (
             "unbounded_growth",
-            f"about {f.estimated_child_count_per_parent} children per parent exceeds the "
-            f"{w.hard.max_children_per_parent} limit (unbounded array growth)",
+            f"{who} exceeds the {w.hard.max_children_per_parent} limit (unbounded array growth)",
         )
     size = projected_parent_bytes(f, w)
     if size > w.hard.max_parent_doc_bytes:
@@ -78,8 +81,31 @@ def soft_factors(f: RelationshipFeatures, w: Weights) -> dict[str, float]:
     }
 
 
+def workload_terms(f: RelationshipFeatures, w: Weights) -> dict[str, float]:
+    """Penalties from the workload and seed statistics (all <= 0; empty when neither says anything).
+
+    * parent_write_amplification: every write to the parent rewrites a document that holds its embedded
+      children; weighted by the parent's share of the workload and by how big the children make it
+      (children bytes / ``doc_budget_bytes``, capped at 1);
+    * child_write_share: the child's share of the workload's statements that write (positional updates
+      into a parent document);
+    * fanout_skew: a few parents with far more children than the average make an embedded array unsafe
+      even when the average looks small.
+    """
+    k = w.workload
+    out: dict[str, float] = {}
+    if f.workload_weighted:
+        children_bytes = f.estimated_child_count_per_parent * f.estimated_child_doc_size_bytes
+        amplification = f.parent_write_share * min(1.0, children_bytes / k.doc_budget_bytes)
+        out["parent_write_amplification"] = k.parent_write_amplification * amplification
+        out["child_write_share"] = k.child_write_share * min(1.0, f.child_write_share)
+    if f.fanout_skew > 0:
+        out["fanout_skew"] = k.fanout_skew * min(1.0, f.fanout_skew / k.skew_scale)
+    return out
+
+
 def score_relationship(f: RelationshipFeatures, w: Weights) -> CostResult:
-    contributions = soft_factors(f, w)
+    contributions = {**soft_factors(f, w), **workload_terms(f, w)}
     raw = sum(contributions.values())
     span = w.raw_max - w.raw_min
     score = min(1.0, max(0.0, (raw - w.raw_min) / span)) if span else 0.5

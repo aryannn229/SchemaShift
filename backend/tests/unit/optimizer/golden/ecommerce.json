@@ -23,7 +23,7 @@
     "fk:orders.customer_id->customers.id": {
       "decision": "REFERENCE",
       "host": null,
-      "score": 0.42
+      "score": 0.4
     },
     "fk:payments.order_id->orders.id": {
       "decision": "EMBED",

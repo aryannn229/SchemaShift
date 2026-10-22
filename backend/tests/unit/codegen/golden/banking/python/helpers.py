@@ -207,13 +207,13 @@ PLAN = {'options': {'uuid_as': 'binary', 'preserve_integer_ids': False},
                                                   'is_array': False,
                                                   'nullable': False}}},
             'beneficiaries': {'kind': 'ref_docs',
-                              'collection': 'accounts',
-                              'host': 'accounts',
+                              'collection': 'customers',
+                              'host': 'customers',
                               'path': ['beneficiaries'],
-                              'dropped': ['account_id'],
+                              'dropped': ['customer_id'],
                               'host_columns': ['id'],
                               'id_column': None,
-                              'fields': {'customer_id': 'customer_id', 'nickname': 'nickname'},
+                              'fields': {'account_id': 'account_id', 'nickname': 'nickname'},
                               'scalar_column': None,
                               'pk': ['customer_id', 'account_id'],
                               'identity': [],
@@ -289,7 +289,7 @@ PLAN = {'options': {'uuid_as': 'binary', 'preserve_integer_ids': False},
                     'ref_columns': ['id'],
                     'on_delete': 'CASCADE',
                     'on_update': 'NO ACTION',
-                    'embedded': False},
+                    'embedded': True},
                    {'id': 'fk:beneficiaries.account_id->accounts.id',
                     'child': 'beneficiaries',
                     'parent': 'accounts',
@@ -297,7 +297,7 @@ PLAN = {'options': {'uuid_as': 'binary', 'preserve_integer_ids': False},
                     'ref_columns': ['id'],
                     'on_delete': 'CASCADE',
                     'on_update': 'NO ACTION',
-                    'embedded': True}],
+                    'embedded': False}],
  'defaults': {'customers': {'created_at': {'kind': 'now', 'value': None}},
               'kyc_profiles': {'verified': {'kind': 'literal', 'value': False}},
               'accounts': {'balance': {'kind': 'literal', 'value': 0},
@@ -334,6 +334,7 @@ def insert_accounts_tx(client, db, values):
 def delete_accounts(client, db, **match):
     # Mitigates:
     #   cascade_delete:transactions.account_id->accounts.id (BROKEN): EQ-CASCADE-DEL
+    #   cascade_delete:beneficiaries.account_id->accounts.id (BROKEN): EQ-CASCADE-DEL
     """DELETE FROM accounts WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
         client, lambda session: delete_row(db, PLAN, 'accounts', match, session)
@@ -353,7 +354,7 @@ def update_accounts(client, db, match, changes):
 def insert_beneficiaries(db, values, session=None):
     # Mitigates:
     #   pk:beneficiaries.customer_id,account_id (CHANGED): EQ-ENTITY-UNIQ
-    #   fk:beneficiaries.customer_id->customers.id (CHANGED): EQ-REF-INTEGRITY
+    #   fk:beneficiaries.account_id->accounts.id (CHANGED): EQ-REF-INTEGRITY
     #   cross_unique:beneficiaries.customer_id,account_id (BROKEN): EQ-CROSS-UNIQ
     """INSERT INTO beneficiaries: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'beneficiaries', values, session)
@@ -451,7 +452,6 @@ def delete_customers(client, db, **match):
     # Mitigates:
     #   restrict_delete:accounts.customer_id->customers.id (CHANGED): EQ-RESTRICT
     #   restrict_delete:loans.customer_id->customers.id (CHANGED): EQ-RESTRICT
-    #   cascade_delete:beneficiaries.customer_id->customers.id (BROKEN): EQ-CASCADE-DEL
     """DELETE FROM customers WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
         client, lambda session: delete_row(db, PLAN, 'customers', match, session)

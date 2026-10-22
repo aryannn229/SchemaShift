@@ -21,6 +21,12 @@ from schemashift.models.query import Query, TransactionBlock
 from schemashift.models.schema import Schema
 from schemashift.models.source import Diagnostic
 from schemashift.optimizer import AccessHint, OptimizerOptions, extract_features, plan_placement
+from schemashift.optimizer.sensitivity import analyze_sensitivity, attach_fragility
+from schemashift.optimizer.workload import (
+    WorkloadSpec,
+    annotation_frequencies,
+    merge_frequencies,
+)
 from schemashift.parser import parse
 from schemashift.semantic import SchemaGraph, analyze
 
@@ -37,6 +43,9 @@ class CompileOptions(FrozenModel):
     rows_per_table: int = 50
     relationship_overrides: dict[str, Placement] = {}
     access_hints: dict[str, AccessHint] = {}
+    # Phase 18: per-query frequencies (sidecar workload.yaml / API) and the weight sensitivity analysis
+    workload: WorkloadSpec = WorkloadSpec()
+    sensitivity: bool = True
 
     def rule_options(self) -> RuleOptions:
         return RuleOptions(
@@ -46,9 +55,12 @@ class CompileOptions(FrozenModel):
             uuid_as=self.uuid_as,
         )
 
-    def optimizer_options(self) -> OptimizerOptions:
+    def optimizer_options(self, query_freq: dict[str, float] | None = None) -> OptimizerOptions:
         return OptimizerOptions(
-            access_hints=self.access_hints, relationship_overrides=self.relationship_overrides
+            access_hints=self.access_hints,
+            relationship_overrides=self.relationship_overrides,
+            query_freq=query_freq if query_freq is not None else dict(self.workload.query_freq),
+            default_freq=self.workload.default_freq,
         )
 
 
@@ -89,13 +101,30 @@ def compile_sql(
     analysis = analyze(parsed.schema_, parsed.queries)
     program = build_ir(analysis.graph, parsed.queries)
     seed_queries = seed.queries if seed else ()
-    plan = plan_placement(
-        analysis.graph, program, parsed.queries, seed_queries, options.optimizer_options()
+    offset = schema_sql.count("\n") + 1
+    freq = merge_frequencies(
+        annotation_frequencies(queries_sql, parsed.queries, offset), options.workload
     )
-    if advisor is not None:
+    opt_options = options.optimizer_options(freq)
+    plan = plan_placement(analysis.graph, program, parsed.queries, seed_queries, opt_options)
+    features = None
+    if advisor is not None or (options.sensitivity and analysis.graph.relationships):
         features = extract_features(
-            analysis.graph, program, parsed.queries, seed_queries, options.access_hints
+            analysis.graph,
+            program,
+            parsed.queries,
+            seed_queries,
+            options.access_hints,
+            None,
+            freq,
+            options.workload.default_freq,
         )
+    if options.sensitivity and features:
+        from schemashift.optimizer.weights import load_weights
+
+        report = analyze_sensitivity(analysis.graph, features, opt_options, load_weights(), plan)
+        plan = attach_fragility(plan, report)
+    if advisor is not None and features is not None:
         plan = attach_opinions(plan, features, parsed.schema_, advisor, cache)
     equivalence = check_both(program, analysis.graph, plan, options.rule_options())
     concurrency = check_concurrency(program, analysis.graph, plan, options.rule_options())

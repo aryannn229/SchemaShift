@@ -3,12 +3,12 @@
     "fk:accounts.branch_id->branches.id": {
       "decision": "REFERENCE",
       "host": null,
-      "score": 0.17
+      "score": 0.14
     },
     "fk:accounts.customer_id->customers.id": {
       "decision": "REFERENCE",
       "host": null,
-      "score": 0.34
+      "score": 0.31
     },
     "fk:beneficiaries.account_id->accounts.id": {
       "decision": "REFERENCE",
@@ -43,11 +43,11 @@
     "fk:transactions.account_id->accounts.id": {
       "decision": "REFERENCE",
       "host": null,
-      "score": 0.75
+      "score": 0.69
     },
     "m2n:beneficiaries": {
       "decision": "REF_ARRAY",
-      "host": "accounts",
+      "host": "customers",
       "score": 0.61
     }
   },

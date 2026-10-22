@@ -31,6 +31,21 @@ class AIOpinion(FrozenModel):
     error: str | None = None
 
 
+class Flip(FrozenModel):
+    """A weight change that turns the decision around."""
+
+    weight: str  # dotted name in weights.yaml, e.g. "soft.read_together"
+    change: float  # relative change, e.g. -0.1 for -10%
+    becomes: Placement
+
+
+class Fragility(FrozenModel):
+    """How sensitive a decision is to the tunable weights (see optimizer/sensitivity.py)."""
+
+    level: Literal["fragile", "watch", "stable", "constrained"]
+    flips: tuple[Flip, ...] = ()
+
+
 class PlacementDecision(FrozenModel):
     relationship_id: str
     decision: Placement
@@ -39,6 +54,8 @@ class PlacementDecision(FrozenModel):
     reason: str = ""
     overridden: bool = False  # forced by the user (relationship_overrides)
     host: str | None = None  # table whose document hosts the embedding / array of references
+    explanation: str = ""  # why: score vs threshold, top contributors, workload and seed facts
+    fragility: Fragility | None = None  # sensitivity to the weights (when analysed)
     ai: AIOpinion | None = None  # advisory second opinion
     agree: bool | None = None  # optimizer == AI (only when a real AI opinion exists)
 
