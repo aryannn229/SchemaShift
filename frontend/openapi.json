@@ -503,6 +503,15 @@
             "title": "Uuid As",
             "default": "binary"
           },
+          "string_collation": {
+            "type": "string",
+            "enum": [
+              "en",
+              "binary"
+            ],
+            "title": "String Collation",
+            "default": "en"
+          },
           "rows_per_table": {
             "type": "integer",
             "title": "Rows Per Table",
@@ -559,6 +568,7 @@
               "transactions_available": true,
               "preserve_integer_ids": false,
               "uuid_as": "binary",
+              "string_collation": "en",
               "rows_per_table": 50,
               "relationship_overrides": {},
               "access_hints": {}
@@ -1613,6 +1623,7 @@
               "transactions_available": true,
               "preserve_integer_ids": false,
               "uuid_as": "binary",
+              "string_collation": "en",
               "rows_per_table": 50,
               "relationship_overrides": {},
               "access_hints": {}

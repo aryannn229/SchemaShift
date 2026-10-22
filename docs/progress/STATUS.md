@@ -4,7 +4,7 @@
 |---|---|
 | 0 current-state note | done |
 | F frontend redesign | done (tag phase-F-done) |
-| 14 fuzz + differential/metamorphic | pending |
+| 14 fuzz + differential/metamorphic | done (tag phase-14-done) |
 | 15 independent corpus + honest metrics | pending |
 | 16 evidence levels + counterexamples | pending |
 | 17 concurrency analyzer | pending |

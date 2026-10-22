@@ -623,3 +623,16 @@ variables in `frontend/src/index.css` consumed through Tailwind; light/dark/syst
 tabular numerals in tables and metrics. All verdict/foreground pairs must meet WCAG AA (4.5:1) in both themes,
 enforced by `tests/contrast.test.ts`. Reusable components live in `frontend/src/components/ui`; later phases must use
 them and add no ad-hoc styling. Accessibility is enforced by axe checks in Playwright (`e2e/a11y.spec.ts`).
+
+## 17. Phase 14: Differential and metamorphic testing
+
+`schemashift fuzz --cases N --seed S [--metamorphic] [--save-dir D]` generates schemas (all supported column types,
+enums, UNIQUE/CHECK/DEFAULT, serial and composite keys, self-references, FK cycles via ALTER TABLE, multi-parent
+children), seed data (NULLs, duplicates in non-unique columns, empty strings, boundary numbers, empty tables) and
+SELECTs (filters with AND/OR/NOT, comparisons, IN/NOT IN with NULL, BETWEEN, LIKE/ILIKE, IS NULL, INNER/LEFT joins,
+GROUP BY, aggregates, HAVING, DISTINCT, ORDER BY, LIMIT/OFFSET, integer and numeric arithmetic). Each case runs on
+PostgreSQL and as the generated pipeline on MongoDB and the normalised results are compared. Metamorphic relations
+(`fuzz/relations.py`): ternary-logic partitioning, tautology, AND/OR commutativity, COUNT(*) = row count, and identical
+results under the default, all-REFERENCE and all-EMBED plans. Failures are shrunk and saved to
+`backend/tests/regressions/fuzz_<hash>.yaml`; `tests/integration/test_fuzz.py` replays them all. The known gap "global
+aggregate over an empty input" is **closed**. See `docs/FUZZING.md`.

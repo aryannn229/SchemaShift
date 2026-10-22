@@ -214,6 +214,12 @@ export interface components {
              */
             uuid_as?: "binary" | "string";
             /**
+             * String Collation
+             * @default en
+             * @enum {string}
+             */
+            string_collation?: "en" | "binary";
+            /**
              * Rows Per Table
              * @default 50
              */
@@ -253,6 +259,7 @@ export interface components {
              *       "transactions_available": true,
              *       "preserve_integer_ids": false,
              *       "uuid_as": "binary",
+             *       "string_collation": "en",
              *       "rows_per_table": 50,
              *       "relationship_overrides": {},
              *       "access_hints": {}
@@ -675,6 +682,7 @@ export interface components {
              *       "transactions_available": true,
              *       "preserve_integer_ids": false,
              *       "uuid_as": "binary",
+             *       "string_collation": "en",
              *       "rows_per_table": 50,
              *       "relationship_overrides": {},
              *       "access_hints": {}

@@ -40,8 +40,26 @@ Untranslatable checks are listed in `CodegenResult.untranslated_checks` and get 
 - SQL predicates use three-valued logic: NOT is pushed to the leaves and leaves are NULL-aware
   (`codegen/predicate.py`).
 
+- A global aggregate (no GROUP BY) is wrapped in `$facet` with a default row, so an empty input still returns one
+  row (`COUNT` 0, `SUM`/`AVG`/`MIN`/`MAX` NULL), as in PostgreSQL.
+- `integer / integer` truncates toward zero (`$trunc($divide)`); any non-integer operand divides exactly.
+- `ORDER BY` and `<` `<=` `>` `>=` on an **enum** column use the declaration order (`$indexOfArray`), as PostgreSQL
+  does; `MIN`/`MAX` over an enum is reported as untranslatable. A repeated ORDER BY key keeps its first direction.
+- `LIMIT 0` becomes `{$match: {$expr: false}}` (MongoDB rejects `$limit: 0`).
+- MongoDB equality matches `null` with a missing field while SQL `NULL = x` is never true: a `$lookup` whose local key
+  can be NULL (nullable column, or a row absent after a LEFT JOIN) is guarded.
+- `(p) IS [NOT] NULL` over a boolean expression (the "unknown" truth value) is translated.
+
+## String collation
+Collections are created with the ICU `en` collation (`CompileOptions.string_collation = "en"`, the default), so
+`ORDER BY` and `<`/`>` on text follow the case rules of an `en_US` PostgreSQL database (`a < A < b`). Use
+`string_collation = "binary"` when the PostgreSQL database uses the `C` collation (byte order). **Known limit:**
+PostgreSQL's libc collation ignores punctuation and spaces at the first comparison level (`'a%'` sorts before `'A'`),
+ICU does not, so strings that differ only in punctuation or whitespace can sort differently. Equality stays exact. The
+reproducer lives in `backend/tests/regressions/known_limitations/` and a test fails when it stops reproducing.
+Collation can only be set when a collection is created (`collMod` cannot change it).
+
 **Known gaps** (reported, not hidden):
-- A global aggregate over an empty input returns no row in MongoDB (PostgreSQL returns one NULL/0 row).
 - Translated DML does **not** cascade: use the generated `delete_<table>()` / `update_<table>()` helpers.
 - Inserts into embedded tables need the parent key in the statement.
 
