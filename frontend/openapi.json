@@ -205,6 +205,48 @@
         }
       }
     },
+    "/api/v1/simulate": {
+      "post": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Simulate Endpoint",
+        "description": "Fast what-if: override placements, change workload frequencies or constraints.\n\nThe optimizer's own plan is untouched; the answer is a separate, labeled simulation.",
+        "operationId": "simulate_endpoint_api_v1_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Simulation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/diff": {
       "post": {
         "tags": [
@@ -952,6 +994,16 @@
             },
             "type": "array",
             "title": "Warnings"
+          },
+          "risk": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RiskReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -1906,6 +1958,30 @@
         ],
         "title": "HealthResponse"
       },
+      "IndexDelta": {
+        "properties": {
+          "added": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Added"
+          },
+          "removed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Removed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "added",
+          "removed"
+        ],
+        "title": "IndexDelta"
+      },
       "MetricsResponse": {
         "properties": {
           "available": {
@@ -2053,6 +2129,80 @@
           "reason"
         ],
         "title": "MigrationStep"
+      },
+      "PipelineDelta": {
+        "properties": {
+          "query_id": {
+            "type": "string",
+            "title": "Query Id"
+          },
+          "collection_before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collection Before"
+          },
+          "collection_after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collection After"
+          },
+          "changed": {
+            "type": "boolean",
+            "title": "Changed"
+          },
+          "estimated_cost_before": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Cost Before"
+          },
+          "estimated_cost_after": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Cost After"
+          },
+          "rewrites": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rewrites",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "query_id",
+          "collection_before",
+          "collection_after",
+          "changed",
+          "estimated_cost_before",
+          "estimated_cost_after"
+        ],
+        "title": "PipelineDelta"
       },
       "PipelineExplain": {
         "properties": {
@@ -2228,6 +2378,74 @@
           "decision"
         ],
         "title": "PlacementDecision"
+      },
+      "PlacementRow": {
+        "properties": {
+          "relationship_id": {
+            "type": "string",
+            "title": "Relationship Id"
+          },
+          "optimizer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "EMBED",
+                  "REFERENCE",
+                  "REF_ARRAY"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Optimizer"
+          },
+          "simulated": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "EMBED",
+                  "REFERENCE",
+                  "REF_ARRAY"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulated"
+          },
+          "overridden": {
+            "type": "boolean",
+            "title": "Overridden"
+          },
+          "blocked": {
+            "type": "boolean",
+            "title": "Blocked",
+            "default": false
+          },
+          "blocked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "relationship_id",
+          "optimizer",
+          "simulated",
+          "overridden"
+        ],
+        "title": "PlacementRow"
       },
       "PlanChange": {
         "properties": {
@@ -2623,6 +2841,176 @@
         ],
         "title": "RenameCandidate",
         "description": "A drop + add that looks like a rename. Never applied without confirmation."
+      },
+      "RiskCategory": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight"
+          },
+          "reference": {
+            "type": "number",
+            "title": "Reference"
+          },
+          "points": {
+            "type": "number",
+            "title": "Points"
+          },
+          "score": {
+            "type": "integer",
+            "title": "Score"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/RiskFinding"
+            },
+            "type": "array",
+            "title": "Findings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "weight",
+          "reference",
+          "points",
+          "score",
+          "findings"
+        ],
+        "title": "RiskCategory"
+      },
+      "RiskDelta": {
+        "properties": {
+          "before": {
+            "type": "integer",
+            "title": "Before"
+          },
+          "after": {
+            "type": "integer",
+            "title": "After"
+          },
+          "level_before": {
+            "type": "string",
+            "title": "Level Before"
+          },
+          "level_after": {
+            "type": "string",
+            "title": "Level After"
+          },
+          "categories": {
+            "additionalProperties": {
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "object",
+            "title": "Categories"
+          }
+        },
+        "type": "object",
+        "required": [
+          "before",
+          "after",
+          "level_before",
+          "level_after",
+          "categories"
+        ],
+        "title": "RiskDelta"
+      },
+      "RiskFinding": {
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "points": {
+            "type": "number",
+            "title": "Points"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "links": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Links",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule_id",
+          "category",
+          "title",
+          "points",
+          "detail"
+        ],
+        "title": "RiskFinding"
+      },
+      "RiskReport": {
+        "properties": {
+          "overall": {
+            "type": "integer",
+            "title": "Overall"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "low",
+              "moderate",
+              "high",
+              "severe"
+            ],
+            "title": "Level"
+          },
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/RiskCategory"
+            },
+            "type": "array",
+            "title": "Categories"
+          },
+          "formula": {
+            "type": "string",
+            "title": "Formula"
+          }
+        },
+        "type": "object",
+        "required": [
+          "overall",
+          "level",
+          "categories",
+          "formula"
+        ],
+        "title": "RiskReport"
       },
       "RowDiff": {
         "properties": {
@@ -3117,6 +3505,164 @@
         ],
         "title": "SchemaDiff"
       },
+      "SimulateRequest": {
+        "properties": {
+          "schema_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Schema Sql"
+          },
+          "queries_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Queries Sql",
+            "default": ""
+          },
+          "options": {
+            "$ref": "#/components/schemas/CompileOptions",
+            "default": {
+              "target_mongo_version": "7.0",
+              "transactions_available": true,
+              "preserve_integer_ids": false,
+              "uuid_as": "binary",
+              "string_collation": "en",
+              "rows_per_table": 50,
+              "relationship_overrides": {},
+              "access_hints": {},
+              "workload": {
+                "default_freq": 1.0,
+                "query_freq": {}
+              },
+              "sensitivity": true,
+              "optimize_pipelines": true
+            }
+          },
+          "overrides": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "EMBED",
+                "REFERENCE",
+                "REF_ARRAY"
+              ]
+            },
+            "type": "object",
+            "title": "Overrides",
+            "default": {}
+          },
+          "query_freq": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Query Freq",
+            "default": {}
+          },
+          "alter_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Alter Sql",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "schema_sql"
+        ],
+        "title": "SimulateRequest",
+        "description": "Re-plan with the user's decisions and compare with what the optimizer chose."
+      },
+      "Simulation": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": "simulated plan (your overrides, not the optimizer's output)"
+          },
+          "placements": {
+            "items": {
+              "$ref": "#/components/schemas/PlacementRow"
+            },
+            "type": "array",
+            "title": "Placements"
+          },
+          "blocked": {
+            "items": {
+              "$ref": "#/components/schemas/PlacementRow"
+            },
+            "type": "array",
+            "title": "Blocked"
+          },
+          "verdicts": {
+            "items": {
+              "$ref": "#/components/schemas/VerdictDelta"
+            },
+            "type": "array",
+            "title": "Verdicts"
+          },
+          "overall_before": {
+            "type": "string",
+            "title": "Overall Before"
+          },
+          "overall_after": {
+            "type": "string",
+            "title": "Overall After"
+          },
+          "indexes": {
+            "$ref": "#/components/schemas/IndexDelta"
+          },
+          "validators_changed": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Validators Changed"
+          },
+          "pipelines": {
+            "items": {
+              "$ref": "#/components/schemas/PipelineDelta"
+            },
+            "type": "array",
+            "title": "Pipelines"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/RiskDelta"
+          },
+          "risk_after": {
+            "$ref": "#/components/schemas/RiskReport"
+          },
+          "schema_changes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Schema Changes",
+            "default": []
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "placements",
+          "blocked",
+          "verdicts",
+          "overall_before",
+          "overall_after",
+          "indexes",
+          "validators_changed",
+          "pipelines",
+          "risk",
+          "risk_after"
+        ],
+        "title": "Simulation"
+      },
       "SourceSpan": {
         "properties": {
           "line_start": {
@@ -3414,6 +3960,80 @@
         ],
         "title": "VerdictChange",
         "description": "A guarantee verdict that differs between the old and the new version."
+      },
+      "VerdictDelta": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "evidence_before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence Before"
+          },
+          "evidence_after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evidence After"
+          },
+          "because": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Because",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id",
+          "rule_id",
+          "before",
+          "after",
+          "evidence_before",
+          "evidence_after"
+        ],
+        "title": "VerdictDelta"
       },
       "VerificationReport": {
         "properties": {

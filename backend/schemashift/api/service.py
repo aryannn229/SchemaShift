@@ -27,6 +27,7 @@ from schemashift.codegen.layout import build_layouts
 from schemashift.models.query import TransactionBlock
 from schemashift.models.source import Diagnostic
 from schemashift.pipeline import CompileResult, compile_sql
+from schemashift.risk import score_risk
 
 
 class RequestTooLarge(ValueError):
@@ -123,6 +124,11 @@ def build_response(
         graph_nodes=nodes,
         graph_edges=edges,
         ai_enabled=ai_enabled,
+        risk=score_risk(
+            result,
+            [q.query_id for q in codegen.queries if q.error],
+            len(codegen.untranslated_checks),
+        ),
         generated=list(codegen.files),
         queries=queries,
         untranslated_checks=[

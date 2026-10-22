@@ -9,7 +9,8 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
-import type { CompileResponse, PlacementDecision } from "../api/client";
+import type { CompileRequest, CompileResponse, PlacementDecision } from "../api/client";
+import { SimulatorPanel } from "./SimulatorPanel";
 import { Badge, Button, Card, CardHeader, EmptyState } from "./ui";
 
 const EMBED_COLOR = "rgb(var(--accent))";
@@ -40,8 +41,10 @@ function Legend() {
 export function RelationshipsTab({
   result,
   onOverride,
+  request,
 }: {
   result: CompileResponse;
+  request?: { schema_sql: string; queries_sql?: string; options?: CompileRequest["options"] };
   onOverride?: (relationshipId: string, decision: "EMBED" | "REFERENCE") => void;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
@@ -200,6 +203,7 @@ export function RelationshipsTab({
           )}
         </div>
       </Card>
+      {request && <SimulatorPanel result={result} request={request} />}
     </div>
   );
 }

@@ -682,3 +682,23 @@ migrate(v2) on the same data, and the rollback restores v1. See `docs/EVOLUTION.
 ## 24. Phase 23: Safe migration mode
 Batched, checkpointed, idempotent copy with a manifest, validator-aware quarantine, dry run that writes nothing and post-migration checks.
 See `docs/SAFE_MIGRATION.md`.
+
+## 25. Phase 24: Migration risk score and decision simulator
+**Risk score.** Five categories, each the sum of the points of explicit rules (`schemashift/risk/rules.py`), every finding linking to the verdict,
+relationship or query behind it:
+
+| Category | Weight | Reference points | Rules (points) |
+|---|---|---|---|
+| constraint loss | 0.30 | 120 | BROKEN guarantee 6, CHANGED 2, changed without evidence +1 |
+| query incompatibility | 0.25 | 20 | BROKEN query verdict 6, CHANGED 2, untranslatable query 8 |
+| migration complexity | 0.15 | 30 | embedded table 2, folded junction 1, no primary key 2, fragile placement 1, self-reference 1, inexpressible CHECK 3 |
+| runtime enforcement | 0.15 | 100 | non-SAFE verdict with a mitigation 2, CONDITIONAL on a non-generic condition 1 |
+| concurrency | 0.15 | 25 | BROKEN scenario 8, CHANGED 3 |
+
+`score = min(100, round(100 x points / reference))`; `overall = round(sum(weight x score))`; level `<25 low, <50 moderate, <75 high, else severe`.
+The reference points are the amount of findings we call severe; they are calibrated by judgement, not fitted, and are listed here so they can be argued with.
+Tests: `tests/unit/test_risk_simulate.py` (every point traces to a finding, the formula holds, determinism, untranslatable queries add exactly their points).
+
+**Simulator.** `POST /api/v1/simulate` compiles the schema as the optimizer decides and again with the user's overrides / workload frequencies / ALTER
+(constraint toggles), and returns placements (blocked overrides with the reason), verdict and evidence changes, index and validator changes, pipeline
+changes with estimated cost, and the risk before/after. The optimizer's output is never modified; the answer is labeled "simulated plan".

@@ -76,6 +76,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/simulate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Simulate Endpoint
+         * @description Fast what-if: override placements, change workload frequencies or constraints.
+         *
+         *     The optimizer's own plan is untouched; the answer is a separate, labeled simulation.
+         */
+        post: operations["simulate_endpoint_api_v1_simulate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/diff": {
         parameters: {
             query?: never;
@@ -439,6 +461,7 @@ export interface components {
             untranslated_checks: components["schemas"]["UntranslatedCheckDTO"][];
             /** Warnings */
             warnings: string[];
+            risk?: components["schemas"]["RiskReport"] | null;
         };
         /**
          * ConcurrencyResult
@@ -857,6 +880,13 @@ export interface components {
              */
             database?: "up" | "down" | "unconfigured";
         };
+        /** IndexDelta */
+        IndexDelta: {
+            /** Added */
+            added: string[];
+            /** Removed */
+            removed: string[];
+        };
         /** MetricsResponse */
         MetricsResponse: {
             /** Available */
@@ -912,6 +942,26 @@ export interface components {
              * @default []
              */
             changes?: string[];
+        };
+        /** PipelineDelta */
+        PipelineDelta: {
+            /** Query Id */
+            query_id: string;
+            /** Collection Before */
+            collection_before: string | null;
+            /** Collection After */
+            collection_after: string | null;
+            /** Changed */
+            changed: boolean;
+            /** Estimated Cost Before */
+            estimated_cost_before: number | null;
+            /** Estimated Cost After */
+            estimated_cost_after: number | null;
+            /**
+             * Rewrites
+             * @default []
+             */
+            rewrites?: string[];
         };
         /** PipelineExplain */
         PipelineExplain: {
@@ -986,6 +1036,24 @@ export interface components {
             ai?: components["schemas"]["AIOpinion"] | null;
             /** Agree */
             agree?: boolean | null;
+        };
+        /** PlacementRow */
+        PlacementRow: {
+            /** Relationship Id */
+            relationship_id: string;
+            /** Optimizer */
+            optimizer: ("EMBED" | "REFERENCE" | "REF_ARRAY") | null;
+            /** Simulated */
+            simulated: ("EMBED" | "REFERENCE" | "REF_ARRAY") | null;
+            /** Overridden */
+            overridden: boolean;
+            /**
+             * Blocked
+             * @default false
+             */
+            blocked?: boolean;
+            /** Blocked Reason */
+            blocked_reason?: string | null;
         };
         /**
          * PlanChange
@@ -1154,6 +1222,73 @@ export interface components {
              * @default false
              */
             confirmed?: boolean;
+        };
+        /** RiskCategory */
+        RiskCategory: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Weight */
+            weight: number;
+            /** Reference */
+            reference: number;
+            /** Points */
+            points: number;
+            /** Score */
+            score: number;
+            /** Findings */
+            findings: components["schemas"]["RiskFinding"][];
+        };
+        /** RiskDelta */
+        RiskDelta: {
+            /** Before */
+            before: number;
+            /** After */
+            after: number;
+            /** Level Before */
+            level_before: string;
+            /** Level After */
+            level_after: string;
+            /** Categories */
+            categories: {
+                [key: string]: [
+                    number,
+                    number
+                ];
+            };
+        };
+        /** RiskFinding */
+        RiskFinding: {
+            /** Rule Id */
+            rule_id: string;
+            /** Category */
+            category: string;
+            /** Title */
+            title: string;
+            /** Points */
+            points: number;
+            /** Detail */
+            detail: string;
+            /**
+             * Links
+             * @default []
+             */
+            links?: string[];
+        };
+        /** RiskReport */
+        RiskReport: {
+            /** Overall */
+            overall: number;
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "low" | "moderate" | "high" | "severe";
+            /** Categories */
+            categories: components["schemas"]["RiskCategory"][];
+            /** Formula */
+            formula: string;
         };
         /** RowDiff */
         RowDiff: {
@@ -1358,6 +1493,92 @@ export interface components {
             warnings?: string[];
         };
         /**
+         * SimulateRequest
+         * @description Re-plan with the user's decisions and compare with what the optimizer chose.
+         */
+        SimulateRequest: {
+            /** Schema Sql */
+            schema_sql: string;
+            /**
+             * Queries Sql
+             * @default
+             */
+            queries_sql?: string;
+            /**
+             * @default {
+             *       "target_mongo_version": "7.0",
+             *       "transactions_available": true,
+             *       "preserve_integer_ids": false,
+             *       "uuid_as": "binary",
+             *       "string_collation": "en",
+             *       "rows_per_table": 50,
+             *       "relationship_overrides": {},
+             *       "access_hints": {},
+             *       "workload": {
+             *         "default_freq": 1,
+             *         "query_freq": {}
+             *       },
+             *       "sensitivity": true,
+             *       "optimize_pipelines": true
+             *     }
+             */
+            options?: components["schemas"]["CompileOptions"];
+            /**
+             * Overrides
+             * @default {}
+             */
+            overrides?: {
+                [key: string]: "EMBED" | "REFERENCE" | "REF_ARRAY";
+            };
+            /**
+             * Query Freq
+             * @default {}
+             */
+            query_freq?: {
+                [key: string]: number;
+            };
+            /**
+             * Alter Sql
+             * @default
+             */
+            alter_sql?: string;
+        };
+        /** Simulation */
+        Simulation: {
+            /**
+             * Label
+             * @default simulated plan (your overrides, not the optimizer's output)
+             */
+            label?: string;
+            /** Placements */
+            placements: components["schemas"]["PlacementRow"][];
+            /** Blocked */
+            blocked: components["schemas"]["PlacementRow"][];
+            /** Verdicts */
+            verdicts: components["schemas"]["VerdictDelta"][];
+            /** Overall Before */
+            overall_before: string;
+            /** Overall After */
+            overall_after: string;
+            indexes: components["schemas"]["IndexDelta"];
+            /** Validators Changed */
+            validators_changed: string[];
+            /** Pipelines */
+            pipelines: components["schemas"]["PipelineDelta"][];
+            risk: components["schemas"]["RiskDelta"];
+            risk_after: components["schemas"]["RiskReport"];
+            /**
+             * Schema Changes
+             * @default []
+             */
+            schema_changes?: string[];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings?: string[];
+        };
+        /**
          * SourceSpan
          * @description 1-based line/column range. ``col_end`` is exclusive.
          */
@@ -1468,6 +1689,26 @@ export interface components {
             because: string[];
             /** Reason */
             reason: string;
+        };
+        /** VerdictDelta */
+        VerdictDelta: {
+            /** Node Id */
+            node_id: string;
+            /** Rule Id */
+            rule_id: string;
+            /** Before */
+            before: string | null;
+            /** After */
+            after: string | null;
+            /** Evidence Before */
+            evidence_before: string | null;
+            /** Evidence After */
+            evidence_after: string | null;
+            /**
+             * Because
+             * @default []
+             */
+            because?: string[];
         };
         /** VerificationReport */
         VerificationReport: {
@@ -1695,6 +1936,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunCancelled"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    simulate_endpoint_api_v1_simulate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SimulateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Simulation"];
                 };
             };
             /** @description Validation Error */

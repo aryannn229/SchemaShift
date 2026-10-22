@@ -19,6 +19,7 @@ export type EvidenceUpgrade = Schemas["EvidenceUpgrade"];
 export type ConcurrencyResult = Schemas["ConcurrencyResult"];
 export type ConcurrencySkip = Schemas["ConcurrencySkip"];
 export type DiffRequest = Schemas["DiffRequest"];
+export type SimulateRequest = Schemas["SimulateRequest"];
 export type DiffResponse = Schemas["DiffResponse"];
 export type Status = "SAFE" | "CHANGED" | "BROKEN";
 

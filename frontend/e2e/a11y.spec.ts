@@ -26,6 +26,24 @@ for (const scheme of ["light", "dark"] as const) {
       }
     });
 
+    test("compare versions with its results, and the simulator", async ({ page }) => {
+      await page.goto("/compare");
+      await page.getByRole("button", { name: /^Compare$/ }).click();
+      await expect(page.getByTestId("diff-result")).toBeVisible({ timeout: 20_000 });
+      for (const tab of ["Changes", "Migration plan", "Guarantee diff", "Script"]) {
+        await page.getByRole("tab", { name: new RegExp(tab) }).click();
+        expect(await violations(page), tab).toEqual([]);
+      }
+      await page.goto("/");
+      await page.getByLabel("Load sample").selectOption("ecommerce");
+      await page.getByRole("button", { name: "Compile", exact: true }).click();
+      await expect(page.getByTestId("overall-verdict")).toBeVisible();
+      await page.getByRole("tab", { name: "Relationships" }).click();
+      await page.getByRole("combobox", { name: /^Placement of / }).first().selectOption({ index: 1 });
+      await expect(page.getByTestId("sim-result")).toBeVisible({ timeout: 20_000 });
+      expect(await violations(page), "simulator").toEqual([]);
+    });
+
     test("about, history and benchmarks", async ({ page }) => {
       for (const path of ["/about", "/history", "/benchmarks"]) {
         await page.goto(path);

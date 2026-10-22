@@ -28,8 +28,17 @@ from schemashift.api.schemas import (
     RunSummary,
     SampleDetail,
     SampleInfo,
+    SimulateRequest,
 )
-from schemashift.api.service import RequestTooLarge, build_response, export_zip, run_compile
+from schemashift.api.service import (
+    RequestTooLarge,
+    build_response,
+    check_limits,
+    export_zip,
+    run_compile,
+)
+from schemashift.pipeline import compile_sql
+from schemashift.simulate import Simulation
 from schemashift.verification import VerificationReport
 
 router = APIRouter()
@@ -110,6 +119,29 @@ def cancel_run(run_id: str, state: AppState = Depends(get_state)) -> RunCancelle
     if status == "missing":
         raise HTTPException(status_code=404, detail="run not found")
     return RunCancelled(run_id=run_id, status=status)
+
+
+@router.post("/simulate", response_model=Simulation)
+def simulate_endpoint(req: SimulateRequest, state: AppState = Depends(get_state)) -> Simulation:
+    """Fast what-if: override placements, change workload frequencies or constraints.
+
+    The optimizer's own plan is untouched; the answer is a separate, labeled simulation.
+    """
+    from schemashift.simulate import simulate
+
+    probe = CompileRequest(schema_sql=req.schema_sql, queries_sql=req.queries_sql)
+    try:
+        check_limits(compile_sql(probe.schema_sql, probe.queries_sql), state.settings)
+    except RequestTooLarge as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return simulate(
+        req.schema_sql,
+        req.queries_sql,
+        options=req.options,
+        overrides=req.overrides,
+        query_freq=req.query_freq,
+        alter_sql=req.alter_sql,
+    )
 
 
 @router.post("/diff", response_model=DiffResponse)

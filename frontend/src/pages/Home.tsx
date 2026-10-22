@@ -227,6 +227,7 @@ export default function Home() {
         run={verifyRun}
         onSelectVerdict={selectVerdict}
         onOverride={override}
+        request={request}
       />
     </section>
   );

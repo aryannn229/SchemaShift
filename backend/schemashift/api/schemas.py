@@ -11,8 +11,10 @@ from schemashift.codegen.emit import GeneratedFile
 from schemashift.equivalence.checker import PlacementChange
 from schemashift.evolve import EvolutionPlan
 from schemashift.models import Counterexample, CounterexampleGap, PlacementDecision, Verdict
+from schemashift.models.placement import Placement
 from schemashift.models.source import Diagnostic
 from schemashift.pipeline import CompileOptions
+from schemashift.risk import RiskReport
 from schemashift.verification import VerificationReport
 
 MAX_SQL_CHARS = 200_000
@@ -23,6 +25,17 @@ class CompileRequest(BaseModel):
     queries_sql: str = Field(default="", max_length=MAX_SQL_CHARS)
     seed_sql: str = Field(default="", max_length=MAX_SQL_CHARS)
     options: CompileOptions = CompileOptions()
+
+
+class SimulateRequest(BaseModel):
+    """Re-plan with the user's decisions and compare with what the optimizer chose."""
+
+    schema_sql: str = Field(max_length=MAX_SQL_CHARS)
+    queries_sql: str = Field(default="", max_length=MAX_SQL_CHARS)
+    options: CompileOptions = CompileOptions()
+    overrides: dict[str, Placement] = {}  # relationship id -> EMBED | REFERENCE
+    query_freq: dict[str, float] = {}  # statement id -> relative frequency
+    alter_sql: str = Field(default="", max_length=MAX_SQL_CHARS)  # e.g. drop a constraint
 
 
 class DiffRequest(BaseModel):
@@ -116,6 +129,7 @@ class CompileResponse(BaseModel):
     queries: list[QueryTranslation]
     untranslated_checks: list[UntranslatedCheckDTO]
     warnings: list[str]
+    risk: RiskReport | None = None  # transparent rule-based migration risk (Phase 24)
 
 
 RunStatus = Literal["pending", "running", "done", "failed", "cancelled"]

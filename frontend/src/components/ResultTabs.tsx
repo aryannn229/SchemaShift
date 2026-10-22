@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import type { CompileResponse, RunDetail, Verdict } from "../api/client";
+import type { CompileRequest, CompileResponse, RunDetail, Verdict } from "../api/client";
 import { CodeTab } from "./CodeTab";
 import { IRTab } from "./IRTab";
 import { RelationshipsTab } from "./RelationshipsTab";
@@ -27,6 +27,7 @@ export function ResultTabs({
   run,
   onSelectVerdict,
   onOverride,
+  request,
 }: {
   result?: CompileResponse | null;
   loading?: boolean;
@@ -35,6 +36,7 @@ export function ResultTabs({
   run?: RunDetail;
   onSelectVerdict?: (v: Verdict) => void;
   onOverride?: (relationshipId: string, decision: "EMBED" | "REFERENCE") => void;
+  request?: { schema_sql: string; queries_sql?: string; options?: CompileRequest["options"] };
 }) {
   const [tab, setTab] = useState<Tab>("Summary");
 
@@ -52,7 +54,7 @@ export function ResultTabs({
   else if (tab === "Summary") body = <SummaryTab result={result} run={run} />;
   else if (tab === "Verdicts") body = <VerdictsTab result={result} run={run} onSelect={onSelectVerdict} />;
   else if (tab === "Relationships")
-    body = <RelationshipsTab result={result} onOverride={onOverride} />;
+    body = <RelationshipsTab result={result} onOverride={onOverride} request={request} />;
   else if (tab === "IR") body = <IRTab result={result} />;
   else body = <CodeTab result={result} />;
 
