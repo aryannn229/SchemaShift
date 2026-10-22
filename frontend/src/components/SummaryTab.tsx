@@ -93,6 +93,56 @@ function RiskCard({ risk }: { risk: NonNullable<CompileResponse["risk"]> }) {
   );
 }
 
+function SmtCard({ smt }: { smt: NonNullable<CompileResponse["smt"]> }) {
+  const tone = {
+    EQUIVALENT: "safe",
+    COUNTEREXAMPLE: "changed",
+    UNSUPPORTED: "neutral",
+    TIMEOUT: "neutral",
+  } as const;
+  const label = {
+    EQUIVALENT: "proven",
+    COUNTEREXAMPLE: "counterexample",
+    UNSUPPORTED: "unverified",
+    TIMEOUT: "unverified",
+  } as const;
+  return (
+    <Card>
+      <CardHeader title="Constraint proofs (Z3)" />
+      <div className="space-y-2 p-4 text-sm" data-testid="smt-card">
+        <p className="text-xs text-muted">
+          Does the generated validator accept exactly what the SQL constraints
+          accept? {smt.solver}, timeout {smt.timeout_ms} ms. Anything outside
+          the supported fragment stays unverified, never safe.
+        </p>
+        <ul className="space-y-2">
+          {smt.tables.map((t) => (
+            <li key={t.table}>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-xs">{t.table}</span>
+                <Badge value={label[t.status]} tone={tone[t.status]} />
+                {t.reason && (
+                  <span className="text-xs text-muted">{t.reason}</span>
+                )}
+              </div>
+              {(t.findings ?? []).slice(0, 2).map((f, i) => (
+                <p key={i} className="ml-4 mt-1 text-xs">
+                  {f.explanation}. Row:{" "}
+                  <span className="font-mono">
+                    {Object.entries(f.row)
+                      .map(([k, v]) => `${k}=${v ?? "NULL"}`)
+                      .join(", ")}
+                  </span>
+                </p>
+              ))}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Card>
+  );
+}
+
 export function SummaryTab({
   result,
   run,
@@ -161,6 +211,7 @@ export function SummaryTab({
       )}
 
       {result.risk && <RiskCard risk={result.risk} />}
+      {result.smt && <SmtCard smt={result.smt} />}
 
       <Card>
         <CardHeader title="Top findings" />

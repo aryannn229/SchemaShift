@@ -197,7 +197,12 @@ def _merge_keywords(target: dict[str, Any], new: dict[str, Any]) -> None:
         elif key in ("maximum", "maxLength") and key in target:
             target[key] = min(target[key], value)
         elif key == "enum" and key in target:
-            target[key] = [v for v in target[key] if v in value]
+            kept = [v for v in target[key] if v in value]
+            if kept:
+                target[key] = kept
+            else:  # contradictory IN lists: no value can pass ($jsonSchema forbids an empty enum)
+                target.pop(key)
+                target["not"] = {}
         else:
             target.setdefault(key, value)
 

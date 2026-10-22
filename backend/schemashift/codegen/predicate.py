@@ -338,6 +338,26 @@ def _isnull(x: Any) -> dict[str, Any]:
     return {"$lte": [x, None]}
 
 
+def _isnull_any(x: Any) -> dict[str, Any]:
+    """x is null/missing (testing the argument of a function that raises on null)."""
+    t = _guard_targets(x)
+    return _isnull(t[0]) if len(t) == 1 else {"$or": [_isnull(i) for i in t]}
+
+
+def _notnull_all(x: Any) -> dict[str, Any]:
+    t = _guard_targets(x)
+    return _notnull(t[0]) if len(t) == 1 else {"$and": [_notnull(i) for i in t]}
+
+
+def _guard_targets(x: Any) -> list[Any]:
+    """What a null guard must test. ``$strLenCP`` raises on null/missing, so the guard has to test
+    its
+    argument: ``$or: [{$lte: [{$strLenCP: "$s"}, null]}, ...]`` already fails on a missing ``s``."""
+    if isinstance(x, dict) and len(x) == 1 and "$strLenCP" in x:
+        return _guard_targets(x["$strLenCP"])
+    return [x]
+
+
 # ---------------------------------------------------------------------- expression form
 def to_expr(pred: Pred, resolve: Resolver, mode: Mode, hook: Hook | None = None) -> Any:
     """Boolean aggregation expression (for ``$expr`` / ``$match: {$expr}`` / validators)."""
@@ -366,7 +386,7 @@ def to_expr(pred: Pred, resolve: Resolver, mode: Mode, hook: Hook | None = None)
         operands = [(pred.left, left), (pred.right, right)]
         if any(isinstance(n, exp.Null) for n, _ in operands):
             return unknown_passes
-        checked = [x for n, x in operands if not is_literal(n)]
+        checked = [t for n, x in operands if not is_literal(n) for t in _guard_targets(x)]
         if unknown_passes:
             guards = [_isnull(x) for x in checked]
             return {"$or": [*guards, core]} if guards else core
@@ -381,9 +401,9 @@ def to_expr(pred: Pred, resolve: Resolver, mode: Mode, hook: Hook | None = None)
         membership: Any = {"$in": [left, values]}
         if pred.neg:
             if has_null:  # x NOT IN (..., NULL) is never TRUE
-                return unknown_passes and {"$or": [_isnull(left), {"$not": [membership]}]}
+                return unknown_passes and {"$or": [_isnull_any(left), {"$not": [membership]}]}
             membership = {"$not": [membership]}
-        guard = _isnull(left) if unknown_passes else _notnull(left)
+        guard = _isnull_any(left) if unknown_passes else _notnull_all(left)
         return {"$or": [guard, membership]} if unknown_passes else {"$and": [guard, membership]}
     if isinstance(pred, PLike):
         left = value_expr(pred.left, resolve, None, hook)
@@ -394,8 +414,8 @@ def to_expr(pred: Pred, resolve: Resolver, mode: Mode, hook: Hook | None = None)
         if pred.neg:
             match = {"$not": [match]}
         if unknown_passes:
-            return {"$or": [_isnull(left), match]}
-        return {"$and": [_notnull(left), match]} if pred.neg else match
+            return {"$or": [_isnull_any(left), match]}
+        return {"$and": [_notnull_all(left), match]} if pred.neg else match
     if isinstance(pred, PUnknown):
         decided = {
             "$or": [
@@ -406,7 +426,7 @@ def to_expr(pred: Pred, resolve: Resolver, mode: Mode, hook: Hook | None = None)
         return decided if pred.neg else {"$not": [decided]}
     if isinstance(pred, PNull):
         left = value_expr(pred.left, resolve, None, hook)
-        return _notnull(left) if pred.neg else _isnull(left)
+        return _notnull_all(left) if pred.neg else _isnull_any(left)
     if isinstance(pred, PBool):
         x = value_expr(pred.expr, resolve, None, hook)
         if unknown_passes:

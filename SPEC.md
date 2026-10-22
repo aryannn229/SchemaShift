@@ -706,3 +706,26 @@ changes with estimated cost, and the risk before/after. The optimizer's output i
 ## 26. Phase 25: CI/CD tooling
 `schemashift check --baseline | --baseline-ref` with `schemashift.policy.yaml`; text, JSON, SARIF 2.1.0 and Markdown output; a composite GitHub Action
 (SARIF upload, one updating PR comment, policy-based failure); optional LSP server and VS Code client. See `docs/CI.md`.
+
+## 27. Phase 26: SMT-backed constraint reasoning (Z3)
+`schemashift/equivalence/smt/` asks Z3 whether the generated validator accepts exactly the rows the SQL constraints accept (per root table; row-local
+constraints only). Two queries per table: `SQL-accepts AND NOT mongo-accepts` and `mongo-accepts AND NOT SQL-accepts`.
+- **UNSAT, UNSAT**: the verdicts of every encoded constraint become **PROVEN** (assumptions listed on the verdict: validators installed; a SQL NULL is an
+  absent field, never an explicit null).
+- **SAT**: the model is a concrete row; the verdict becomes CHANGED (the validator accepts a row SQL rejects) or BROKEN (the validator rejects a row SQL
+  accepts) if it was lower, and the row is in the reason and the `smt` report.
+- **Unsupported construct or timeout (default 2000 ms)**: UNVERIFIED, never SAFE; nothing is upgraded.
+
+**Supported fragment.** Columns: SMALLINT/INTEGER/BIGINT (Int, with the range of the type), NUMERIC(p,s) and DOUBLE (Real), TEXT/VARCHAR(n)/CHAR(n)/ENUM
+(String), BOOLEAN. SQL: NOT NULL, the column type (ranges, precision overflow, length, enum members), CHECK built from comparisons, AND/OR/NOT, IN lists,
+BETWEEN, IS [NOT] NULL, `+ - *` and Real `/`, LENGTH, string equality, with SQL three-valued logic (a CHECK passes on UNKNOWN). PostgreSQL facts that are
+modelled: NUMERIC rounds half away from zero to its scale before CHECKs run and rejects only a precision overflow; integer arithmetic raises on overflow
+at the operand width (16/32/64 bits). MongoDB: `$jsonSchema` with bsonType, minimum/maximum (+exclusive), enum, min/maxLength, `not: {}`, required; `$expr`
+with `$and $or $not $eq $ne $gt $gte $lt $lte $in $add $subtract $multiply $strLenCP $literal`, BSON null/missing ordering, and the fact that an
+expression that raises (for example `$strLenCP` of a missing field) rejects the document.
+**Out of scope** (reported UNSUPPORTED/UNVERIFIED): embedded tables, UNIQUE/FOREIGN KEY (not row-local), FLOAT (single precision), dates, UUID, JSON, arrays,
+string ordering (collation), integer division, LIKE/regex, CAST, functions other than LENGTH, subqueries, `$jsonSchema` keywords beyond those listed.
+
+**Soundness test.** `tests/integration/test_smt_soundness.py` (hypothesis): random single-table schemas inside the fragment; every counterexample row is
+inserted into real PostgreSQL 16 and real MongoDB 7 and must behave as claimed; for every proof, random rows must never be accepted by one database and
+rejected by the other. Result of the recorded run in `docs/progress/phase-26.md`.

@@ -17,6 +17,7 @@ dependencies = [
   "structlog>=24.1",
   "typer>=0.12",
   "pyyaml>=6",
+  "z3-solver>=4.12",
   "faker>=25",
   "anthropic>=1.0",
   "redis>=5",
@@ -76,6 +77,10 @@ select = ["E", "F", "I", "UP", "B"]
 strict = true
 python_version = "3.11"
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["z3", "z3.*"]
+ignore_missing_imports = true
 
 [tool.mutmut]
 paths_to_mutate = ["schemashift/equivalence/", "schemashift/optimizer/"]

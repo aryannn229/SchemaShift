@@ -361,6 +361,16 @@ export interface components {
              * @default true
              */
             optimize_pipelines?: boolean;
+            /**
+             * Smt
+             * @default true
+             */
+            smt?: boolean;
+            /**
+             * Smt Timeout Ms
+             * @default 2000
+             */
+            smt_timeout_ms?: number;
         };
         /** CompileRequest */
         CompileRequest: {
@@ -391,7 +401,9 @@ export interface components {
              *         "query_freq": {}
              *       },
              *       "sensitivity": true,
-             *       "optimize_pipelines": true
+             *       "optimize_pipelines": true,
+             *       "smt": true,
+             *       "smt_timeout_ms": 2000
              *     }
              */
             options?: components["schemas"]["CompileOptions"];
@@ -462,6 +474,7 @@ export interface components {
             /** Warnings */
             warnings: string[];
             risk?: components["schemas"]["RiskReport"] | null;
+            smt?: components["schemas"]["SmtReport"] | null;
         };
         /**
          * ConcurrencyResult
@@ -647,7 +660,9 @@ export interface components {
              *         "query_freq": {}
              *       },
              *       "sensitivity": true,
-             *       "optimize_pipelines": true
+             *       "optimize_pipelines": true,
+             *       "smt": true,
+             *       "smt_timeout_ms": 2000
              *     }
              */
             options?: components["schemas"]["CompileOptions"];
@@ -1410,7 +1425,9 @@ export interface components {
              *         "query_freq": {}
              *       },
              *       "sensitivity": true,
-             *       "optimize_pipelines": true
+             *       "optimize_pipelines": true,
+             *       "smt": true,
+             *       "smt_timeout_ms": 2000
              *     }
              */
             options?: components["schemas"]["CompileOptions"];
@@ -1519,7 +1536,9 @@ export interface components {
              *         "query_freq": {}
              *       },
              *       "sensitivity": true,
-             *       "optimize_pipelines": true
+             *       "optimize_pipelines": true,
+             *       "smt": true,
+             *       "smt_timeout_ms": 2000
              *     }
              */
             options?: components["schemas"]["CompileOptions"];
@@ -1579,6 +1598,36 @@ export interface components {
             warnings?: string[];
         };
         /**
+         * SmtFinding
+         * @description A row on which the two validators disagree.
+         */
+        SmtFinding: {
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "mongo_accepts_sql_rejects" | "sql_accepts_mongo_rejects";
+            /** Row */
+            row: {
+                [key: string]: string | null;
+            };
+            /** Explanation */
+            explanation: string;
+            /** Nodes */
+            nodes: string[];
+            /** Clause */
+            clause?: string | null;
+        };
+        /** SmtReport */
+        SmtReport: {
+            /** Solver */
+            solver: string;
+            /** Timeout Ms */
+            timeout_ms: number;
+            /** Tables */
+            tables: components["schemas"]["TableResult"][];
+        };
+        /**
          * SourceSpan
          * @description 1-based line/column range. ``col_end`` is exclusive.
          */
@@ -1591,6 +1640,38 @@ export interface components {
             line_end: number;
             /** Col End */
             col_end: number;
+        };
+        /** TableResult */
+        TableResult: {
+            /** Table */
+            table: string;
+            /** Collection */
+            collection: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "EQUIVALENT" | "COUNTEREXAMPLE" | "UNSUPPORTED" | "TIMEOUT";
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
+            /**
+             * Encoded
+             * @default []
+             */
+            encoded?: string[];
+            /**
+             * Findings
+             * @default []
+             */
+            findings?: components["schemas"]["SmtFinding"][];
+            /**
+             * Milliseconds
+             * @default 0
+             */
+            milliseconds?: number;
         };
         /** UntranslatedCheckDTO */
         UntranslatedCheckDTO: {

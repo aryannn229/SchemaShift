@@ -124,6 +124,7 @@ def build_response(
         graph_nodes=nodes,
         graph_edges=edges,
         ai_enabled=ai_enabled,
+        smt=result.smt,
         risk=score_risk(
             result,
             [q.query_id for q in codegen.queries if q.error],

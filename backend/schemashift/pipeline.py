@@ -14,6 +14,7 @@ from schemashift.equivalence import (
     check_both,
     check_concurrency,
 )
+from schemashift.equivalence.smt.model import SmtReport
 from schemashift.ir import IRProgram, build_ir, print_ir
 from schemashift.models import Placement, PlacementPlan
 from schemashift.models.base import FrozenModel
@@ -49,6 +50,10 @@ class CompileOptions(FrozenModel):
     sensitivity: bool = True
     # Phase 19: rewrite generated aggregation pipelines (cost-based, semantics preserving)
     optimize_pipelines: bool = True
+    # Phase 26: ask Z3 whether the generated validators accept exactly what the SQL constraints
+    # accept
+    smt: bool = True
+    smt_timeout_ms: int = 2000
 
     def rule_options(self) -> RuleOptions:
         return RuleOptions(
@@ -76,6 +81,7 @@ class CompileResult(FrozenModel):
     plan: PlacementPlan
     equivalence: EquivalenceResult
     concurrency: ConcurrencyReport = ConcurrencyReport()
+    smt: SmtReport | None = None
     queries_line_offset: int = 0  # spans refer to schema_sql + "\n" + queries_sql
     graph: SchemaGraph = Field(exclude=True)
     seed_queries: tuple[Query | TransactionBlock, ...] = Field(default=(), exclude=True)
@@ -178,7 +184,7 @@ def _compile_parsed(
     diagnostics = [*parse_diagnostics, *analysis.diagnostics]
     if seed:
         diagnostics.extend(seed.diagnostics)
-    return CompileResult(
+    result = CompileResult(
         schema_=schema,
         queries=queries,
         diagnostics=tuple(diagnostics),
@@ -190,4 +196,16 @@ def _compile_parsed(
         queries_line_offset=offset,
         graph=analysis.graph,
         seed_queries=seed_queries,
+    )
+    if not options.smt:
+        return result
+    from schemashift.equivalence.smt.check import apply_smt, run_smt
+
+    smt_report = run_smt(result, options, options.smt_timeout_ms)
+    final = apply_smt(equivalence.final, smt_report)
+    return result.model_copy(
+        update={
+            "smt": smt_report,
+            "equivalence": equivalence.model_copy(update={"final": final}),
+        }
     )

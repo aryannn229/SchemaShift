@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from schemashift.codegen.emit import GeneratedFile
 from schemashift.equivalence.checker import PlacementChange
+from schemashift.equivalence.smt.model import SmtReport
 from schemashift.evolve import EvolutionPlan
 from schemashift.models import Counterexample, CounterexampleGap, PlacementDecision, Verdict
 from schemashift.models.placement import Placement
@@ -130,6 +131,7 @@ class CompileResponse(BaseModel):
     untranslated_checks: list[UntranslatedCheckDTO]
     warnings: list[str]
     risk: RiskReport | None = None  # transparent rule-based migration risk (Phase 24)
+    smt: SmtReport | None = None  # Z3 proofs and counterexamples for the validators (Phase 26)
 
 
 RunStatus = Literal["pending", "running", "done", "failed", "cancelled"]

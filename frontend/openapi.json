@@ -797,6 +797,16 @@
             "type": "boolean",
             "title": "Optimize Pipelines",
             "default": true
+          },
+          "smt": {
+            "type": "boolean",
+            "title": "Smt",
+            "default": true
+          },
+          "smt_timeout_ms": {
+            "type": "integer",
+            "title": "Smt Timeout Ms",
+            "default": 2000
           }
         },
         "type": "object",
@@ -837,7 +847,9 @@
                 "query_freq": {}
               },
               "sensitivity": true,
-              "optimize_pipelines": true
+              "optimize_pipelines": true,
+              "smt": true,
+              "smt_timeout_ms": 2000
             }
           }
         },
@@ -999,6 +1011,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/RiskReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "smt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SmtReport"
               },
               {
                 "type": "null"
@@ -1382,7 +1404,9 @@
                 "query_freq": {}
               },
               "sensitivity": true,
-              "optimize_pipelines": true
+              "optimize_pipelines": true,
+              "smt": true,
+              "smt_timeout_ms": 2000
             }
           },
           "confirmed_renames": {
@@ -3323,7 +3347,9 @@
                 "query_freq": {}
               },
               "sensitivity": true,
-              "optimize_pipelines": true
+              "optimize_pipelines": true,
+              "smt": true,
+              "smt_timeout_ms": 2000
             }
           },
           "verify": {
@@ -3534,7 +3560,9 @@
                 "query_freq": {}
               },
               "sensitivity": true,
-              "optimize_pipelines": true
+              "optimize_pipelines": true,
+              "smt": true,
+              "smt_timeout_ms": 2000
             }
           },
           "overrides": {
@@ -3663,6 +3691,89 @@
         ],
         "title": "Simulation"
       },
+      "SmtFinding": {
+        "properties": {
+          "direction": {
+            "type": "string",
+            "enum": [
+              "mongo_accepts_sql_rejects",
+              "sql_accepts_mongo_rejects"
+            ],
+            "title": "Direction"
+          },
+          "row": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Row"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "nodes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "clause": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clause"
+          }
+        },
+        "type": "object",
+        "required": [
+          "direction",
+          "row",
+          "explanation",
+          "nodes"
+        ],
+        "title": "SmtFinding",
+        "description": "A row on which the two validators disagree."
+      },
+      "SmtReport": {
+        "properties": {
+          "solver": {
+            "type": "string",
+            "title": "Solver"
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "title": "Timeout Ms"
+          },
+          "tables": {
+            "items": {
+              "$ref": "#/components/schemas/TableResult"
+            },
+            "type": "array",
+            "title": "Tables"
+          }
+        },
+        "type": "object",
+        "required": [
+          "solver",
+          "timeout_ms",
+          "tables"
+        ],
+        "title": "SmtReport"
+      },
       "SourceSpan": {
         "properties": {
           "line_start": {
@@ -3691,6 +3802,61 @@
         ],
         "title": "SourceSpan",
         "description": "1-based line/column range. ``col_end`` is exclusive."
+      },
+      "TableResult": {
+        "properties": {
+          "table": {
+            "type": "string",
+            "title": "Table"
+          },
+          "collection": {
+            "type": "string",
+            "title": "Collection"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "EQUIVALENT",
+              "COUNTEREXAMPLE",
+              "UNSUPPORTED",
+              "TIMEOUT"
+            ],
+            "title": "Status"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "encoded": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Encoded",
+            "default": []
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/SmtFinding"
+            },
+            "type": "array",
+            "title": "Findings",
+            "default": []
+          },
+          "milliseconds": {
+            "type": "integer",
+            "title": "Milliseconds",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "table",
+          "collection",
+          "status"
+        ],
+        "title": "TableResult"
       },
       "UntranslatedCheckDTO": {
         "properties": {
