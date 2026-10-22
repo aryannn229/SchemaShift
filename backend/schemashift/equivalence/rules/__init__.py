@@ -3,6 +3,7 @@
 from schemashift.equivalence.rules import (  # noqa: F401
     atomicity,
     columns,
+    concurrency,
     queries,
     referential,
     uniqueness,

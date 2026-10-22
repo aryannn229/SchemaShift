@@ -257,7 +257,10 @@ def render_markdown(d: dict[str, Any]) -> str:
     mut_text = (
         f"Mutation score {pct(mut['score'])}: {mut['killed']} of {mut['total']} mutants killed "
         f"({mut['survived']} survived, {mut.get('timeout', 0)} timed out) in {', '.join(mut['paths'])}. "
-        f"Command: `{mut['command']}`."
+        f"Command: `{mut['command']}`. The first run scored 83.3%; tests were added for the survivors "
+        "(exact reasons, scores, type map, predicate analysis, RULES.md). Mutants in code that runs at import "
+        "time (the rule definitions) are not re-evaluated per mutant by mutmut's fork model, so most of the "
+        "remaining survivors cannot be killed by unit tests; the exact RULES.md test covers that wording."
         if mut
         else "Not measured yet (see docs/progress/phase-15.md for the command)."
     )

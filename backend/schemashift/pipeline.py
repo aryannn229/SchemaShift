@@ -7,7 +7,13 @@ from typing import Literal
 from pydantic import Field
 
 from schemashift.ai import AdvisorCache, LLMAdvisor, attach_opinions
-from schemashift.equivalence import EquivalenceResult, RuleOptions, check_both
+from schemashift.equivalence import (
+    ConcurrencyReport,
+    EquivalenceResult,
+    RuleOptions,
+    check_both,
+    check_concurrency,
+)
 from schemashift.ir import IRProgram, build_ir, print_ir
 from schemashift.models import Placement, PlacementPlan
 from schemashift.models.base import FrozenModel
@@ -54,6 +60,7 @@ class CompileResult(FrozenModel):
     ir_text: str
     plan: PlacementPlan
     equivalence: EquivalenceResult
+    concurrency: ConcurrencyReport = ConcurrencyReport()
     queries_line_offset: int = 0  # spans refer to schema_sql + "\n" + queries_sql
     graph: SchemaGraph = Field(exclude=True)
     seed_queries: tuple[Query | TransactionBlock, ...] = Field(default=(), exclude=True)
@@ -91,6 +98,7 @@ def compile_sql(
         )
         plan = attach_opinions(plan, features, parsed.schema_, advisor, cache)
     equivalence = check_both(program, analysis.graph, plan, options.rule_options())
+    concurrency = check_concurrency(program, analysis.graph, plan, options.rule_options())
     diagnostics = [*parsed.diagnostics, *analysis.diagnostics]
     if seed:
         diagnostics.extend(seed.diagnostics)
@@ -102,6 +110,7 @@ def compile_sql(
         ir_text=print_ir(program),
         plan=plan,
         equivalence=equivalence,
+        concurrency=concurrency,
         queries_line_offset=schema_sql.count("\n") + 1,
         graph=analysis.graph,
         seed_queries=seed_queries,

@@ -310,6 +310,24 @@ export interface components {
             ir_node_count: number;
             /** Verdicts */
             verdicts: components["schemas"]["Verdict"][];
+            /**
+             * Concurrency Verdicts
+             * @default []
+             */
+            concurrency_verdicts?: components["schemas"]["Verdict"][];
+            /**
+             * Concurrency Counts
+             * @default {}
+             */
+            concurrency_counts?: {
+                [key: string]: number;
+            };
+            /**
+             * Concurrency Overall
+             * @default SAFE
+             * @enum {string}
+             */
+            concurrency_overall?: "SAFE" | "CHANGED" | "BROKEN";
             /** Initial Counts */
             initial_counts: {
                 [key: string]: number;
@@ -334,6 +352,56 @@ export interface components {
             untranslated_checks: components["schemas"]["UntranslatedCheckDTO"][];
             /** Warnings */
             warnings: string[];
+        };
+        /**
+         * ConcurrencyResult
+         * @description One probe: ``iterations`` racing rounds of ``threads`` writers with a given strategy.
+         *
+         *     ``generated`` runs the helpers exactly as shipped; ``unguarded`` switches their concurrency guards
+         *     (lock documents, the atomic array guard) off, or drops the transaction, to show what the same
+         *     operations would let through. Zero violations is *test evidence*, not proof; a nonzero count is a
+         *     demonstration, reproducible from ``seed``.
+         */
+        ConcurrencyResult: {
+            /** Scenario Id */
+            scenario_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "fk_race" | "duplicate_insert" | "counter" | "transaction";
+            /**
+             * Strategy
+             * @enum {string}
+             */
+            strategy: "generated" | "unguarded";
+            /** Threads */
+            threads: number;
+            /** Iterations */
+            iterations: number;
+            /** Violations */
+            violations: number;
+            /** Violation */
+            violation: string;
+            /** Seed */
+            seed: number;
+            /** Duration Ms */
+            duration_ms: number;
+            /**
+             * Detail
+             * @default
+             */
+            detail?: string;
+        };
+        /**
+         * ConcurrencySkip
+         * @description A scenario that could not be probed, and why (never silently missing).
+         */
+        ConcurrencySkip: {
+            /** Scenario Id */
+            scenario_id: string;
+            /** Reason */
+            reason: string;
         };
         /**
          * ConditionTrace
@@ -1003,6 +1071,16 @@ export interface components {
              * @default []
              */
             probes?: components["schemas"]["ProbeOutcome"][];
+            /**
+             * Concurrency
+             * @default []
+             */
+            concurrency?: components["schemas"]["ConcurrencyResult"][];
+            /**
+             * Concurrency Skips
+             * @default []
+             */
+            concurrency_skips?: components["schemas"]["ConcurrencySkip"][];
             /**
              * Counterexamples
              * @default []

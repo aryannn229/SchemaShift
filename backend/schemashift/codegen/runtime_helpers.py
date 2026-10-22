@@ -20,10 +20,40 @@ class IntegrityError(Exception):
     """A SQL guarantee (foreign key, restrict, uniqueness) would be violated."""
 
 
+# Concurrency guards. They are on by default; the concurrency probes switch them off to show what the
+# unguarded, check-then-act version of each helper would let through.
+GUARDS = True
+LOCKS = "_locks"
+
+
 def run_in_transaction(client: Any, fn: Any) -> Any:
-    """Run ``fn(session)`` atomically (needs a replica set or Atlas)."""
+    """Run ``fn(session)`` atomically (needs a replica set or Atlas).
+
+    ``with_transaction`` retries the whole callback on TransientTransactionError (for example a write
+    conflict on a lock document) and retries the commit on UnknownTransactionCommitResult, for up to
+    120 seconds. ``fn`` must therefore be safe to run more than once: do all reads inside it.
+    """
     with client.start_session() as session:
         return session.with_transaction(fn)
+
+
+def _key_text(table: str, key: dict[str, Any]) -> str:
+    return table + "|" + "|".join(f"{c}={key[c]!r}" for c in sorted(key))
+
+
+def lock_row(db: Any, table: str, key: dict[str, Any], session: Any) -> None:
+    """Materialize a write conflict on the row identified by ``key`` (a write-skew guard).
+
+    Snapshot isolation only detects conflicts between writes to the *same* document, so a child insert
+    that merely reads its parent cannot conflict with a concurrent delete of that parent. Both take
+    this lock document inside their transactions: the later one aborts with a write conflict and the
+    transaction callback is retried against the committed state. No effect outside a transaction.
+    """
+    if not GUARDS or session is None:
+        return
+    db[LOCKS].update_one(
+        {"_id": _key_text(table, key)}, {"$inc": {"n": 1}}, upsert=True, session=session
+    )
 
 
 def next_id(db: Any, key: str, session: Any = None) -> int:
@@ -304,6 +334,8 @@ def delete_row(
     """DELETE with SQL semantics: CASCADE / SET NULL / SET DEFAULT / RESTRICT are honoured."""
     rows = locate(db, plan, table, match, session)
     for doc, node, row in rows:
+        if plan["tables"][table]["kind"] == "root":
+            lock_row(db, table, _identity_match(plan, table, row), session)
         _apply_embedded_rules(db, plan, table, node, row, session)
         _remove_row(db, plan, table, doc, row, session)
     return len(rows)
@@ -345,12 +377,13 @@ def insert_row(
         if rel["child"] != table or rel["embedded"]:
             continue
         vals = [row.get(c) for c in rel["columns"]]
-        if all(v is not None for v in vals) and not exists(
-            db, plan, rel["parent"], dict(zip(rel["ref_columns"], vals, strict=True)), session
-        ):
-            raise IntegrityError(
-                f"{table}: no {rel['parent']} row with {rel['ref_columns']} = {vals}"
-            )
+        if all(v is not None for v in vals):
+            parent_key = dict(zip(rel["ref_columns"], vals, strict=True))
+            lock_row(db, rel["parent"], parent_key, session)
+            if not exists(db, plan, rel["parent"], parent_key, session):
+                raise IntegrityError(
+                    f"{table}: no {rel['parent']} row with {rel['ref_columns']} = {vals}"
+                )
     if t["kind"] == "root":
         doc = row_to_doc(plan, table, row)
         if "_id" not in doc and t["id_column"] is None:
@@ -363,11 +396,24 @@ def insert_row(
     for dropped in t["dropped"]:
         if row.get(dropped) is None:
             raise IntegrityError(f"{table}: {dropped} is required to locate the {t['host']} row")
+    guards: list[dict[str, Any]] = []
     for key in [t["pk"], *plan["unique"].get(table, [])]:
         if key and all(row.get(c) is not None for c in key):
             same_host = {c: row[c] for c in t["dropped"]}
             if locate(db, plan, table, {**same_host, **{c: row[c] for c in key}}, session):
                 raise IntegrityError(f"{table}: duplicate key {key} within its {t['host']} row")
+            if t["kind"] in ("array", "ref_docs"):
+                guards.append(
+                    {
+                        t["path"][-1]: {
+                            "$not": {
+                                "$elemMatch": {
+                                    t["fields"][c]: _bson(plan, table, c, row[c]) for c in key
+                                }
+                            }
+                        }
+                    }
+                )
     flt = {
         host["fields"][hc]: _bson(plan, table, dc, row[dc])
         for hc, dc in zip(t["host_columns"], t["dropped"], strict=True)
@@ -398,8 +444,19 @@ def insert_row(
         update = {"$set": {target: row_to_doc(plan, table, row)}}
     else:
         update = {"$push": {target: row_to_doc(plan, table, row)}}
+    if GUARDS and guards and host["kind"] == "root":
+        # check-and-push as ONE atomic single-document update: two concurrent inserts of the same
+        # key cannot both pass (the unique index MongoDB cannot give us inside one array)
+        flt = {"$and": [flt, *guards]}
     result = db[t["collection"]].update_one(flt, update, session=session, **kwargs)
     if result.matched_count == 0:
+        host_exists = db[t["collection"]].count_documents(
+            {k: v for k, v in flt.items() if k != "$and"} if "$and" not in flt else flt["$and"][0],
+            limit=1,
+            session=session,
+        )
+        if host_exists:
+            raise IntegrityError(f"{table}: duplicate key within its {t['host']} row")
         raise IntegrityError(
             f"{table}: no {t['host']} row matches {t['dropped']} = {[row[c] for c in t['dropped']]}"
         )
@@ -425,6 +482,7 @@ def update_row(
             changed = [c for c in rel["ref_columns"] if c in changes and changes[c] != row.get(c)]
             if not changed:
                 continue
+            lock_row(db, table, {c: row.get(c) for c in rel["ref_columns"]}, session)
             old = dict(zip(rel["columns"], [row.get(c) for c in rel["ref_columns"]], strict=True))
             children = locate(db, plan, rel["child"], old, session)
             if not children:

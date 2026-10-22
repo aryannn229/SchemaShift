@@ -353,6 +353,13 @@ def insert_addresses(db, values, session=None):
     return insert_row(db, PLAN, 'addresses', values, session)
 
 
+def insert_addresses_tx(client, db, values):
+    """insert_addresses in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'addresses', values, session)
+    )
+
+
 def delete_addresses(client, db, **match):
     """DELETE FROM addresses WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -366,6 +373,13 @@ def insert_categories(db, values, session=None):
     #   fk:categories.parent_id->categories.id (CHANGED): EQ-REF-INTEGRITY
     """INSERT INTO categories: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'categories', values, session)
+
+
+def insert_categories_tx(client, db, values):
+    """insert_categories in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'categories', values, session)
+    )
 
 
 def delete_categories(client, db, **match):
@@ -394,6 +408,13 @@ def insert_customers(db, values, session=None):
     #   unique:customers.phone (CHANGED): EQ-VALUE-UNIQ
     """INSERT INTO customers: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'customers', values, session)
+
+
+def insert_customers_tx(client, db, values):
+    """insert_customers in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'customers', values, session)
+    )
 
 
 def delete_customers(client, db, **match):
@@ -427,6 +448,13 @@ def insert_order_items(db, values, session=None):
     return insert_row(db, PLAN, 'order_items', values, session)
 
 
+def insert_order_items_tx(client, db, values):
+    """insert_order_items in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'order_items', values, session)
+    )
+
+
 def delete_order_items(client, db, **match):
     """DELETE FROM order_items WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -442,6 +470,13 @@ def insert_orders(db, values, session=None):
     #   fk:orders.customer_id->customers.id (CHANGED): EQ-REF-INTEGRITY
     """INSERT INTO orders: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'orders', values, session)
+
+
+def insert_orders_tx(client, db, values):
+    """insert_orders in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'orders', values, session)
+    )
 
 
 def delete_orders(client, db, **match):
@@ -470,6 +505,13 @@ def insert_payments(db, values, session=None):
     return insert_row(db, PLAN, 'payments', values, session)
 
 
+def insert_payments_tx(client, db, values):
+    """insert_payments in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'payments', values, session)
+    )
+
+
 def delete_payments(client, db, **match):
     """DELETE FROM payments WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -486,6 +528,13 @@ def insert_product_categories(db, values, session=None):
     return insert_row(db, PLAN, 'product_categories', values, session)
 
 
+def insert_product_categories_tx(client, db, values):
+    """insert_product_categories in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'product_categories', values, session)
+    )
+
+
 def delete_product_categories(client, db, **match):
     """DELETE FROM product_categories WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -499,6 +548,13 @@ def insert_products(db, values, session=None):
     #   default:products.stock (CHANGED): EQ-DEFAULT
     """INSERT INTO products: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'products', values, session)
+
+
+def insert_products_tx(client, db, values):
+    """insert_products in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'products', values, session)
+    )
 
 
 def delete_products(client, db, **match):
@@ -528,6 +584,13 @@ def insert_reviews(db, values, session=None):
     #   fk:reviews.customer_id->customers.id (CHANGED): EQ-REF-INTEGRITY
     """INSERT INTO reviews: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'reviews', values, session)
+
+
+def insert_reviews_tx(client, db, values):
+    """insert_reviews in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'reviews', values, session)
+    )
 
 
 def delete_reviews(client, db, **match):

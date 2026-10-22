@@ -324,6 +324,13 @@ def insert_accounts(db, values, session=None):
     return insert_row(db, PLAN, 'accounts', values, session)
 
 
+def insert_accounts_tx(client, db, values):
+    """insert_accounts in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'accounts', values, session)
+    )
+
+
 def delete_accounts(client, db, **match):
     # Mitigates:
     #   cascade_delete:transactions.account_id->accounts.id (BROKEN): EQ-CASCADE-DEL
@@ -352,6 +359,13 @@ def insert_beneficiaries(db, values, session=None):
     return insert_row(db, PLAN, 'beneficiaries', values, session)
 
 
+def insert_beneficiaries_tx(client, db, values):
+    """insert_beneficiaries in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'beneficiaries', values, session)
+    )
+
+
 def delete_beneficiaries(client, db, **match):
     """DELETE FROM beneficiaries WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -364,6 +378,13 @@ def insert_branches(db, values, session=None):
     #   auto_increment:branches.id (CHANGED): EQ-AUTOINC
     """INSERT INTO branches: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'branches', values, session)
+
+
+def insert_branches_tx(client, db, values):
+    """insert_branches in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'branches', values, session)
+    )
 
 
 def delete_branches(client, db, **match):
@@ -395,6 +416,13 @@ def insert_cards(db, values, session=None):
     return insert_row(db, PLAN, 'cards', values, session)
 
 
+def insert_cards_tx(client, db, values):
+    """insert_cards in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'cards', values, session)
+    )
+
+
 def delete_cards(client, db, **match):
     """DELETE FROM cards WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -410,6 +438,13 @@ def insert_customers(db, values, session=None):
     #   fk:customers.home_branch_id->branches.id (CHANGED): EQ-REF-INTEGRITY
     """INSERT INTO customers: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'customers', values, session)
+
+
+def insert_customers_tx(client, db, values):
+    """insert_customers in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'customers', values, session)
+    )
 
 
 def delete_customers(client, db, **match):
@@ -440,6 +475,13 @@ def insert_kyc_profiles(db, values, session=None):
     return insert_row(db, PLAN, 'kyc_profiles', values, session)
 
 
+def insert_kyc_profiles_tx(client, db, values):
+    """insert_kyc_profiles in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'kyc_profiles', values, session)
+    )
+
+
 def delete_kyc_profiles(client, db, **match):
     """DELETE FROM kyc_profiles WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -453,6 +495,13 @@ def insert_loans(db, values, session=None):
     #   pk:loans.id (CHANGED): EQ-ENTITY-UNIQ
     """INSERT INTO loans: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'loans', values, session)
+
+
+def insert_loans_tx(client, db, values):
+    """insert_loans in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'loans', values, session)
+    )
 
 
 def delete_loans(client, db, **match):
@@ -469,6 +518,13 @@ def insert_transactions(db, values, session=None):
     #   fk:transactions.account_id->accounts.id (CHANGED): EQ-REF-INTEGRITY
     """INSERT INTO transactions: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'transactions', values, session)
+
+
+def insert_transactions_tx(client, db, values):
+    """insert_transactions in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'transactions', values, session)
+    )
 
 
 def delete_transactions(client, db, **match):

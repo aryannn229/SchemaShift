@@ -35,6 +35,14 @@ export function SummaryTab({ result, run }: { result: CompileResponse; run?: Run
         <StatCard label="Changed" value={result.counts.CHANGED ?? 0} tone="changed" />
         <StatCard label="Broken" value={result.counts.BROKEN ?? 0} tone="broken" />
       </div>
+      {(result.concurrency_verdicts ?? []).length > 0 && (
+        <StatCard
+          label="Concurrency scenarios"
+          value={`${result.concurrency_counts?.BROKEN ?? 0} broken, ${result.concurrency_counts?.CHANGED ?? 0} conditional`}
+          hint={`${result.concurrency_verdicts?.length} scenarios; ${result.concurrency_counts?.SAFE ?? 0} safe by construction`}
+          tone={result.concurrency_overall === "BROKEN" ? "broken" : result.concurrency_overall === "CHANGED" ? "changed" : "safe"}
+        />
+      )}
       {queries.length > 0 && (
         <StatCard
           label="Queries matched"

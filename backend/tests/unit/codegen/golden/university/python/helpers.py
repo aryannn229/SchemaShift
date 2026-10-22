@@ -315,6 +315,13 @@ def insert_courses(db, values, session=None):
     return insert_row(db, PLAN, 'courses', values, session)
 
 
+def insert_courses_tx(client, db, values):
+    """insert_courses in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'courses', values, session)
+    )
+
+
 def delete_courses(client, db, **match):
     # Mitigates:
     #   restrict_delete:prerequisites.requires_id->courses.id (CHANGED): EQ-RESTRICT
@@ -340,6 +347,13 @@ def insert_departments(db, values, session=None):
     #   auto_increment:departments.id (CHANGED): EQ-AUTOINC
     """INSERT INTO departments: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'departments', values, session)
+
+
+def insert_departments_tx(client, db, values):
+    """insert_departments in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'departments', values, session)
+    )
 
 
 def delete_departments(client, db, **match):
@@ -371,6 +385,13 @@ def insert_enrollments(db, values, session=None):
     return insert_row(db, PLAN, 'enrollments', values, session)
 
 
+def insert_enrollments_tx(client, db, values):
+    """insert_enrollments in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'enrollments', values, session)
+    )
+
+
 def delete_enrollments(client, db, **match):
     """DELETE FROM enrollments WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -384,6 +405,13 @@ def insert_office_hours(db, values, session=None):
     #   pk:office_hours.id (CHANGED): EQ-ENTITY-UNIQ
     """INSERT INTO office_hours: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'office_hours', values, session)
+
+
+def insert_office_hours_tx(client, db, values):
+    """insert_office_hours in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'office_hours', values, session)
+    )
 
 
 def delete_office_hours(client, db, **match):
@@ -401,6 +429,13 @@ def insert_prerequisites(db, values, session=None):
     return insert_row(db, PLAN, 'prerequisites', values, session)
 
 
+def insert_prerequisites_tx(client, db, values):
+    """insert_prerequisites in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'prerequisites', values, session)
+    )
+
+
 def delete_prerequisites(client, db, **match):
     """DELETE FROM prerequisites WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -415,6 +450,13 @@ def insert_professors(db, values, session=None):
     #   unique:professors.email (CHANGED): EQ-VALUE-UNIQ
     """INSERT INTO professors: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'professors', values, session)
+
+
+def insert_professors_tx(client, db, values):
+    """insert_professors in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'professors', values, session)
+    )
 
 
 def delete_professors(client, db, **match):
@@ -447,6 +489,13 @@ def insert_sections(db, values, session=None):
     return insert_row(db, PLAN, 'sections', values, session)
 
 
+def insert_sections_tx(client, db, values):
+    """insert_sections in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'sections', values, session)
+    )
+
+
 def delete_sections(client, db, **match):
     # Mitigates:
     #   cascade_delete:enrollments.section_id->sections.id (BROKEN): EQ-CASCADE-DEL
@@ -473,6 +522,13 @@ def insert_students(db, values, session=None):
     #   fk:students.advisor_id->professors.id (CHANGED): EQ-REF-INTEGRITY
     """INSERT INTO students: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'students', values, session)
+
+
+def insert_students_tx(client, db, values):
+    """insert_students in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'students', values, session)
+    )
 
 
 def delete_students(client, db, **match):

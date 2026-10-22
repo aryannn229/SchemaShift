@@ -14,6 +14,7 @@ from schemashift.codegen.layout import TableLayout, build_layouts
 from schemashift.codegen.queries import QueryContext, TranslatedQuery, WriteOp, translate_query
 from schemashift.codegen.values import materialize
 from schemashift.models.base import FrozenModel
+from schemashift.models.concurrency import ConcurrencyResult, ConcurrencySkip
 from schemashift.models.evidence import Counterexample, CounterexampleGap, EvidenceUpgrade
 from schemashift.models.query import Query
 from schemashift.optimizer.workload import flatten
@@ -79,6 +80,8 @@ class VerificationReport(FrozenModel):
     migrated: dict[str, int]
     queries: list[QueryOutcome]
     probes: list[ProbeOutcome] = []
+    concurrency: list[ConcurrencyResult] = []
+    concurrency_skips: list[ConcurrencySkip] = []
     counterexamples: list[Counterexample] = []
     counterexample_gaps: list[CounterexampleGap] = []
     evidence_upgrades: list[EvidenceUpgrade] = []
@@ -257,6 +260,8 @@ def verify(
     seed: int = 0,
     run_probes: bool = True,
     counterexamples: bool = True,
+    concurrency: bool = True,
+    concurrency_iterations: int = 30,
 ) -> VerificationReport:
     """Verify a compile result against real PostgreSQL and MongoDB sandboxes."""
     if config is None:
@@ -298,6 +303,14 @@ def verify(
             from schemashift.verification.probes import run_probes as _probes
 
             probes = _probes(env)
+        conc_results: list[ConcurrencyResult] = []
+        conc_skips: list[ConcurrencySkip] = []
+        if concurrency and not result.has_errors:
+            from schemashift.verification.concurrency import run_concurrency_probes
+
+            conc_results, conc_skips = run_concurrency_probes(
+                env, result, seed_data.seed, iterations=concurrency_iterations
+            )
     examples: list[Counterexample] = []
     gaps: list[CounterexampleGap] = []
     if counterexamples:
@@ -312,6 +325,8 @@ def verify(
         migrated=migrated,
         queries=sorted_outcomes,
         probes=probes,
+        concurrency=conc_results,
+        concurrency_skips=conc_skips,
         counterexamples=examples,
         counterexample_gaps=gaps,
         evidence_upgrades=evidence_upgrades(result, sorted_outcomes, seed_data.seed, rows),

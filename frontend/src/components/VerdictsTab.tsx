@@ -3,9 +3,10 @@ import { Fragment, useMemo, useState } from "react";
 
 import type { Counterexample, CounterexampleGap, CompileResponse, RunDetail, Verdict } from "../api/client";
 import { useReplayCounterexample } from "../api/hooks";
+import { ConcurrencyEvidence } from "./ConcurrencyEvidence";
 import { CounterexampleView } from "./CounterexampleView";
 import { EvidencePanel, effectiveLevel } from "./EvidencePanel";
-import { EmptyState, EvidenceBadge, Table, Td, Th, THead, VerdictBadge } from "./ui";
+import { EmptyState, EvidenceBadge, Table, Tabs, Td, Th, THead, VerdictBadge } from "./ui";
 
 type SortKey = "status" | "node_id" | "rule_id" | "evidence";
 const ORDER: Record<string, number> = { BROKEN: 0, CHANGED: 1, SAFE: 2 };
@@ -26,6 +27,9 @@ function Details({ verdict, run }: { verdict: Verdict; run?: RunDetail }) {
   const example: Counterexample | undefined = replayed?.counterexample ?? (replayed?.gap ? undefined : stored);
   const gap: CounterexampleGap | undefined = replayed?.gap ?? (replayed?.counterexample ? undefined : storedGap);
   const verified = !!run?.verification;
+  const concurrent = verdict.rule_id.startsWith("EQ-CONC-");
+  const probes = (run?.verification?.concurrency ?? []).filter((r) => r.scenario_id === verdict.node_id);
+  const skip = run?.verification?.concurrency_skips?.find((s) => s.scenario_id === verdict.node_id);
   return (
     <div className="space-y-4">
       <EvidencePanel verdict={verdict} upgrade={upgrade} />
@@ -40,7 +44,14 @@ function Details({ verdict, run }: { verdict: Verdict; run?: RunDetail }) {
           ))}
         </ul>
       </div>
-      {verdict.status !== "SAFE" &&
+      {concurrent &&
+        (verified ? (
+          <ConcurrencyEvidence results={probes} skip={skip} />
+        ) : (
+          <p className="text-xs text-muted">Run verification to race the generated helpers against MongoDB.</p>
+        ))}
+      {!concurrent &&
+        verdict.status !== "SAFE" &&
         (verified ? (
           <CounterexampleView
             example={example}
@@ -71,13 +82,18 @@ export function VerdictsTab({
   const [sort, setSort] = useState<SortKey>("status");
   const [desc, setDesc] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
+  const [scope, setScope] = useState<"guarantees" | "concurrency">("guarantees");
   const upgrades = run?.verification?.evidence_upgrades;
+  const all = useMemo(
+    () => (scope === "guarantees" ? result.verdicts : (result.concurrency_verdicts ?? [])),
+    [scope, result.verdicts, result.concurrency_verdicts],
+  );
 
   const levelOf = (v: Verdict) => effectiveLevel(v, upgrades?.find((u) => u.verdict_id === v.node_id));
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = result.verdicts.filter(
+    const filtered = all.filter(
       (v) =>
         (filter === "ALL" || v.status === filter) &&
         (evidence === "ALL" ||
@@ -94,9 +110,10 @@ export function VerdictsTab({
           : String(a[sort]).localeCompare(String(b[sort])),
     );
     return desc ? sorted.reverse() : sorted;
-  }, [result.verdicts, filter, evidence, query, sort, desc, upgrades]);
+  }, [all, filter, evidence, query, sort, desc, upgrades]);
 
-  if (result.verdicts.length === 0) return <EmptyState title="No verdicts for this input" />;
+  if (result.verdicts.length === 0 && (result.concurrency_verdicts ?? []).length === 0)
+    return <EmptyState title="No verdicts for this input" />;
 
   const sortBy = (k: SortKey) => {
     if (sort === k) setDesc(!desc);
@@ -109,6 +126,19 @@ export function VerdictsTab({
 
   return (
     <div className="space-y-3 p-4">
+      <Tabs
+        variant="pill"
+        label="Verdict scope"
+        value={scope}
+        onChange={(v) => {
+          setScope(v);
+          setOpen(null);
+        }}
+        tabs={[
+          { id: "guarantees", label: `Guarantees (${result.verdicts.length})` },
+          { id: "concurrency", label: `Concurrency (${(result.concurrency_verdicts ?? []).length})` },
+        ]}
+      />
       <div className="flex flex-wrap items-center gap-3 text-sm">
         <label htmlFor="verdict-filter" className="text-muted">
           Filter
@@ -144,7 +174,7 @@ export function VerdictsTab({
           className="h-8 min-w-0 flex-1 rounded border border-line bg-surface px-2 sm:max-w-xs"
         />
         <span className="tabular text-xs text-muted">
-          {rows.length} of {result.verdicts.length}
+          {rows.length} of {all.length}
         </span>
       </div>
 

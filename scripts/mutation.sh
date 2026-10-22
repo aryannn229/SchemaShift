@@ -24,9 +24,9 @@ tar --exclude=.venv --exclude=node_modules --exclude=.git --exclude=__pycache__ 
       pip install -q -e '.[dev]' mutmut 2>&1 | tail -1
       rm -rf mutants
       mutmut run --max-children $CHILDREN || true
-      mutmut results > /tmp/results.txt || true
+      mutmut results --all true > /tmp/results.txt || true
       python /work/scripts/mutation_summary.py /tmp/results.txt /tmp/mutation.json '$CHILDREN'
-      cat /tmp/mutation.json
+      echo '---MUTATION-JSON---'; cat /tmp/mutation.json; echo '---END---'
     " | tee /tmp/mutation.out
-docker cp "$NAME:/tmp/mutation.json" "$ROOT/docs/mutation.json" 2>/dev/null || true
+sed -n '/---MUTATION-JSON---/,/---END---/p' /tmp/mutation.out | sed '1d;$d' > "$ROOT/docs/mutation.json"
 docker rm -f "$NAME" >/dev/null 2>&1 || true

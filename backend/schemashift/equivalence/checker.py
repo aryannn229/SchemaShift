@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 import schemashift.equivalence.rules  # noqa: F401  (registers every rule)
+from schemashift.concurrency.helpers import HelperProfile
 from schemashift.equivalence.context import RuleContext, RuleOptions
 from schemashift.equivalence.registry import get_rule
 from schemashift.ir.nodes import IRProgram
@@ -25,6 +26,14 @@ class EquivalenceReport(FrozenModel):
             if v.node_id == node_id:
                 return v
         raise KeyError(node_id)
+
+
+class ConcurrencyReport(FrozenModel):
+    """Verdicts for the concurrency scenarios (kept apart from the guarantee verdicts)."""
+
+    verdicts: tuple[Verdict, ...] = ()
+    counts: dict[Status, int] = {"SAFE": 0, "CHANGED": 0, "BROKEN": 0}
+    overall: Status = "SAFE"
 
 
 class PlacementChange(FrozenModel):
@@ -85,3 +94,32 @@ def check_both(
         if v.node_id in before and before[v.node_id].status != v.status
     )
     return EquivalenceResult(initial=initial, final=final, changed_by_placement=changes)
+
+
+def check_concurrency(
+    program: IRProgram,
+    graph: SchemaGraph,
+    plan: PlacementPlan | None = None,
+    options: RuleOptions | None = None,
+    helpers: HelperProfile | None = None,
+) -> ConcurrencyReport:
+    """Derive the concurrency scenarios of a schema and evaluate their rules.
+
+    ``helpers`` defaults to the profile of the helpers this installation ships; tests pass others.
+    """
+    from schemashift.concurrency.scenarios import build_scenarios
+
+    ctx = RuleContext(graph=graph, plan=plan or PlacementPlan(), options=options or RuleOptions())
+    if helpers is not None:
+        ctx.helpers = helpers
+    verdicts: list[Verdict] = []
+    for scenario in build_scenarios(graph, program, ctx):
+        spec = get_rule(scenario)
+        if spec is not None:
+            verdicts.append(spec.evaluate(scenario, ctx))
+    counts: dict[Status, int] = {"SAFE": 0, "CHANGED": 0, "BROKEN": 0}
+    for v in verdicts:
+        counts[v.status] += 1
+    return ConcurrencyReport(
+        verdicts=tuple(verdicts), counts=counts, overall=worst([v.status for v in verdicts])
+    )

@@ -119,8 +119,8 @@ def test_every_non_probeable_non_safe_outcome_has_a_documented_gap_reason() -> N
     probeable = {t.__name__ for t in PROBES}
     missing: list[tuple[str, str]] = []
     for spec in all_rules():
-        if spec.node_type.__name__ in probeable:
-            continue
+        if spec.node_type.__name__ in probeable or spec.rule_id.startswith("EQ-CONC-"):
+            continue  # concurrency scenarios are demonstrated by the concurrency probes instead
         for o in spec.outcomes:
             if o.status != "SAFE" and (spec.rule_id, o.key) not in ce.GAP_REASONS:
                 missing.append((spec.rule_id, o.key))

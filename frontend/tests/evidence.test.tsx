@@ -203,3 +203,73 @@ test("with a verified run the stored counterexample is shown and can be replayed
   await waitFor(() => expect(screen.getByText(/seed 9/)).toBeInTheDocument());
   expect(replayCalls).toEqual([["run-1", base.node_id]]);
 });
+
+const conc = {
+  ...base,
+  node_id: "conc:fk_race:fk:o.u->u.id",
+  rule_id: "EQ-CONC-FK",
+  status: "CHANGED",
+  reason: "locked inside transactions",
+  evidence: "CONDITIONAL",
+  evidence_conditions: [{ kind: "replica_set", text: "a replica set", parameters: {} }],
+} as unknown as V;
+
+const resultWithConcurrency = {
+  verdicts: [base],
+  concurrency_verdicts: [conc],
+  concurrency_counts: { SAFE: 0, CHANGED: 1, BROKEN: 0 },
+  concurrency_overall: "CHANGED",
+} as unknown as CompileResponse;
+
+test("the verdict scope switch shows the concurrency scenarios", () => {
+  wrap(<VerdictsTab result={resultWithConcurrency} />);
+  expect(screen.getByText("no native cascade")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("tab", { name: "Concurrency (1)" }));
+  expect(screen.getByText("locked inside transactions")).toBeInTheDocument();
+  expect(screen.queryByText("no native cascade")).toBeNull();
+  fireEvent.click(screen.getByText("locked inside transactions"));
+  expect(screen.getByText(/Run verification to race the generated helpers/)).toBeInTheDocument();
+});
+
+test("probe results are shown for a concurrency verdict of a verified run", () => {
+  const run = {
+    id: "run-1",
+    status: "done",
+    verification: {
+      counterexamples: [],
+      counterexample_gaps: [],
+      evidence_upgrades: [],
+      concurrency: [
+        { scenario_id: conc.node_id, kind: "fk_race", strategy: "generated", threads: 2, iterations: 30, violations: 0, violation: "orphan child", seed: 3, duration_ms: 900, detail: "insert vs delete" },
+        { scenario_id: conc.node_id, kind: "fk_race", strategy: "unguarded", threads: 2, iterations: 30, violations: 30, violation: "orphan child", seed: 3, duration_ms: 700, detail: "insert vs delete" },
+      ],
+      concurrency_skips: [],
+    },
+  } as unknown as RunDetail;
+  wrap(<VerdictsTab result={resultWithConcurrency} run={run} />);
+  fireEvent.click(screen.getByRole("tab", { name: "Concurrency (1)" }));
+  fireEvent.click(screen.getByText("locked inside transactions"));
+  const panel = screen.getByTestId("concurrency-evidence");
+  expect(panel).toHaveTextContent("0 of 30");
+  expect(panel).toHaveTextContent("30 of 30");
+  expect(panel).toHaveTextContent("orphan child");
+  expect(panel).toHaveTextContent("test evidence, not proof");
+});
+
+test("a skipped scenario shows why", () => {
+  const run = {
+    id: "r",
+    status: "done",
+    verification: {
+      counterexamples: [],
+      counterexample_gaps: [],
+      evidence_upgrades: [],
+      concurrency: [],
+      concurrency_skips: [{ scenario_id: conc.node_id, reason: "a key column is not an integer or text" }],
+    },
+  } as unknown as RunDetail;
+  wrap(<VerdictsTab result={resultWithConcurrency} run={run} />);
+  fireEvent.click(screen.getByRole("tab", { name: "Concurrency (1)" }));
+  fireEvent.click(screen.getByText("locked inside transactions"));
+  expect(screen.getByText(/a key column is not an integer or text/)).toBeInTheDocument();
+});

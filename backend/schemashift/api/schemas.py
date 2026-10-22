@@ -76,6 +76,11 @@ class CompileResponse(BaseModel):
     ir_text: str
     ir_node_count: int
     verdicts: list[Verdict]
+    concurrency_verdicts: list[
+        Verdict
+    ] = []  # concurrency scenarios (kept apart from the guarantees)
+    concurrency_counts: dict[str, int] = {}
+    concurrency_overall: Literal["SAFE", "CHANGED", "BROKEN"] = "SAFE"
     initial_counts: dict[str, int]
     changed_by_placement: list[PlacementChange]
     plan: list[PlacementDecision]

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from schemashift.concurrency.helpers import HelperProfile, shipped_profile
 from schemashift.models.base import FrozenModel
 from schemashift.models.placement import PlacementPlan, junction_key
 from schemashift.semantic.graph import Relationship, SchemaGraph
@@ -22,6 +23,7 @@ class RuleContext:
     graph: SchemaGraph
     plan: PlacementPlan = field(default_factory=PlacementPlan)
     options: RuleOptions = field(default_factory=RuleOptions)
+    helpers: HelperProfile = field(default_factory=shipped_profile)  # what the shipped helpers do
 
     # ---- placement helpers ---------------------------------------------------------
     def folded_host(self, junction: str) -> str | None:

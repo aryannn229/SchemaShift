@@ -1,6 +1,6 @@
 {
   "date": "2026-10-22",
-  "commit": "cdd1a51",
+  "commit": "5312da9",
   "equivalence": {
     "corpus_schemas": 32,
     "labeled_nodes": 883,
@@ -1008,5 +1008,18 @@
       "verified": 31,
       "rate": 1.0
     }
+  },
+  "mutation": {
+    "score": 0.8914919852034525,
+    "killed": 1446,
+    "total": 1622,
+    "survived": 163,
+    "timeout": 13,
+    "paths": [
+      "schemashift/equivalence/",
+      "schemashift/optimizer/"
+    ],
+    "command": "scripts/mutation.sh 8",
+    "date": "2026-10-22"
   }
 }

@@ -200,6 +200,13 @@ def insert_comments(db, values, session=None):
     return insert_row(db, PLAN, 'comments', values, session)
 
 
+def insert_comments_tx(client, db, values):
+    """insert_comments in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'comments', values, session)
+    )
+
+
 def delete_comments(client, db, **match):
     # Mitigates:
     #   cascade_delete:comments.parent_comment_id->comments.id (BROKEN): EQ-CASCADE-DEL
@@ -228,6 +235,13 @@ def insert_post_tags(db, values, session=None):
     return insert_row(db, PLAN, 'post_tags', values, session)
 
 
+def insert_post_tags_tx(client, db, values):
+    """insert_post_tags in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'post_tags', values, session)
+    )
+
+
 def delete_post_tags(client, db, **match):
     """DELETE FROM post_tags WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -242,6 +256,13 @@ def insert_posts(db, values, session=None):
     #   pk:posts.id (CHANGED): EQ-ENTITY-UNIQ
     """INSERT INTO posts: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'posts', values, session)
+
+
+def insert_posts_tx(client, db, values):
+    """insert_posts in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'posts', values, session)
+    )
 
 
 def delete_posts(client, db, **match):
@@ -271,6 +292,13 @@ def insert_tags(db, values, session=None):
     return insert_row(db, PLAN, 'tags', values, session)
 
 
+def insert_tags_tx(client, db, values):
+    """insert_tags in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'tags', values, session)
+    )
+
+
 def delete_tags(client, db, **match):
     """DELETE FROM tags WHERE <match> honouring ON DELETE (one transaction)."""
     return run_in_transaction(
@@ -294,6 +322,13 @@ def insert_users(db, values, session=None):
     #   default:users.created_at (CHANGED): EQ-DEFAULT
     """INSERT INTO users: defaults, identity ids, FK and uniqueness checks."""
     return insert_row(db, PLAN, 'users', values, session)
+
+
+def insert_users_tx(client, db, values):
+    """insert_users in one retried transaction: use this under concurrent writers."""
+    return run_in_transaction(
+        client, lambda session: insert_row(db, PLAN, 'users', values, session)
+    )
 
 
 def delete_users(client, db, **match):

@@ -5,9 +5,9 @@
 | 0 current-state note | done |
 | F frontend redesign | done (tag phase-F-done) |
 | 14 fuzz + differential/metamorphic | done (tag phase-14-done) |
-| 15 independent corpus + honest metrics | done except mutation score (see phase-15.md) |
+| 15 independent corpus + honest metrics | done (tag phase-15-done); independent labels need a second person |
 | 16 evidence levels + counterexamples | done (tag phase-16-done) |
-| 17 concurrency analyzer | pending |
+| 17 concurrency analyzer | done (tag phase-17-done) |
 | 18 workload-aware optimizer | pending |
 | 19 pipeline optimizer | pending |
 | 20 benchmark lab | pending |

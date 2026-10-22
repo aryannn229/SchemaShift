@@ -29,7 +29,9 @@
   Starter contain functions, triggers, views, RLS or partitioning that SchemaShift rejects, so they are reported, not verified.
 - Optimizer vs mock advisor: 119/165 agree, kappa 0.42 (the mock is a rule of thumb, not an AI signal). Real model: not measured
   (no API key).
-- Mutation score: see METRICS.md (filled when `scripts/mutation.sh` completes; blocked marker below if it did not).
+- Mutation score (mutmut 3, `equivalence/` + `optimizer/`, 1,622 mutants): **83.3%** on the first run, **89.1%** (1,446 killed, 163 survived, 13 timed out) after adding
+  characterization tests (exact reasons, scores, type map, predicate analysis, RULES.md equality). About 60 of the remaining survivors are
+  import-time code (rule definitions) that mutmut's fork model cannot re-evaluate per mutant.
 
 ## Results (commands run 2026-10-22)
 - `schemashift corpus report --verify --write-docs` and `schemashift evaluate --verify --write-docs` (bundled samples 21/21).

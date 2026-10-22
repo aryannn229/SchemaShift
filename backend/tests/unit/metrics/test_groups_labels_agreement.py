@@ -327,6 +327,7 @@ def test_compute_keeps_previous_sections_it_cannot_recompute(
         encoding="utf-8",
     )
     monkeypatch.setattr(report, "JSON_PATH", prev)
+    monkeypatch.setattr(report, "DOCS", tmp_path)  # no fresh docs/mutation.json here
     data = report.compute()
     assert data["mutation"] == {"score": 0.5}
     assert data["agreement"]["real"] == {"rate": 0.9}
@@ -355,3 +356,26 @@ def test_cli_corpus_report_prints_both_groups() -> None:
     assert res.exit_code == 0
     assert "self_labeled:" in res.output and "independent: no labeled schemas yet" in res.output
     assert "optimizer vs mock advisor" in res.output and "not measured" in res.output
+
+
+def test_a_fresh_mutation_run_is_picked_up(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "mutation.json").write_text(
+        json.dumps(
+            {
+                "score": 0.9,
+                "killed": 9,
+                "total": 10,
+                "survived": 1,
+                "no_tests": 0,
+                "timeout": 0,
+                "paths": ["equivalence/"],
+                "command": "scripts/mutation.sh",
+                "date": "2026-01-01",
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(report, "DOCS", tmp_path)
+    got = report.load_mutation()
+    assert got is not None and got["score"] == 0.9 and got["survived"] == 1
+    assert report.load_mutation(tmp_path / "missing.json") is None

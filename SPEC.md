@@ -654,3 +654,11 @@ structured conditions behind it, the rule/outcome that decided it and the inputs
 counterexamples (setup data, operation, behaviour on each database, resulting difference) or a documented reason, evidence
 upgrades to TESTED, and a replay endpoint. The Verdicts tab shows the evidence badge, conditions, counterexample, side-by-side
 outcome and a replay button. See `docs/VERIFICATION.md`.
+
+## 20. Phase 17: Transaction and concurrency analyzer
+
+Concurrency scenarios (FK race, duplicate insert, array writes, multi-collection transactions, counters) are derived from the
+guarantee IR and the placement plan and judged by `EQ-CONC-*` rules in the registry, against a static profile of the shipped
+helpers. The helpers take lock documents inside transactions and fold array uniqueness into one conditional update. A
+verification run races them against the replica set (generated vs unguarded) and reports violations with seeds. See
+`docs/CONCURRENCY.md`.

@@ -147,6 +147,13 @@ def generate_helpers(
             f"    return insert_row(db, PLAN, {table!r}, values, session)\n"
         )
         wrappers.append(
+            f"def insert_{n}_tx(client, db, values):\n"
+            f'    """insert_{n} in one retried transaction: use this under concurrent writers."""\n'
+            f"    return run_in_transaction(\n"
+            f"        client, lambda session: insert_row(db, PLAN, {table!r}, values, session)\n"
+            f"    )\n"
+        )
+        wrappers.append(
             f"def delete_{n}(client, db, **match):\n"
             f"{mitigates(f'delete_{n}')}"
             f'    """DELETE FROM {table} WHERE <match> honouring ON DELETE (one transaction)."""\n'

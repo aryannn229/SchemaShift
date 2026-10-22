@@ -291,3 +291,16 @@ def test_verified_runs_and_replays_have_their_own_rate_limit(tmp_path: Path) -> 
         assert res.status_code == 429
         # plain (unverified) runs and compiles are unaffected
         assert c.post("/api/v1/runs", json={"schema_sql": SCHEMA}).status_code == 202
+
+
+def test_compile_response_carries_concurrency_verdicts(client: TestClient) -> None:
+    body = client.post(
+        "/api/v1/compile", json={"schema_sql": SCHEMA, "queries_sql": QUERIES}
+    ).json()
+    verdicts = body["concurrency_verdicts"]
+    assert verdicts and all(v["rule_id"].startswith("EQ-CONC-") for v in verdicts)
+    assert {"SAFE", "CHANGED", "BROKEN"} >= set(body["concurrency_counts"])
+    assert body["concurrency_overall"] in {"SAFE", "CHANGED", "BROKEN"}
+    # kept apart from the guarantee verdicts and counts
+    assert not any(v["rule_id"].startswith("EQ-CONC-") for v in body["verdicts"])
+    assert sum(body["counts"].values()) == len(body["verdicts"])

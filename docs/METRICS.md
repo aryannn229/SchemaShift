@@ -3,7 +3,7 @@
 Computed by `schemashift corpus report` (see `docs/EVALUATION.md` for methodology).
 
 - **Date:** 2026-10-22
-- **Commit:** cdd1a51
+- **Commit:** 5312da9
 
 The two label groups are scored **separately and never merged into one headline number**: the
 self-labeled corpus is written by the author of the rules, so agreement shows internal consistency,
@@ -106,7 +106,7 @@ Disagreements (mock), optimizer vs advisor, both rationales:
 
 ## Mutation testing
 
-Not measured yet (see docs/progress/phase-15.md for the command).
+Mutation score 89.1%: 1446 of 1622 mutants killed (163 survived, 13 timed out) in schemashift/equivalence/, schemashift/optimizer/. Command: `scripts/mutation.sh 8`.
 
 ## Failure cases
 

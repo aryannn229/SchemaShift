@@ -314,7 +314,13 @@ def test_branch(case: Case) -> None:
 
 def test_every_registered_outcome_is_covered() -> None:
     covered = {(c.rule_id, c.outcome) for c in CASES}
-    declared = {(spec.rule_id, o.key) for spec in all_rules() for o in spec.outcomes}
+    # EQ-CONC-* rules judge concurrency scenarios, not IR nodes: see test_concurrency_rules.py
+    declared = {
+        (spec.rule_id, o.key)
+        for spec in all_rules()
+        if not spec.rule_id.startswith("EQ-CONC-")
+        for o in spec.outcomes
+    }
     assert declared - covered == set(), f"untested outcomes: {sorted(declared - covered)}"
     assert covered - declared == set()
 
@@ -342,7 +348,9 @@ def test_every_rule_covers_every_ir_guarantee_node_type() -> None:
         nodes.JoinSemantics,
         nodes.AggregateSemantics,
     }
-    assert {s.node_type for s in all_rules()} == guarantee_types
+    assert {
+        s.node_type for s in all_rules() if not s.rule_id.startswith("EQ-CONC-")
+    } == guarantee_types
 
 
 def test_status_matches_declared_outcome() -> None:

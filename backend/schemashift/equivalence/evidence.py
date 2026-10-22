@@ -46,6 +46,14 @@ TRANSACTIONS = _c(
     "MongoDB runs as a replica set (or Atlas) so multi-document transactions are available, and the "
     "application retries TransientTransactionError and UnknownTransactionCommitResult",
 )
+IN_TRANSACTION = _c(
+    "helpers_in_transaction",
+    "the helpers are called inside run_in_transaction (they take lock documents through its session)",
+)
+IDEMPOTENT_CALLBACK = _c(
+    "idempotent_callback",
+    "the transaction callback has no side effects besides database writes (it can run more than once)",
+)
 IMMUTABLE_KEYS = _c(
     "immutable_keys", "the application never updates the parent key (the _id is immutable)"
 )
@@ -180,6 +188,51 @@ EVIDENCE: dict[tuple[str, str], EvidenceSpec] = {
     ),
     ("EQ-CROSS-UNIQ", "SPLIT"): EvidenceSpec(
         "PROVEN", "no MongoDB index or constraint can span two collections"
+    ),
+    # ----------------------------------------------------------------------------- concurrency
+    ("EQ-CONC-FK", "EMBEDDED"): EvidenceSpec(
+        "PROVEN",
+        "child and parent are one document and MongoDB applies single-document writes atomically",
+    ),
+    ("EQ-CONC-FK", "LOCKED"): EvidenceSpec(
+        "CONDITIONAL", conditions=(TRANSACTIONS, IN_TRANSACTION)
+    ),
+    ("EQ-CONC-FK", "UNLOCKED"): EvidenceSpec(
+        "PROVEN",
+        "snapshot isolation only detects conflicts between writes to the same document; a read of the parent "
+        "and a delete of the parent do not conflict (write skew)",
+    ),
+    ("EQ-CONC-FK", "NO_TRANSACTION"): EvidenceSpec(
+        "PROVEN",
+        "the existence check and the insert are separate operations that other writers can interleave",
+    ),
+    ("EQ-CONC-DUP", "INDEX"): EvidenceSpec("CONDITIONAL", conditions=(INDEXES,)),
+    ("EQ-CONC-DUP", "ARRAY_ATOMIC"): EvidenceSpec("CONDITIONAL", conditions=(HELPERS,)),
+    ("EQ-CONC-DUP", "ARRAY_TXN"): EvidenceSpec(
+        "CONDITIONAL", conditions=(TRANSACTIONS, IN_TRANSACTION)
+    ),
+    ("EQ-CONC-DUP", "ARRAY_RACE"): EvidenceSpec(
+        "PROVEN", "a check followed by a push are two operations; both writers can pass the check"
+    ),
+    ("EQ-CONC-ARRAY", "ATOMIC"): EvidenceSpec(
+        "PROVEN", "MongoDB applies each single-document update atomically and in isolation"
+    ),
+    ("EQ-CONC-TXN", "SINGLE_DOCUMENT"): EvidenceSpec(
+        "PROVEN", "MongoDB guarantees that a write to a single document is atomic"
+    ),
+    ("EQ-CONC-TXN", "RETRIED"): EvidenceSpec(
+        "CONDITIONAL", conditions=(TRANSACTIONS, IDEMPOTENT_CALLBACK)
+    ),
+    ("EQ-CONC-TXN", "UNPROTECTED"): EvidenceSpec(
+        "PROVEN",
+        "without multi-document transactions MongoDB cannot make writes to several documents atomic",
+    ),
+    ("EQ-CONC-COUNTER", "OBJECTID"): EvidenceSpec(
+        "PROVEN", "drivers generate ObjectIds that are unique across clients without coordination"
+    ),
+    ("EQ-CONC-COUNTER", "COUNTER"): EvidenceSpec("CONDITIONAL", conditions=(HELPERS,)),
+    ("EQ-CONC-COUNTER", "COUNTER_RACE"): EvidenceSpec(
+        "PROVEN", "a read followed by a write of the counter are two operations that can interleave"
     ),
 }
 

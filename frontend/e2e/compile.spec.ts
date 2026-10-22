@@ -60,3 +60,22 @@ test("a verified run shows evidence, a minimal counterexample and can replay it"
   });
   await expect(example).toContainText("Resulting difference");
 });
+
+test("a verified run races the helpers and shows the concurrency evidence", async ({ page }) => {
+  test.skip(!process.env.E2E_VERIFY, "needs a backend with sandbox databases");
+  await page.goto("/");
+  await page.getByLabel("Load sample").selectOption("banking");
+  await page.getByRole("button", { name: "Run verification" }).click();
+  await page.getByRole("tab", { name: "Verification" }).click();
+  await expect(page.getByText("MATCH").first()).toBeVisible({ timeout: 45_000 });
+  await page.getByRole("tab", { name: "Verdicts" }).click();
+  await page.getByRole("tab", { name: /^Concurrency \(/ }).click();
+  await page.getByLabel("Search verdicts").fill("conc:fk_race:fk:transactions");
+  await page.getByRole("button", { name: /Expand trace for conc:fk_race:fk:transactions/ }).click();
+  const evidence = page.getByTestId("concurrency-evidence");
+  await expect(evidence).toBeVisible({ timeout: 45_000 });
+  await expect(evidence).toContainText("generated");
+  await expect(evidence).toContainText("unguarded");
+  await expect(evidence).toContainText("orphan child");
+  await expect(evidence).toContainText("test evidence, not proof");
+});

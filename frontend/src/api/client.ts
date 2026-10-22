@@ -16,6 +16,8 @@ export type Counterexample = Schemas["Counterexample"];
 export type CounterexampleGap = Schemas["CounterexampleGap"];
 export type CounterexampleReplay = Schemas["CounterexampleReplay"];
 export type EvidenceUpgrade = Schemas["EvidenceUpgrade"];
+export type ConcurrencyResult = Schemas["ConcurrencyResult"];
+export type ConcurrencySkip = Schemas["ConcurrencySkip"];
 export type Status = "SAFE" | "CHANGED" | "BROKEN";
 
 export class ApiError extends Error {}
