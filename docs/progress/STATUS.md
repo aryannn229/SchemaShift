@@ -3,7 +3,7 @@
 | Item | State |
 |---|---|
 | 0 current-state note | done |
-| F frontend redesign | in progress |
+| F frontend redesign | done (tag phase-F-done) |
 | 14 fuzz + differential/metamorphic | pending |
 | 15 independent corpus + honest metrics | pending |
 | 16 evidence levels + counterexamples | pending |

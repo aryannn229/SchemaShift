@@ -4,13 +4,20 @@ import type { CompileResponse, RunDetail, Verdict } from "../api/client";
 import { CodeTab } from "./CodeTab";
 import { IRTab } from "./IRTab";
 import { RelationshipsTab } from "./RelationshipsTab";
-import { Empty, ErrorBox, Loading } from "./States";
 import { SummaryTab } from "./SummaryTab";
+import { EmptyState, ErrorState, SkeletonBlock, Tabs } from "./ui";
 import { VerdictsTab } from "./VerdictsTab";
 import { VerificationTab } from "./VerificationTab";
 
-const TABS = ["Summary", "Verdicts", "Relationships", "IR", "Generated Code", "Verification"] as const;
-type Tab = (typeof TABS)[number];
+const TABS = [
+  { id: "Summary", label: "Summary" },
+  { id: "Verdicts", label: "Verdicts" },
+  { id: "Relationships", label: "Relationships" },
+  { id: "IR", label: "IR" },
+  { id: "Generated Code", label: "Generated Code" },
+  { id: "Verification", label: "Verification" },
+] as const;
+type Tab = (typeof TABS)[number]["id"];
 
 export function ResultTabs({
   result,
@@ -33,11 +40,16 @@ export function ResultTabs({
 
   let body: React.ReactNode;
   if (tab === "Verification")
-    body = verifyError && !run ? <ErrorBox message={verifyError} /> : <VerificationTab run={run} />;
-  else if (loading) body = <Loading />;
-  else if (error) body = <ErrorBox message={error} />;
-  else if (!result) body = <Empty>Compile some SQL to see results.</Empty>;
-  else if (tab === "Summary") body = <SummaryTab result={result} />;
+    body = verifyError && !run ? <ErrorState message={verifyError} /> : <VerificationTab run={run} />;
+  else if (loading) body = <SkeletonBlock rows={6} label="Compiling" />;
+  else if (error) body = <ErrorState message={error} />;
+  else if (!result)
+    body = (
+      <EmptyState title="No results yet">
+        Compile some SQL to see results. Load a sample from the editor toolbar to start.
+      </EmptyState>
+    );
+  else if (tab === "Summary") body = <SummaryTab result={result} run={run} />;
   else if (tab === "Verdicts") body = <VerdictsTab result={result} onSelect={onSelectVerdict} />;
   else if (tab === "Relationships")
     body = <RelationshipsTab result={result} onOverride={onOverride} />;
@@ -46,20 +58,8 @@ export function ResultTabs({
 
   return (
     <div className="flex h-full min-h-[24rem] flex-col">
-      <div role="tablist" className="flex flex-wrap border-b dark:border-slate-700">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            className={`px-3 py-2 text-sm ${tab === t ? "border-b-2 border-indigo-600 font-semibold" : "text-slate-500"}`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-      <div role="tabpanel" className="flex-1 overflow-auto">
+      <Tabs tabs={TABS} value={tab} onChange={setTab} label="Result sections" />
+      <div role="tabpanel" tabIndex={0} aria-label="Result details" className="min-h-0 flex-1 overflow-auto">
         {body}
       </div>
     </div>

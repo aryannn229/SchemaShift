@@ -4,6 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SchemaShift</title>
+    <meta
+      name="description"
+      content="SchemaShift compiles a PostgreSQL schema to MongoDB and reports which guarantees survive the migration."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="SchemaShift" />
+    <meta property="og:title" content="SchemaShift: SQL to MongoDB migration compiler" />
+    <meta
+      property="og:description"
+      content="See which SQL guarantees (keys, cascades, uniqueness, types, transactions) survive a move to MongoDB, with evidence."
+    />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      // Apply the stored theme before first paint to avoid a flash.
+      try {
+        var p = localStorage.getItem("schemashift-theme");
+        var d = p ? p === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.dataset.theme = d ? "dark" : "light";
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

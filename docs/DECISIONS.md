@@ -61,3 +61,10 @@
 | Frontend zip download | Built client-side with JSZip for stateless compiles; server zip for stored runs | Compile stores nothing, so there is no run to export. |
 | Metrics sections | Result-set and AI numbers persist in metrics.json until recomputed | They need live databases / an API key that CI and most dev machines lack. |
 | Docker context | Repository root | The image bundles samples/ and docs/metrics.json for /samples and /metrics. |
+| 2026-10-22 | Design tokens are RGB-triplet CSS variables mapped into Tailwind colours; dark theme via `data-theme="dark"` | Tailwind alpha modifiers work with variables, and one token set drives both themes. |
+| 2026-10-22 | Fonts bundled with `@fontsource-variable` (Inter, JetBrains Mono), not a CDN | No third-party request at page load; works offline. |
+| 2026-10-22 | `react-resizable-panels` for the split view; below 1024px the panels stack | Maintained library with keyboard-accessible separators and collapse support. [AUTONOMOUS — REVIEW] |
+| 2026-10-22 | Monaco uses custom `schemashift-light/dark` themes | The stock themes' SQL string/operator colours fail WCAG AA (axe found 3.6:1 and 4.2:1); the custom themes are AA. |
+| 2026-10-22 | Visual snapshot tests run only with `E2E_VISUAL=1`, one snapshot set for all OSes, 2% pixel tolerance, Monaco masked | Font rasterisation differs between Windows and Linux; run them locally and refresh with `--update-snapshots=all`. [AUTONOMOUS — REVIEW] |
+| 2026-10-22 | The home toolbar button "Compile & Verify" is renamed "Run verification" | The spec for Phase F names it that. SPEC.md updated. |
+| 2026-10-22 | No risk-score card or evidence badges are wired yet; the `EvidenceBadge`/UNVERIFIED components exist | The backend produces neither until Phases 16 and 24; nothing is faked. |

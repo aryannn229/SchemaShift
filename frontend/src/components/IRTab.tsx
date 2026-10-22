@@ -1,11 +1,11 @@
 import type { CompileResponse } from "../api/client";
-import { Empty } from "./States";
+import { CodeBlock, EmptyState } from "./ui";
 
 export function IRTab({ result }: { result: CompileResponse }) {
-  if (!result.ir_text) return <Empty>No IR produced.</Empty>;
+  if (!result.ir_text) return <EmptyState title="No IR produced" />;
   return (
-    <pre className="overflow-auto p-4 font-mono text-xs" data-testid="ir-text">
-      {result.ir_text}
-    </pre>
+    <div className="p-4">
+      <CodeBlock code={result.ir_text} title={`${result.ir_node_count} IR nodes`} testId="ir-text" maxHeight="none" />
+    </div>
   );
 }

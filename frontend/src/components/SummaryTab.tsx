@@ -1,44 +1,90 @@
-import type { CompileResponse } from "../api/client";
-import { Badge } from "./Badge";
+import { AlertCircle, AlertTriangle, Info } from "lucide-react";
+
+import type { CompileResponse, RunDetail } from "../api/client";
+import { Card, CardHeader, EmptyState, StatCard, VerdictBadge } from "./ui";
 
 const BANNER: Record<string, string> = {
-  SAFE: "border-green-400 bg-green-50 dark:bg-green-950",
-  CHANGED: "border-amber-400 bg-amber-50 dark:bg-amber-950",
-  BROKEN: "border-red-400 bg-red-50 dark:bg-red-950",
+  SAFE: "border-safe/40 bg-safe-soft text-safe",
+  CHANGED: "border-changed/40 bg-changed-soft text-changed",
+  BROKEN: "border-broken/40 bg-broken-soft text-broken",
 };
 
-export function SummaryTab({ result }: { result: CompileResponse }) {
+const SEVERITY_ICON = { error: AlertCircle, warning: AlertTriangle, info: Info } as const;
+
+export function SummaryTab({ result, run }: { result: CompileResponse; run?: RunDetail }) {
+  const total = Object.values(result.counts).reduce((a, b) => a + b, 0);
+  const queries = run?.verification?.queries ?? [];
+  const matched = queries.filter((q) => q.status === "MATCH").length;
+  const findings = result.verdicts
+    .filter((v) => v.status !== "SAFE")
+    .sort((a, b) => (a.status === b.status ? 0 : a.status === "BROKEN" ? -1 : 1))
+    .slice(0, 5);
+
   return (
     <div className="space-y-4 p-4">
-      <div className={`rounded border-l-4 p-4 ${BANNER[result.overall_verdict]}`}>
-        <div className="text-sm uppercase tracking-wide text-slate-500">Overall verdict</div>
-        <div className="text-2xl font-bold" data-testid="overall-verdict">
+      <div className={`rounded-lg border px-4 py-3 ${BANNER[result.overall_verdict]}`}>
+        <div className="text-xs font-medium uppercase tracking-wide opacity-80">Overall verdict</div>
+        <div className="text-2xl font-semibold" data-testid="overall-verdict">
           {result.overall_verdict}
         </div>
       </div>
-      <div className="flex gap-3">
-        {(["SAFE", "CHANGED", "BROKEN"] as const).map((s) => (
-          <div key={s} className="flex-1 rounded border p-3 text-center dark:border-slate-700">
-            <div className="text-2xl font-semibold">{result.counts[s] ?? 0}</div>
-            <Badge value={s} />
-          </div>
-        ))}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Guarantees analysed" value={total} />
+        <StatCard label="Safe" value={result.counts.SAFE ?? 0} tone="safe" />
+        <StatCard label="Changed" value={result.counts.CHANGED ?? 0} tone="changed" />
+        <StatCard label="Broken" value={result.counts.BROKEN ?? 0} tone="broken" />
       </div>
-      <section>
-        <h3 className="mb-1 font-semibold">Diagnostics</h3>
-        {result.diagnostics.length === 0 ? (
-          <p className="text-sm text-slate-500">No diagnostics.</p>
+      {queries.length > 0 && (
+        <StatCard
+          label="Queries matched"
+          value={`${matched} / ${queries.length}`}
+          hint="PostgreSQL vs MongoDB result sets"
+          tone={matched === queries.length ? "safe" : "broken"}
+        />
+      )}
+
+      <Card>
+        <CardHeader title="Top findings" />
+        {findings.length === 0 ? (
+          <EmptyState>No CHANGED or BROKEN guarantees.</EmptyState>
         ) : (
-          <ul className="space-y-1 text-sm">
-            {result.diagnostics.map((d, i) => (
-              <li key={i}>
-                <span className="font-mono text-xs">{d.severity}</span> <b>{d.code}</b> {d.message}
-                {d.location ? ` (line ${d.location.line_start})` : ""}
+          <ul className="divide-y divide-line text-sm">
+            {findings.map((v) => (
+              <li key={v.node_id} className="flex items-start gap-3 px-4 py-2">
+                <VerdictBadge status={v.status} />
+                <div className="min-w-0">
+                  <div className="truncate font-mono text-xs text-muted">{v.node_id}</div>
+                  <div>{v.reason}</div>
+                </div>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Card>
+
+      <Card>
+        <CardHeader title="Diagnostics" />
+        {result.diagnostics.length === 0 ? (
+          <p className="px-4 py-3 text-sm text-muted">No diagnostics.</p>
+        ) : (
+          <ul className="divide-y divide-line text-sm">
+            {result.diagnostics.map((d, i) => {
+              const Icon = SEVERITY_ICON[d.severity as keyof typeof SEVERITY_ICON] ?? Info;
+              return (
+                <li key={i} className="flex items-start gap-2 px-4 py-2">
+                  <Icon size={14} className="mt-1 shrink-0 text-muted" aria-hidden />
+                  <span>
+                    <span className="sr-only">{d.severity}: </span>
+                    <b className="font-mono text-xs">{d.code}</b> {d.message}
+                    {d.location ? ` (line ${d.location.line_start})` : ""}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
     </div>
   );
 }

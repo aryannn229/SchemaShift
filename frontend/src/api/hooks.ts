@@ -50,3 +50,10 @@ export function useRuns(page: number) {
       ),
   });
 }
+
+export function useMetrics() {
+  return useQuery({
+    queryKey: ["metrics"],
+    queryFn: async () => unwrap(await client.GET("/api/v1/metrics")),
+  });
+}

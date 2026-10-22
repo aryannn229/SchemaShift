@@ -1,5 +1,102 @@
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-.ss-highlight { background: rgba(250, 204, 21, 0.3); }
+/* Design tokens: RGB triplets so Tailwind can apply alpha. Verdict pairs are checked for
+   WCAG AA (>= 4.5:1) by tests/contrast.test.ts. */
+:root {
+  --bg: 255 255 255;
+  --surface: 248 250 252;
+  --raised: 241 245 249;
+  --line: 226 232 240;
+  --fg: 15 23 42;
+  --muted: 71 85 105;
+  --accent: 29 78 216;
+  --accent-fg: 255 255 255;
+  --accent-soft: 219 234 254;
+  --safe: 22 101 52;
+  --safe-soft: 220 252 231;
+  --changed: 146 64 14;
+  --changed-soft: 254 243 199;
+  --broken: 153 27 27;
+  --broken-soft: 254 226 226;
+  --unverified: 71 85 105;
+  --unverified-soft: 241 245 249;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: 11 18 32;
+  --surface: 17 26 43;
+  --raised: 24 35 56;
+  --line: 36 48 70;
+  --fg: 226 232 240;
+  --muted: 148 163 184;
+  --accent: 147 197 253;
+  --accent-fg: 11 18 32;
+  --accent-soft: 30 58 110;
+  --safe: 134 239 172;
+  --safe-soft: 20 48 31;
+  --changed: 252 211 77;
+  --changed-soft: 58 42 10;
+  --broken: 252 165 165;
+  --broken-soft: 63 21 21;
+  --unverified: 203 213 225;
+  --unverified-soft: 30 41 59;
+  color-scheme: dark;
+}
+
+@layer base {
+  html {
+    font-family: "Inter Variable", Inter, system-ui, sans-serif;
+    font-feature-settings: "cv11", "ss01";
+  }
+  body {
+    @apply bg-bg text-fg antialiased;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-bg;
+  }
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+  ::selection {
+    background: rgb(var(--accent) / 0.25);
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.ss-highlight {
+  background: rgb(var(--changed) / 0.2);
+}
+
+/* react-flow adopts the theme */
+.react-flow__node-default {
+  background: rgb(var(--surface));
+  color: rgb(var(--fg));
+  border: 1px solid rgb(var(--line));
+  border-radius: 6px;
+  font-size: 12px;
+  padding: 0;
+}
+.react-flow__controls-button {
+  background: rgb(var(--surface));
+  color: rgb(var(--fg));
+  border-bottom: 1px solid rgb(var(--line));
+}
+.react-flow__controls-button svg {
+  fill: currentColor;
+}
+.react-flow__minimap {
+  background: rgb(var(--surface));
+}
+.react-flow__attribution {
+  display: none;
+}

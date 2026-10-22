@@ -15,7 +15,7 @@ test("compile and verify shows MATCH results", async ({ page }) => {
   test.skip(!process.env.E2E_VERIFY, "needs a backend with sandbox databases");
   await page.goto("/");
   await page.getByLabel("Load sample").selectOption("ecommerce");
-  await page.getByRole("button", { name: "Compile & Verify" }).click();
+  await page.getByRole("button", { name: "Run verification" }).click();
   await page.getByRole("tab", { name: "Verification" }).click();
   await expect(page.getByText("MATCH").first()).toBeVisible({ timeout: 45_000 });
 });
@@ -28,6 +28,6 @@ test("demo button loads banking and compiles", async ({ page }) => {
   if (process.env.E2E_VERIFY) {
     await expect(page.getByText("MATCH").first()).toBeVisible({ timeout: 45_000 });
   } else {
-    await expect(page.getByRole("alert")).toContainText("verification is not configured");
+    await expect(page.getByRole("tabpanel").getByRole("alert")).toContainText("verification is not configured");
   }
 });

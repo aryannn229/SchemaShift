@@ -462,7 +462,7 @@ Alembic migrations for all of it. Index `runs.created_at`, `verdicts.run_id`.
 ### Phase 11: Frontend
 
 **Home page layout** (desktop: two columns; mobile: stacked):
-- **Left:** Monaco editor with tabs `Schema | Queries | Seed (optional)`, SQL syntax highlighting, "Load sample" dropdown, options drawer, buttons **Compile** (fast) and **Compile & Verify**.
+- **Left:** Monaco editor with tabs `Schema | Queries | Seed (optional)`, SQL syntax highlighting, "Load sample" dropdown, options drawer, buttons **Compile** (fast) and **Run verification**.
 - **Right:** result tabs:
   1. **Summary:** overall verdict banner, SAFE/CHANGED/BROKEN counts, diagnostics.
   2. **Verdicts:** sortable/filterable table (construct, IR node, status badge green/amber/red, reason, mitigation); clicking a row highlights the source SQL span in the editor via Monaco decorations; expandable "Why?" showing condition traces.
@@ -601,7 +601,7 @@ Prepare `samples/banking/` as the class demo: 5 tables (`customers`, `accounts`,
 - **BROKEN:** `ON DELETE CASCADE` from accounts→transactions where transactions are referenced (unbounded growth forces REFERENCE), and a uniqueness constraint that spans collections
 - A guarantee probe that shows orphaned transactions in Mongo after deleting an account
 
-Add a "Demo" button on the home page that loads this sample and runs Compile & Verify.
+Add a "Demo" button on the home page that loads this sample and runs Compile and Run verification.
 
 ---
 
@@ -614,3 +614,12 @@ Add a "Demo" button on the home page that loads this sample and runs Compile & V
 - `docs/` complete: ARCHITECTURE, IR, RULES (generated), SUPPORTED_SQL, DECISIONS, METRICS, DEPLOYMENT.
 
 **Start now with Phase 0. Before writing code, reply with: (1) your understanding of the project in 5 bullet points, (2) any spec issues or ambiguities you see, (3) your Phase 0 file plan. Then wait for my go-ahead.**
+
+## 16. Phase F: Frontend redesign (design system)
+
+The UI follows one restrained design system (see `docs/progress/phase-F.md`): neutral slate palette with a
+single blue accent; verdict colours SAFE green, CHANGED amber, BROKEN red, UNVERIFIED grey; tokens are CSS
+variables in `frontend/src/index.css` consumed through Tailwind; light/dark/system themes; Inter + JetBrains Mono;
+tabular numerals in tables and metrics. All verdict/foreground pairs must meet WCAG AA (4.5:1) in both themes,
+enforced by `tests/contrast.test.ts`. Reusable components live in `frontend/src/components/ui`; later phases must use
+them and add no ad-hoc styling. Accessibility is enforced by axe checks in Playwright (`e2e/a11y.spec.ts`).

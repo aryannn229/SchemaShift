@@ -1,16 +1,26 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useOutletContext } from "react-router-dom";
+import { PanelLeftClose, PanelLeftOpen, Play, ShieldCheck, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Group, Panel, Separator, type PanelImperativeHandle } from "react-resizable-panels";
 
-import { fetchSample, useCompile, useRun, useSamples, useStartRun } from "../api/hooks";
 import type { CompileRequest, Verdict } from "../api/client";
+import { fetchSample, useCompile, useRun, useSamples, useStartRun } from "../api/hooks";
 import { ResultTabs } from "../components/ResultTabs";
 import { SqlEditor, type Highlight } from "../components/SqlEditor";
+import { Button, Tabs, cx } from "../components/ui";
+import { useMediaQuery } from "../lib/useMediaQuery";
 
 type EditorTab = "schema" | "queries" | "seed";
 
+const EDITOR_TABS = [
+  { id: "schema", label: "Schema" },
+  { id: "queries", label: "Queries" },
+  { id: "seed", label: "Seed (optional)" },
+] as const;
+
 export default function Home() {
-  const { dark } = useOutletContext<{ dark: boolean }>();
   const navigate = useNavigate();
+  const wide = useMediaQuery("(min-width: 1024px)");
   const [files, setFiles] = useState({ schema: "", queries: "", seed: "" });
   const [options, setOptions] = useState<CompileRequest["options"]>({});
   const [optionsText, setOptionsText] = useState("{}");
@@ -18,6 +28,8 @@ export default function Home() {
   const [tab, setTab] = useState<EditorTab>("schema");
   const [highlight, setHighlight] = useState<Highlight | null>(null);
   const [runId, setRunId] = useState<string | undefined>();
+  const [collapsed, setCollapsed] = useState(false);
+  const editorPanel = useRef<PanelImperativeHandle | null>(null);
   const samples = useSamples();
   const compile = useCompile();
   const startRun = useStartRun();
@@ -96,7 +108,10 @@ export default function Home() {
   const override = (relationshipId: string, decision: "EMBED" | "REFERENCE") => {
     const next = {
       ...options,
-      relationship_overrides: { ...(options?.relationship_overrides ?? {}), [relationshipId]: decision },
+      relationship_overrides: {
+        ...(options?.relationship_overrides ?? {}),
+        [relationshipId]: decision,
+      },
     };
     setOptions(next);
     setOptionsText(JSON.stringify(next, null, 2));
@@ -112,29 +127,34 @@ export default function Home() {
     }
   };
 
+  const toggleCollapse = () => {
+    const p = editorPanel.current;
+    if (!p) return;
+    if (p.isCollapsed()) p.expand();
+    else p.collapse();
+  };
+
   const verifyRun = run.data;
   const result = verifyRun?.result ?? compile.data;
+  const empty = !files.schema.trim();
 
-  return (
-    <div className="grid gap-4 p-4 lg:grid-cols-2">
-      <section className="flex min-h-[32rem] flex-col rounded border dark:border-slate-700">
-        <div className="flex flex-wrap items-center gap-2 border-b p-2 dark:border-slate-700">
-          {(["schema", "queries", "seed"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => {
-                setTab(t);
-                setHighlight(null);
-              }}
-              aria-pressed={tab === t}
-              className={`rounded px-2 py-1 text-sm ${tab === t ? "bg-slate-200 font-semibold dark:bg-slate-700" : ""}`}
-            >
-              {t === "seed" ? "Seed (optional)" : t[0].toUpperCase() + t.slice(1)}
-            </button>
-          ))}
+  const editor = (
+    <section aria-label="Editor" className="flex h-full min-h-[28rem] flex-col">
+      <div className="flex flex-wrap items-center gap-2 border-b border-line px-2 py-1">
+        <Tabs
+          tabs={EDITOR_TABS}
+          value={tab}
+          label="Input files"
+          variant="pill"
+          onChange={(t) => {
+            setTab(t);
+            setHighlight(null);
+          }}
+        />
+        <div className="ml-auto flex items-center gap-2">
           <select
             aria-label="Load sample"
-            className="ml-auto rounded border px-1 text-sm dark:border-slate-600 dark:bg-slate-800"
+            className="h-8 rounded border border-line bg-surface px-2 text-sm"
             value=""
             onChange={(e) => void loadSample(e.target.value)}
           >
@@ -145,73 +165,121 @@ export default function Home() {
               </option>
             ))}
           </select>
-          <button
-            onClick={() => void runDemo()}
-            className="rounded bg-emerald-600 px-2 py-1 text-sm font-semibold text-white"
-          >
+          <Button size="sm" onClick={() => void runDemo()} icon={<Sparkles size={13} aria-hidden />}>
             Demo
-          </button>
-          <button
-            onClick={() => setOptionsOpen(!optionsOpen)}
-            className="rounded border px-2 py-1 text-sm dark:border-slate-600"
-          >
+          </Button>
+          <Button size="sm" aria-expanded={optionsOpen} onClick={() => setOptionsOpen(!optionsOpen)}>
             Options
-          </button>
+          </Button>
         </div>
-        {optionsOpen && (
-          <textarea
-            aria-label="Options JSON"
-            className="h-32 border-b p-2 font-mono text-xs dark:border-slate-700 dark:bg-slate-900"
-            value={optionsText}
-            onChange={(e) => applyOptions(e.target.value)}
-          />
-        )}
-        <div className="min-h-[20rem] flex-1">
-          <SqlEditor
-            key={tab}
-            value={files[tab]}
-            onChange={(v) => setFiles((f) => ({ ...f, [tab]: v }))}
-            highlight={highlight}
-            dark={dark}
-          />
-        </div>
-        <div className="flex gap-2 border-t p-2 dark:border-slate-700">
-          <button
-            onClick={doCompile}
-            disabled={!files.schema.trim() || compile.isPending}
-            className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            Compile
-          </button>
-          <button
-            onClick={doVerify}
-            disabled={!files.schema.trim() || startRun.isPending}
-            className="rounded border px-3 py-1.5 text-sm disabled:opacity-50 dark:border-slate-600"
-          >
-            Compile &amp; Verify
-          </button>
-          {verifyRun?.status === "done" && (
-            <button
-              onClick={() => navigate(`/runs/${verifyRun.id}`)}
-              className="ml-auto text-sm text-indigo-600 underline"
-            >
-              Open shareable run
-            </button>
-          )}
-          <span className="ml-auto self-center text-xs text-slate-500">Ctrl/Cmd+Enter compiles</span>
-        </div>
-      </section>
-      <section className="rounded border dark:border-slate-700">
-        <ResultTabs
-          result={result}
-          loading={compile.isPending}
-          error={(compile.error as Error | null)?.message}
-          verifyError={(startRun.error as Error | null)?.message}
-          run={verifyRun}
-          onSelectVerdict={selectVerdict}
-          onOverride={override}
+      </div>
+      {optionsOpen && (
+        <textarea
+          aria-label="Options JSON"
+          spellCheck={false}
+          className="h-32 border-b border-line bg-bg p-2 font-mono text-xs"
+          value={optionsText}
+          onChange={(e) => applyOptions(e.target.value)}
         />
-      </section>
+      )}
+      <div className="min-h-[18rem] flex-1">
+        <SqlEditor
+          key={tab}
+          label={`${tab} editor`}
+          value={files[tab]}
+          onChange={(v) => setFiles((f) => ({ ...f, [tab]: v }))}
+          highlight={highlight}
+        />
+      </div>
+      <div className="flex flex-wrap items-center gap-2 border-t border-line px-2 py-2">
+        <Button
+          variant="primary"
+          onClick={doCompile}
+          disabled={empty || compile.isPending}
+          icon={<Play size={13} aria-hidden />}
+        >
+          Compile
+        </Button>
+        <Button
+          onClick={doVerify}
+          disabled={empty || startRun.isPending}
+          icon={<ShieldCheck size={13} aria-hidden />}
+        >
+          Run verification
+        </Button>
+        {verifyRun?.status === "done" && (
+          <Button variant="ghost" onClick={() => navigate(`/runs/${verifyRun.id}`)}>
+            Open shareable run
+          </Button>
+        )}
+        <span className="ml-auto text-xs text-muted">Ctrl/Cmd+Enter compiles</span>
+      </div>
+    </section>
+  );
+
+  const results = (
+    <section aria-label="Results" className="h-full">
+      <ResultTabs
+        result={result}
+        loading={compile.isPending}
+        error={(compile.error as Error | null)?.message}
+        verifyError={(startRun.error as Error | null)?.message}
+        run={verifyRun}
+        onSelectVerdict={selectVerdict}
+        onOverride={override}
+      />
+    </section>
+  );
+
+  if (!wide)
+    return (
+      <div className="space-y-4 p-4">
+        <div className="rounded-lg border border-line">{editor}</div>
+        <div className="rounded-lg border border-line">{results}</div>
+      </div>
+    );
+
+  return (
+    <div className="mx-auto h-[calc(100vh-7.5rem)] max-w-screen-2xl p-4">
+      <Group orientation="horizontal" className="h-full">
+        <Panel
+          id="editor"
+          defaultSize="45"
+          minSize="25"
+          collapsible
+          collapsedSize="0"
+          panelRef={editorPanel}
+          onResize={(s) => setCollapsed(s.asPercentage < 1)}
+          className="overflow-hidden rounded-lg border border-line"
+        >
+          {editor}
+        </Panel>
+        <Separator
+          aria-label="Resize editor and results"
+          className={cx("group relative mx-1 w-2 shrink-0 cursor-col-resize rounded")}
+        >
+          <div className="mx-auto h-full w-px bg-line group-hover:bg-accent group-data-[separator=active]:bg-accent" />
+        </Separator>
+        <Panel id="results" minSize="30" className="overflow-hidden rounded-lg border border-line">
+          <div className="relative h-full">
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={collapsed ? "Expand editor" : "Collapse editor"}
+              onClick={toggleCollapse}
+              className="absolute right-2 top-1.5 z-10"
+              icon={
+                collapsed ? (
+                  <PanelLeftOpen size={14} aria-hidden />
+                ) : (
+                  <PanelLeftClose size={14} aria-hidden />
+                )
+              }
+            />
+            {results}
+          </div>
+        </Panel>
+      </Group>
     </div>
   );
 }

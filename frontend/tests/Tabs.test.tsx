@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 
 import type { CompileResponse } from "../src/api/client";
-import { Badge } from "../src/components/Badge";
+import { Badge } from "../src/components/ui";
 import { SummaryTab } from "../src/components/SummaryTab";
 import { VerdictsTab } from "../src/components/VerdictsTab";
 
