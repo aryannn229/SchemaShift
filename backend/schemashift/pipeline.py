@@ -43,7 +43,8 @@ class CompileOptions(FrozenModel):
     rows_per_table: int = 50
     relationship_overrides: dict[str, Placement] = {}
     access_hints: dict[str, AccessHint] = {}
-    # Phase 18: per-query frequencies (sidecar workload.yaml / API) and the weight sensitivity analysis
+    # Phase 18: per-query frequencies (sidecar workload.yaml / API) and the weight sensitivity
+    # analysis
     workload: WorkloadSpec = WorkloadSpec()
     sensitivity: bool = True
 

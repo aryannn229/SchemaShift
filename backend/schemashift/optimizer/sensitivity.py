@@ -1,10 +1,15 @@
 """Sensitivity of the embed/reference decisions to the tunable weights.
 
-Every weight in ``weights.yaml`` is perturbed by -20%, -10%, +10% and +20% (one at a time), the plan is
-recomputed from the same features, and any relationship whose decision flips is reported with the weight
-and the change that flipped it. A decision that flips under a 10% change is **fragile**; one that only
-flips at 20% is **watch**; one that never flips is **stable**; one fixed by a hard constraint or a user
-override cannot flip and is **constrained**. The analysis is deterministic: the same schema, workload and
+Every weight in ``weights.yaml`` is perturbed by -20%, -10%, +10% and +20% (one at a time), the
+plan is
+recomputed from the same features, and any relationship whose decision flips is reported with the
+weight
+and the change that flipped it. A decision that flips under a 10% change is **fragile**; one that
+only
+flips at 20% is **watch**; one that never flips is **stable**; one fixed by a hard constraint or a
+user
+override cannot flip and is **constrained**. The analysis is deterministic: the same schema,
+workload and
 weights give the same report.
 """
 

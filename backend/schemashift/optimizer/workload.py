@@ -28,7 +28,8 @@ class AccessHint(FrozenModel):
 class WorkloadSpec(FrozenModel):
     """Per-query relative frequencies (a sidecar ``workload.yaml`` or the API option).
 
-    Keys are query ids (``q1``, ``q2``, ... in file order). A ``-- @freq N`` comment before a statement
+    Keys are query ids (``q1``, ``q2``, ... in file order). A ``-- @freq N`` comment before a
+    statement
     sets the same thing inline; an explicit entry here wins over a comment. Unlisted queries weigh
     ``default_freq`` (1).
     """
@@ -133,7 +134,8 @@ def analyze_workload(
     freq: dict[str, float] | None = None,
     default_freq: float = 1.0,
 ) -> dict[str, WorkloadStats]:
-    """Frequency-weighted access statistics per relationship (weights default to 1 per statement)."""
+    """Frequency-weighted access statistics per relationship (weights default to 1 per
+    statement)."""
     flat = flatten(queries)
     freq = freq or {}
 

@@ -30,7 +30,8 @@ class SoftWeights(FrozenModel):
 
 
 class WorkloadWeights(FrozenModel):
-    """Workload terms (Phase 18). All are penalties (<= 0) added to the raw score when the workload or the
+    """Workload terms (Phase 18). All are penalties (<= 0) added to the raw score when the workload
+    or the
     seed data says something the defaults cannot: they never change a plan that has neither."""
 
     parent_write_amplification: float = (

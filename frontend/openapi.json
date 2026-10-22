@@ -591,6 +591,18 @@
             "type": "object",
             "title": "Access Hints",
             "default": {}
+          },
+          "workload": {
+            "$ref": "#/components/schemas/WorkloadSpec",
+            "default": {
+              "query_freq": {},
+              "default_freq": 1.0
+            }
+          },
+          "sensitivity": {
+            "type": "boolean",
+            "title": "Sensitivity",
+            "default": true
           }
         },
         "type": "object",
@@ -625,7 +637,12 @@
               "string_collation": "en",
               "rows_per_table": 50,
               "relationship_overrides": {},
-              "access_hints": {}
+              "access_hints": {},
+              "workload": {
+                "default_freq": 1.0,
+                "query_freq": {}
+              },
+              "sensitivity": true
             }
           }
         },
@@ -1207,6 +1224,63 @@
         ],
         "title": "Factor"
       },
+      "Flip": {
+        "properties": {
+          "weight": {
+            "type": "string",
+            "title": "Weight"
+          },
+          "change": {
+            "type": "number",
+            "title": "Change"
+          },
+          "becomes": {
+            "type": "string",
+            "enum": [
+              "EMBED",
+              "REFERENCE",
+              "REF_ARRAY"
+            ],
+            "title": "Becomes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "weight",
+          "change",
+          "becomes"
+        ],
+        "title": "Flip",
+        "description": "A weight change that turns the decision around."
+      },
+      "Fragility": {
+        "properties": {
+          "level": {
+            "type": "string",
+            "enum": [
+              "fragile",
+              "watch",
+              "stable",
+              "constrained"
+            ],
+            "title": "Level"
+          },
+          "flips": {
+            "items": {
+              "$ref": "#/components/schemas/Flip"
+            },
+            "type": "array",
+            "title": "Flips",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "level"
+        ],
+        "title": "Fragility",
+        "description": "How sensitive a decision is to the tunable weights (see optimizer/sensitivity.py)."
+      },
       "GeneratedFile": {
         "properties": {
           "path": {
@@ -1494,6 +1568,21 @@
               }
             ],
             "title": "Host"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation",
+            "default": ""
+          },
+          "fragility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Fragility"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "ai": {
             "anyOf": [
@@ -2054,7 +2143,12 @@
               "string_collation": "en",
               "rows_per_table": 50,
               "relationship_overrides": {},
-              "access_hints": {}
+              "access_hints": {},
+              "workload": {
+                "default_freq": 1.0,
+                "query_freq": {}
+              },
+              "sensitivity": true
             }
           },
           "verify": {
@@ -2535,6 +2629,26 @@
           "queries"
         ],
         "title": "VerificationReport"
+      },
+      "WorkloadSpec": {
+        "properties": {
+          "query_freq": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Query Freq",
+            "default": {}
+          },
+          "default_freq": {
+            "type": "number",
+            "title": "Default Freq",
+            "default": 1.0
+          }
+        },
+        "type": "object",
+        "title": "WorkloadSpec",
+        "description": "Per-query relative frequencies (a sidecar ``workload.yaml`` or the API option).\n\nKeys are query ids (``q1``, ``q2``, ... in file order). A ``-- @freq N`` comment before a\nstatement\nsets the same thing inline; an explicit entry here wins over a comment. Unlisted queries weigh\n``default_freq`` (1)."
       }
     }
   }

@@ -84,12 +84,15 @@ def soft_factors(f: RelationshipFeatures, w: Weights) -> dict[str, float]:
 def workload_terms(f: RelationshipFeatures, w: Weights) -> dict[str, float]:
     """Penalties from the workload and seed statistics (all <= 0; empty when neither says anything).
 
-    * parent_write_amplification: every write to the parent rewrites a document that holds its embedded
+    * parent_write_amplification: every write to the parent rewrites a document that holds its
+    embedded
       children; weighted by the parent's share of the workload and by how big the children make it
       (children bytes / ``doc_budget_bytes``, capped at 1);
-    * child_write_share: the child's share of the workload's statements that write (positional updates
+    * child_write_share: the child's share of the workload's statements that write (positional
+    updates
       into a parent document);
-    * fanout_skew: a few parents with far more children than the average make an embedded array unsafe
+    * fanout_skew: a few parents with far more children than the average make an embedded array
+    unsafe
       even when the average looks small.
     """
     k = w.workload

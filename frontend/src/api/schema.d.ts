@@ -258,6 +258,18 @@ export interface components {
             access_hints?: {
                 [key: string]: components["schemas"]["AccessHint"];
             };
+            /**
+             * @default {
+             *       "query_freq": {},
+             *       "default_freq": 1
+             *     }
+             */
+            workload?: components["schemas"]["WorkloadSpec"];
+            /**
+             * Sensitivity
+             * @default true
+             */
+            sensitivity?: boolean;
         };
         /** CompileRequest */
         CompileRequest: {
@@ -282,7 +294,12 @@ export interface components {
              *       "string_collation": "en",
              *       "rows_per_table": 50,
              *       "relationship_overrides": {},
-             *       "access_hints": {}
+             *       "access_hints": {},
+             *       "workload": {
+             *         "default_freq": 1,
+             *         "query_freq": {}
+             *       },
+             *       "sensitivity": true
              *     }
              */
             options?: components["schemas"]["CompileOptions"];
@@ -539,6 +556,37 @@ export interface components {
             /** Contribution */
             contribution: number;
         };
+        /**
+         * Flip
+         * @description A weight change that turns the decision around.
+         */
+        Flip: {
+            /** Weight */
+            weight: string;
+            /** Change */
+            change: number;
+            /**
+             * Becomes
+             * @enum {string}
+             */
+            becomes: "EMBED" | "REFERENCE" | "REF_ARRAY";
+        };
+        /**
+         * Fragility
+         * @description How sensitive a decision is to the tunable weights (see optimizer/sensitivity.py).
+         */
+        Fragility: {
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "fragile" | "watch" | "stable" | "constrained";
+            /**
+             * Flips
+             * @default []
+             */
+            flips?: components["schemas"]["Flip"][];
+        };
         /** GeneratedFile */
         GeneratedFile: {
             /** Path */
@@ -677,6 +725,12 @@ export interface components {
             overridden?: boolean;
             /** Host */
             host?: string | null;
+            /**
+             * Explanation
+             * @default
+             */
+            explanation?: string;
+            fragility?: components["schemas"]["Fragility"] | null;
             ai?: components["schemas"]["AIOpinion"] | null;
             /** Agree */
             agree?: boolean | null;
@@ -894,7 +948,12 @@ export interface components {
              *       "string_collation": "en",
              *       "rows_per_table": 50,
              *       "relationship_overrides": {},
-             *       "access_hints": {}
+             *       "access_hints": {},
+             *       "workload": {
+             *         "default_freq": 1,
+             *         "query_freq": {}
+             *       },
+             *       "sensitivity": true
              *     }
              */
             options?: components["schemas"]["CompileOptions"];
@@ -1106,6 +1165,29 @@ export interface components {
              * @default 0
              */
             duration_ms?: number;
+        };
+        /**
+         * WorkloadSpec
+         * @description Per-query relative frequencies (a sidecar ``workload.yaml`` or the API option).
+         *
+         *     Keys are query ids (``q1``, ``q2``, ... in file order). A ``-- @freq N`` comment before a
+         *     statement
+         *     sets the same thing inline; an explicit entry here wins over a comment. Unlisted queries weigh
+         *     ``default_freq`` (1).
+         */
+        WorkloadSpec: {
+            /**
+             * Query Freq
+             * @default {}
+             */
+            query_freq?: {
+                [key: string]: number;
+            };
+            /**
+             * Default Freq
+             * @default 1
+             */
+            default_freq?: number;
         };
     };
     responses: never;

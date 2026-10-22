@@ -21,7 +21,7 @@
 Local probe run on a 3-table schema (seed 3, 60 rounds): FK race 0 orphans generated vs 60 of 60 unguarded; embedded-array duplicates 0 vs 60
 of 60; counter 0 duplicate ids vs 86 of 120; transaction probe 0 lost updates (callback retried 127 times for 60 updates) vs 90 lost updates.
 Integration test (40 rounds): generated violations are zero for every scenario kind; every unguarded variant shows violations (> 0).
-- `pytest` unit: 1,127 passed. `pytest -m integration`: 93 passed. ruff, `ruff format`, `mypy --strict` clean; `rules_doc --check` up to date.
+- `pytest` unit: 1,128 passed. `pytest -m integration`: 93 passed. ruff, `ruff format`, `mypy --strict` clean; `rules_doc --check` up to date.
 - Frontend: tsc, eslint, Vitest 55 tests, vite build; Playwright with the databases: 12 passed (adds the concurrency flow).
 
 ## Known limitations

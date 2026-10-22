@@ -142,6 +142,31 @@ export function RelationshipsTab({
                 <span className="tabular text-muted">score {(decision.score ?? 0).toFixed(2)}</span>
               </div>
               <p>{decision.reason}</p>
+              {decision.explanation && <p className="text-muted">{decision.explanation}</p>}
+              {decision.fragility && (
+                <div data-testid="fragility">
+                  <Badge
+                    value={decision.fragility.level}
+                    tone={
+                      decision.fragility.level === "fragile"
+                        ? "changed"
+                        : decision.fragility.level === "watch"
+                          ? "neutral"
+                          : "safe"
+                    }
+                  />
+                  {(decision.fragility.flips ?? []).length > 0 && (
+                    <ul className="mt-1 list-disc pl-5 text-muted">
+                      {(decision.fragility.flips ?? []).slice(0, 4).map((f) => (
+                        <li key={`${f.weight}${f.change}`} className="tabular">
+                          {f.weight} {f.change > 0 ? "+" : ""}
+                          {Math.round(f.change * 100)}% flips it to {f.becomes}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
               <ul className="list-disc pl-5 text-muted">
                 {(decision.top_factors ?? []).map((f) => (
                   <li key={f.name} className="tabular">

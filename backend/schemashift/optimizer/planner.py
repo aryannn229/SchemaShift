@@ -134,7 +134,8 @@ def plan_from_features(
     options: OptimizerOptions,
     w: Weights,
 ) -> PlacementPlan:
-    """Everything after feature extraction (the sensitivity analysis re-plans with other weights)."""
+    """Everything after feature extraction (the sensitivity analysis re-plans with other
+    weights)."""
     costs = {rid: score_relationship(f, w) for rid, f in feats.items()}
     st = _State(graph, feats, costs, w)
 
@@ -344,7 +345,8 @@ def _build_plan(
 
 
 def _explain(st: _State, rid: str, embedded: bool, overridden: bool) -> str:
-    """The decision in words: score vs threshold, the strongest contributors, workload and seed facts."""
+    """The decision in words: score vs threshold, the strongest contributors, workload and seed
+    facts."""
     cost, f = st.costs[rid], st.feats[rid]
     decision = "EMBED" if embedded else "REFERENCE"
     parts: list[str] = []
@@ -357,7 +359,8 @@ def _explain(st: _State, rid: str, embedded: bool, overridden: bool) -> str:
         )
     elif embedded != (cost.decision == "EMBED"):
         parts.append(
-            f"{decision}: {st.reasons[rid]} (the score {cost.score:.2f} alone would say {cost.decision})."
+            f"{decision}: {st.reasons[rid]} (the score {cost.score:.2f} alone would say"
+            f"{cost.decision})."
         )
     else:
         cmp = ">=" if cost.decision == "EMBED" else "<"

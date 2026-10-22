@@ -21,6 +21,9 @@ def compile(  # noqa: A001 (CLI verb)
     queries: Path = typer.Option(None, "--queries", "-q", help="Optional SQL queries file"),
     seed: Path = typer.Option(None, "--seed", help="Optional INSERT seed file"),
     options: Path = typer.Option(None, "--options", "-o", help="JSON file with CompileOptions"),
+    workload: Path = typer.Option(
+        None, "--workload", help="workload.yaml with per-query frequencies"
+    ),
     out: Path = typer.Option(None, "--out", help="Directory to write the generated code to"),
     fail_on: str = typer.Option("none", help="Exit 1 when the verdict reaches none|changed|broken"),
 ) -> None:
@@ -33,6 +36,8 @@ def compile(  # noqa: A001 (CLI verb)
         if options
         else CompileOptions()
     )
+    if workload is not None:
+        opts = opts.model_copy(update={"workload": _load_workload(workload)})
     result = compile_sql(
         schema.read_text(encoding="utf-8"),
         queries.read_text(encoding="utf-8") if queries else "",
@@ -48,7 +53,8 @@ def compile(  # noqa: A001 (CLI verb)
         f"BROKEN {counts['BROKEN']})"
     )
     for rid, dec in sorted(result.plan.decisions.items()):
-        typer.echo(f"  {dec.decision:9} {dec.score:.2f}  {rid}")
+        mark = f"  [{dec.fragility.level}]" if dec.fragility else ""
+        typer.echo(f"  {dec.decision:9} {dec.score:.2f}  {rid}{mark}")
     if out is not None:
         generated = generate_code(result, opts)
         for f in generated.files:
@@ -59,6 +65,42 @@ def compile(  # noqa: A001 (CLI verb)
     order = {"none": 99, "changed": 1, "broken": 2}
     rank = {"SAFE": 0, "CHANGED": 1, "BROKEN": 2}[result.overall_verdict]
     raise typer.Exit(1 if result.has_errors or rank >= order.get(fail_on, 99) else 0)
+
+
+def _load_workload(path: Path):  # type: ignore[no-untyped-def]
+    import yaml
+
+    from schemashift.optimizer.workload import WorkloadSpec
+
+    return WorkloadSpec.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")) or {})
+
+
+@app.command()
+def sensitivity(
+    schema: Path = typer.Argument(..., exists=True, readable=True, help="PostgreSQL DDL file"),
+    queries: Path = typer.Option(None, "--queries", "-q", help="Optional SQL queries file"),
+    seed: Path = typer.Option(None, "--seed", help="Optional INSERT seed file"),
+    workload: Path = typer.Option(
+        None, "--workload", help="workload.yaml with per-query frequencies"
+    ),
+) -> None:
+    """Which embed/reference decisions flip when a weight moves by 10% or 20%."""
+    from schemashift.pipeline import CompileOptions, compile_sql
+
+    opts = CompileOptions()
+    if workload is not None:
+        opts = opts.model_copy(update={"workload": _load_workload(workload)})
+    result = compile_sql(
+        schema.read_text(encoding="utf-8"),
+        queries.read_text(encoding="utf-8") if queries else "",
+        seed.read_text(encoding="utf-8") if seed else "",
+        opts,
+    )
+    for rid, dec in sorted(result.plan.decisions.items()):
+        fr = dec.fragility
+        typer.echo(f"{(fr.level if fr else 'n/a'):12} {dec.decision:9} {rid}")
+        for f in fr.flips if fr else ():
+            typer.echo(f"    {f.weight} {f.change:+.0%} -> {f.becomes}")
 
 
 @app.command()

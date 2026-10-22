@@ -662,3 +662,9 @@ guarantee IR and the placement plan and judged by `EQ-CONC-*` rules in the regis
 helpers. The helpers take lock documents inside transactions and fold array uniqueness into one conditional update. A
 verification run races them against the replica set (generated vs unguarded) and reports violations with seeds. See
 `docs/CONCURRENCY.md`.
+
+## 21. Phase 18: Workload-aware schema design
+The placement score is `soft factors + workload terms`, compared against `threshold`; hard constraints still override. Workload terms are
+non-positive and additive (`parent_write_amplification`, `child_write_share`, `fanout_skew`), so they never change the normalization of
+plans that carry no workload or seed information. The sensitivity analysis perturbs each weight by +/-10% and +/-20% and reports flips as
+fragile / watch / stable / constrained. See `docs/OPTIMIZER.md`.

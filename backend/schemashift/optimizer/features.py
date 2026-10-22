@@ -147,7 +147,8 @@ def extract_features(
 ) -> dict[str, RelationshipFeatures]:
     """Features for every foreign-key relationship, keyed by relationship id.
 
-    ``query_freq`` weights each statement (default 1); ``seed_queries`` give measured fan-out and sizes.
+    ``query_freq`` weights each statement (default 1); ``seed_queries`` give measured fan-out and
+    sizes.
     """
     w = weights or load_weights()
     hints = hints or {}
