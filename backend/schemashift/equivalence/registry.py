@@ -6,7 +6,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from schemashift.equivalence.context import RuleContext
+from schemashift.equivalence.evidence import evidence_for
 from schemashift.ir.nodes import IRNode
+from schemashift.models.evidence import RuleInput
 from schemashift.models.verdict import ConditionTrace, Status, Verdict
 
 
@@ -61,6 +63,7 @@ class RuleSpec:
         key, variables = self.fn(node, ctx, trace)
         outcome = self.outcome(key)
         fmt: dict[str, object] = {"node": node, **variables}
+        evidence = evidence_for(self.rule_id, outcome.key)
         return Verdict(
             node_id=node.id,
             rule_id=self.rule_id,
@@ -72,7 +75,36 @@ class RuleSpec:
             mongo_feature=outcome.mongo_feature,
             conditions_evaluated=tuple(trace.items),
             source_span=node.source_span,
+            evidence=evidence.level,
+            argument=evidence.argument or None,
+            evidence_conditions=evidence.conditions,
+            decided_by=f"{self.rule_id}/{outcome.key}: {outcome.when}",
+            inputs=_inputs(self.rule_id, node, ctx),
         )
+
+
+# options a rule consults, shown in the "Why?" inputs
+_OPTION_INPUTS: dict[str, tuple[str, ...]] = {
+    "EQ-ATOMIC": ("transactions_available",),
+    "EQ-AUTOINC": ("preserve_integer_ids",),
+    "EQ-TYPE": ("uuid_as",),
+}
+
+
+def _inputs(rule_id: str, node: IRNode, ctx: RuleContext) -> tuple[RuleInput, ...]:
+    """What the rule looked at: the node, the plan decision for its relationship, the options."""
+    out = [RuleInput(name="IR node", value=node.id)]
+    fk_ref = getattr(node, "fk_ref", None)
+    if isinstance(fk_ref, str):
+        decision = ctx.plan.decisions.get(fk_ref)
+        placed = ctx.plan.decision(fk_ref)
+        detail = (
+            f" (optimizer score {decision.score:.2f})" if decision is not None else " (default)"
+        )
+        out.append(RuleInput(name=f"placement of {fk_ref}", value=placed + detail))
+    for name in _OPTION_INPUTS.get(rule_id, ()):
+        out.append(RuleInput(name=f"option {name}", value=str(getattr(ctx.options, name))))
+    return tuple(out)
 
 
 _REGISTRY: dict[tuple[str, type[IRNode]], RuleSpec] = {}

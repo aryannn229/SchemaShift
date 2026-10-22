@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: 'b embedded in a but c referenced from b: the chain still breaks'
 placements:
   fk:b.a_id->a.id: EMBED

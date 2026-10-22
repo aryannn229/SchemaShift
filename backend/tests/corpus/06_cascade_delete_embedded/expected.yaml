@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: ON DELETE CASCADE with the child embedded
 placements:
   fk:orders.customer_id->customers.id: EMBED

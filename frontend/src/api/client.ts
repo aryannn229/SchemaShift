@@ -12,6 +12,10 @@ export type RunSummary = Schemas["RunSummary"];
 export type Verdict = Schemas["Verdict"];
 export type PlacementDecision = Schemas["PlacementDecision"];
 export type GeneratedFile = Schemas["GeneratedFile"];
+export type Counterexample = Schemas["Counterexample"];
+export type CounterexampleGap = Schemas["CounterexampleGap"];
+export type CounterexampleReplay = Schemas["CounterexampleReplay"];
+export type EvidenceUpgrade = Schemas["EvidenceUpgrade"];
 export type Status = "SAFE" | "CHANGED" | "BROKEN";
 
 export class ApiError extends Error {}

@@ -37,3 +37,28 @@ foreign keys around the written table. `report.unexplained` must stay empty.
 Result-set correctness over the corpus queries: 41 of 43 verified queries match (95.3%); the 2 mismatches are `INSERT`s whose
 duplicate primary key is rejected by PostgreSQL but accepted when the table is embedded in an array
 (rule `EQ-ENTITY-UNIQ/PK_EMBEDDED`, verdict CHANGED).
+
+## Evidence levels, counterexamples and comparison allowances (Phases 15-16)
+
+Every verdict carries an **evidence level** (`models/evidence.py`, table in `equivalence/evidence.py`, shown in
+`docs/RULES.md`): `PROVEN` (a stated argument; platform facts such as "MongoDB has no cascade" or structural facts such as
+"an embedded child cannot be orphaned"), `CONDITIONAL` (holds only under structured conditions, e.g. `app_enforcement`,
+`validators_installed`, `replica_set`), `TESTED` (a verification run supports it) or `UNVERIFIED`. A verification run raises an
+`UNVERIFIED` query-level verdict (join, aggregate) to `TESTED` when its query MATCHes (`VerificationReport.evidence_upgrades`,
+with the seed and row count as the basis); PROVEN and CONDITIONAL verdicts keep their level, because a differential run is not a
+proof. The "Why?" trace names the rule/outcome that fired (`decided_by`) and the inputs it consulted: the IR node, the placement
+decision and score of its relationship, and the options it depends on.
+
+**Minimal counterexamples** (`counterexample.py`): for each CHANGED/BROKEN verdict the harness builds the smallest dataset that
+exercises it (one row per table that matters, the NOT NULL ancestors its foreign keys force, the cascade chain for a cascading
+delete, two rows for a self-reference), loads it into a fresh sandbox, runs the operation on both databases and stores the setup
+`INSERT`s, the operation, what each side did and the resulting difference. Verdicts that are properties of the representation
+rather than of an operation (types, defaults, generated ids, uniqueness inside an array, ...) get a documented reason
+(`GAP_REASONS`) instead; a test fails if any non-SAFE outcome has neither. Every BROKEN verdict of the four bundled samples has
+a counterexample or a documented reason. `POST /api/v1/runs/{id}/counterexamples/replay?verdict_id=...` rebuilds and re-runs
+one (same seed, same result); it shares the stricter verified-run rate limit.
+
+**Comparison allowances** (each is recorded as a note on the query result, never silent): rows tied on the ORDER BY key at a
+`LIMIT` cut-off may be different members (arbitrary in both databases); queries that reference a PostgreSQL `REAL` (float4)
+column use a relative tolerance of 1e-5 because PostgreSQL computes in single precision and MongoDB in double; seed rows are
+inserted parents-first whatever order the schema declares its tables.

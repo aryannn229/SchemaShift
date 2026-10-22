@@ -227,3 +227,67 @@ def test_time_budget_of_compile(client: TestClient) -> None:
     start = time.perf_counter()
     client.post("/api/v1/compile", json={"schema_sql": SCHEMA, "queries_sql": QUERIES})
     assert time.perf_counter() - start < 10
+
+
+# ------------------------------------------------------------- evidence and counterexample replay
+def test_compile_response_carries_evidence(client: TestClient) -> None:
+    body = client.post(
+        "/api/v1/compile", json={"schema_sql": SCHEMA, "queries_sql": QUERIES}
+    ).json()
+    levels = {v["evidence"] for v in body["verdicts"]}
+    assert levels <= {"PROVEN", "CONDITIONAL", "TESTED", "UNVERIFIED"} and levels
+    ref = next(v for v in body["verdicts"] if v["rule_id"] == "EQ-REF-INTEGRITY")
+    assert ref["decided_by"].startswith("EQ-REF-INTEGRITY/") and ref["inputs"]
+    cond = next(v for v in body["verdicts"] if v["evidence"] == "CONDITIONAL")
+    assert cond["evidence_conditions"][0]["kind"]
+    proven = next(v for v in body["verdicts"] if v["evidence"] == "PROVEN")
+    assert proven["argument"]
+
+
+def test_replay_needs_verification_to_be_configured(client: TestClient) -> None:
+    res = client.post("/api/v1/runs/anything/counterexamples/replay", params={"verdict_id": "x"})
+    assert res.status_code == 503
+
+
+def test_replay_unknown_run_and_verdict(tmp_path: Path) -> None:
+    with make_client(
+        tmp_path,
+        sandbox_admin_database_url="postgresql://u:p@127.0.0.1:1/x",
+        mongo_url="mongodb://127.0.0.1:1",
+    ) as c:
+        res = c.post("/api/v1/runs/nope/counterexamples/replay", params={"verdict_id": "x"})
+        assert res.status_code == 404 and res.json()["detail"] == "run not found"
+        run = c.post("/api/v1/runs", json={"schema_sql": SCHEMA, "queries_sql": QUERIES}).json()[
+            "run_id"
+        ]
+        c.app.state.services.wait(run)
+        res = c.post(f"/api/v1/runs/{run}/counterexamples/replay", params={"verdict_id": "nope"})
+        assert res.status_code == 404 and "no such verdict" in res.json()["detail"]
+        safe = next(
+            v["node_id"]
+            for v in c.get(f"/api/v1/runs/{run}").json()["result"]["verdicts"]
+            if v["status"] == "SAFE"
+        )
+        res = c.post(f"/api/v1/runs/{run}/counterexamples/replay", params={"verdict_id": safe})
+        assert res.status_code == 422
+
+
+def test_verified_runs_and_replays_have_their_own_rate_limit(tmp_path: Path) -> None:
+    with make_client(
+        tmp_path,
+        sandbox_admin_database_url="postgresql://u:p@127.0.0.1:1/x",
+        mongo_url="mongodb://127.0.0.1:1",
+        verify_rate_per_minute=2,
+    ) as c:
+        c.post("/api/v1/compile", json={"schema_sql": SCHEMA})  # builds the services lazily
+        c.app.state.services.submit = lambda *_a, **_k: None  # count requests, do not run them
+        body = {"schema_sql": SCHEMA, "queries_sql": QUERIES, "verify": True}
+        assert c.post("/api/v1/runs", json=body).status_code == 202
+        assert c.post("/api/v1/runs", json=body).status_code == 202
+        third = c.post("/api/v1/runs", json=body)
+        assert third.status_code == 429 and third.headers["Retry-After"] == "60"
+        # replays use the same bucket, enforced by the middleware
+        res = c.post("/api/v1/runs/x/counterexamples/replay", params={"verdict_id": "v"})
+        assert res.status_code == 429
+        # plain (unverified) runs and compiles are unaffected
+        assert c.post("/api/v1/runs", json={"schema_sql": SCHEMA}).status_code == 202

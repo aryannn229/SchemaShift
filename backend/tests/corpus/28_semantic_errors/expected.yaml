@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: semantic errors; only the valid nodes are labeled
 diagnostics:
 - SEM001

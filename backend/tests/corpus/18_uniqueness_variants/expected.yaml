@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: single, composite, nullable and partial unique constraints
 diagnostics: []
 bulk:

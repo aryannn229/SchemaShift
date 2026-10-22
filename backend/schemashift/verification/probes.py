@@ -25,6 +25,7 @@ from schemashift.ir.nodes import (
 from schemashift.models.verdict import Verdict
 from schemashift.semantic.graph import Relationship
 from schemashift.verification.ddl import q
+from schemashift.verification.render import render_sql
 from schemashift.verification.runner import Env, ProbeOutcome, restore_mongo, snapshot_mongo
 
 MAX_PROBES = 20
@@ -96,6 +97,7 @@ def _demonstrate(
         demonstrates=bool(differing),
         tables_differing=differing,
         examples=examples,
+        operation=render_sql(pg_sql, pg_params),
     )
 
 

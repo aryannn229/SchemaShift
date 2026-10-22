@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: employee -> manager hierarchy
 diagnostics:
 - SEM011

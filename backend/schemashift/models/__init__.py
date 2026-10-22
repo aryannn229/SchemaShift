@@ -1,3 +1,12 @@
+from schemashift.models.evidence import (
+    Counterexample,
+    CounterexampleGap,
+    CounterexampleStep,
+    EvidenceCondition,
+    EvidenceLevel,
+    EvidenceUpgrade,
+    RuleInput,
+)
 from schemashift.models.placement import (
     AIOpinion,
     AISuggestion,
@@ -25,6 +34,13 @@ from schemashift.models.source import Diagnostic, Severity, SourceSpan
 from schemashift.models.verdict import ConditionTrace, Status, Verdict, worst
 
 __all__ = [
+    "Counterexample",
+    "CounterexampleGap",
+    "CounterexampleStep",
+    "EvidenceCondition",
+    "EvidenceLevel",
+    "EvidenceUpgrade",
+    "RuleInput",
     "AIOpinion",
     "AISuggestion",
     "ConditionTrace",

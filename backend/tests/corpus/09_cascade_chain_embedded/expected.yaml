@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: 'whole chain embedded: deleting the root deletes everything'
 placements:
   fk:b.a_id->a.id: EMBED

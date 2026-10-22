@@ -70,8 +70,10 @@ def values_equal(a: Any, b: Any, tolerance: float = TOLERANCE) -> bool:
     return bool(a == b)
 
 
-def rows_equal(a: tuple[Any, ...], b: tuple[Any, ...]) -> bool:
-    return len(a) == len(b) and all(values_equal(x, y) for x, y in zip(a, b, strict=True))
+def rows_equal(a: tuple[Any, ...], b: tuple[Any, ...], tolerance: float = TOLERANCE) -> bool:
+    return len(a) == len(b) and all(
+        values_equal(x, y, tolerance) for x, y in zip(a, b, strict=True)
+    )
 
 
 def sort_key(row: tuple[Any, ...]) -> str:

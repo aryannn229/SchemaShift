@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: 1:N child embedded in parent
 placements:
   fk:orders.customer_id->customers.id: EMBED

@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 import type { CompileResponse } from "../src/api/client";
@@ -30,7 +31,11 @@ test("summary shows verdict and diagnostics", () => {
 });
 
 test("verdicts sort BROKEN first, filter and expand Why", () => {
-  render(<VerdictsTab result={result} />);
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <VerdictsTab result={result} />
+    </QueryClientProvider>,
+  );
   const cells = () => screen.getAllByText(/^reason /).map((e) => e.textContent);
   expect(cells()).toEqual(["reason b", "reason c", "reason a"]);
   fireEvent.change(screen.getByLabelText("Filter"), { target: { value: "SAFE" } });

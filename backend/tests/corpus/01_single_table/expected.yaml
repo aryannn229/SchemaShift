@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: one table with SERIAL key
 diagnostics: []
 bulk:

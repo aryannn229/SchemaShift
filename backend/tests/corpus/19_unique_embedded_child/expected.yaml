@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: unique constraints on an embedded array child
 placements:
   fk:c.p_id->p.id: EMBED

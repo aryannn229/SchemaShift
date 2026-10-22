@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: 'e-commerce: 9 tables, embedded items/payments/addresses'
 placements:
   fk:addresses.customer_id->customers.id: EMBED

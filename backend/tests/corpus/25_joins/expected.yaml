@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: inner and left joins over embedded and referenced relationships
 placements:
   fk:orders.customer_id->customers.id: EMBED

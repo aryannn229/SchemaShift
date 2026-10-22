@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: child with two parents, embedded in only one
 placements:
   fk:reviews.product_id->products.id: EMBED

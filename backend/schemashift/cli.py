@@ -145,6 +145,7 @@ def evaluate(
     metrics, _ = evaluate_equivalence(load_corpus(corpus or DEFAULT_CORPUS))
     typer.echo(format_report(metrics))
     system = None
+    sandbox = None
     if verify_samples or with_ai:
         import os
 
@@ -152,7 +153,6 @@ def evaluate(
         from schemashift.metrics.evaluate import evaluate_system
         from schemashift.verification import SandboxConfig
 
-        sandbox = None
         if verify_samples:
             sandbox = SandboxConfig(
                 pg_admin_dsn=os.environ["SANDBOX_ADMIN_DATABASE_URL"],
@@ -172,10 +172,17 @@ def evaluate(
         if ai["computed"]:
             typer.echo(f"AI agreement          : {ai['agreement']} over {ai['judged']} placements")
     if write_docs:
-        from schemashift.metrics.evaluate import write_metrics_doc, write_metrics_json
+        from schemashift.metrics import report
 
-        typer.echo(f"wrote {write_metrics_json(metrics, system)}")
-        typer.echo(f"wrote {write_metrics_doc(metrics)}")
+        data = report.compute(sandbox=sandbox if (verify_samples or with_ai) else None)
+        for key in ("result_set", "ai"):
+            fresh = (system or {}).get(key)
+            if fresh and fresh.get("computed"):
+                data[key] = fresh
+        if system and system.get("samples"):
+            data["samples"] = system["samples"]
+        for path in report.write_docs(data):
+            typer.echo(f"wrote {path}")
     if verbose:
         for m in metrics.mismatches:
             typer.echo(f"MISMATCH {m.case} {m.node_id}: label={m.label} predicted={m.predicted}")
@@ -238,6 +245,124 @@ def fuzz(
     for reason, n in sorted(st.untranslated.items(), key=lambda kv: -kv[1])[:8]:
         typer.echo(f"  untranslatable x{n}: {reason}")
     raise typer.Exit(1 if result.failures else 0)
+
+
+corpus_app = typer.Typer(
+    help="Labeled corpus tools: blind-labeling templates and the metrics report."
+)
+app.add_typer(corpus_app, name="corpus")
+
+
+@corpus_app.command("label-template")
+def corpus_label_template(
+    schema: Path = typer.Argument(..., exists=True, readable=True, help="PostgreSQL DDL file"),
+    queries: Path = typer.Option(None, "--queries", "-q", help="Optional SQL queries file"),
+    out: Path = typer.Option(
+        None, "--out", help="Directory to write <name>/ into (default: stdout)"
+    ),
+    name: str = typer.Option(None, help="Case name (default: the schema's folder or file name)"),
+    include_mechanical: bool = typer.Option(
+        False, "--include-mechanical", help="List type:* and not_null:* guarantees too"
+    ),
+) -> None:
+    """Write an empty label file (no verdicts) so a second person can label blind."""
+    from schemashift.ir import build_ir
+    from schemashift.metrics.labels import label_template
+    from schemashift.parser import parse
+    from schemashift.semantic import analyze
+
+    schema_sql = schema.read_text(encoding="utf-8")
+    queries_sql = queries.read_text(encoding="utf-8") if queries else ""
+    parsed = parse(schema_sql + "\n" + queries_sql)
+    analysis = analyze(parsed.schema_, parsed.queries)
+    program = build_ir(analysis.graph, parsed.queries)
+    case = name or (schema.parent.name if schema.name == "schema.sql" else schema.stem)
+    text = label_template(
+        case,
+        schema_sql + "\n" + queries_sql,
+        program,
+        sorted(analysis.graph.relationships),
+        include_mechanical,
+    )
+    if out is None:
+        typer.echo(text)
+        return
+    folder = out / case
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "schema.sql").write_text(schema_sql, encoding="utf-8", newline="\n")
+    if queries_sql:
+        (folder / "queries.sql").write_text(queries_sql, encoding="utf-8", newline="\n")
+    (folder / "expected.yaml").write_text(text, encoding="utf-8", newline="\n")
+    typer.echo(f"wrote {folder}/expected.yaml ({text.count('status:')} guarantees to label)")
+
+
+@corpus_app.command("report")
+def corpus_report(
+    write_docs: bool = typer.Option(
+        False, "--write-docs", help="Update docs/METRICS.md and metrics.json"
+    ),
+    verify_external: bool = typer.Option(
+        False, "--verify", help="Run the external workloads against PostgreSQL + MongoDB"
+    ),
+    with_ai: bool = typer.Option(False, "--ai", help="Also ask a real model (ANTHROPIC_API_KEY)"),
+) -> None:
+    """Print both metric groups, agreement and kappa; the failure-case list; the mutation score."""
+    import os
+
+    from schemashift.metrics import report
+    from schemashift.metrics.groups import evaluate_groups, format_group
+
+    sandbox = None
+    if verify_external:
+        from schemashift.verification import SandboxConfig
+
+        sandbox = SandboxConfig(
+            pg_admin_dsn=os.environ["SANDBOX_ADMIN_DATABASE_URL"], mongo_url=os.environ["MONGO_URL"]
+        )
+    advisor = None
+    if with_ai:
+        from schemashift.ai import AnthropicAdvisor
+
+        key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not key:
+            typer.echo("--ai needs ANTHROPIC_API_KEY", err=True)
+            raise typer.Exit(2)
+        advisor = AnthropicAdvisor(api_key=key)
+    results = evaluate_groups()
+    for group in ("self_labeled", "independent"):
+        typer.echo(format_group(results[group]))
+        typer.echo("")
+    data = report.compute(sandbox=sandbox, real_advisor=advisor)
+    mock = data["agreement"]["mock"]
+    kappa = "undefined" if mock["kappa"] is None else f"{mock['kappa']:.2f}"
+    typer.echo(
+        f"optimizer vs mock advisor: agreement {mock['agreed']}/{mock['pairs']}, kappa {kappa} "
+        "(mock is not an AI signal)"
+    )
+    real = data["agreement"].get("real")
+    typer.echo(
+        "optimizer vs real model  : "
+        + (f"agreement {real['rate']:.1%}, kappa {real['kappa']}" if real else "not measured")
+    )
+    ext = data["external"]["result_set"]
+    typer.echo(
+        f"external result sets     : {ext['match']}/{ext['verified']} MATCH"
+        if ext["computed"]
+        else "external result sets     : not run (use --verify)"
+    )
+    mut = data.get("mutation")
+    typer.echo(
+        f"mutation score           : {mut['score']:.1%}"
+        if mut
+        else "mutation score           : not measured"
+    )
+    fails = results["self_labeled"].failures
+    typer.echo(f"self-labeled failures    : {len(fails)}")
+    for f in fails:
+        typer.echo(f"  {f.case} {f.node_id}: label={f.label} predicted={f.predicted}")
+    if write_docs:
+        for path in report.write_docs(data):
+            typer.echo(f"wrote {path}")
 
 
 @app.callback()

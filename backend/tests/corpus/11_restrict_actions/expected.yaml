@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: RESTRICT / NO ACTION
 placements:
   fk:c3.p_id->p.id: EMBED

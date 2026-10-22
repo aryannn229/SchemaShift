@@ -62,6 +62,7 @@ class TranslatedQuery(FrozenModel):
     ordered: bool = False
     order_positions: list[int] | None = None  # output positions of the ORDER BY keys
     global_aggregate: bool = False  # aggregate without GROUP BY
+    limited: bool = False  # has LIMIT: ties at the cut-off make the row choice arbitrary
     notes: list[str] = []
     error: str | None = None
     transaction_id: str | None = None
@@ -162,6 +163,7 @@ class _Select:
         self.select_items: list[tuple[str, exp.Expr]] = []
         self.order_positions: list[int] | None = None
         self.global_aggregate = False
+        self.limited = False
 
     # ------------------------------------------------------------------ scope
     def _layout(self, table: str) -> TableLayout:
@@ -748,6 +750,7 @@ class _Select:
             stages.append({"$project": {"_id": 0, **{n: 1 for n in outputs}}})
         self.order_positions = self._order_positions(order_items, outputs)
         self.global_aggregate = is_agg and group is None
+        self.limited = limit is not None
         return self.source_collection, stages, outputs, bool(order_items)
 
     def _order_positions(self, order_items: list[exp.Expr], outputs: list[str]) -> list[int] | None:
@@ -1432,6 +1435,7 @@ def translate_query(
                 ordered=ordered,
                 order_positions=sel.order_positions,
                 global_aggregate=sel.global_aggregate,
+                limited=sel.limited,
                 notes=sel.notes,
             )
         dml = _Dml(q, ctx)

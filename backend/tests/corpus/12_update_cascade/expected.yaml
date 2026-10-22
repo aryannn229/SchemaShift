@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: ON UPDATE CASCADE on immutable and mutable keys
 placements:
   fk:c3.p_id->p.id: EMBED

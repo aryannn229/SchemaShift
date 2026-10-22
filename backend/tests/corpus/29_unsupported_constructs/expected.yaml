@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: rejected constructs produce diagnostics and the rest still compiles
 diagnostics:
 - UNSUPPORTED_VIEW

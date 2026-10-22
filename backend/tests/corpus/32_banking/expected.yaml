@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: 'banking: 8 tables; embedded KYC and cards, referenced transactions'
 placements:
   fk:kyc_profiles.customer_id->customers.id: EMBED

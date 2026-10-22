@@ -76,6 +76,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs/{run_id}/counterexamples/replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replay Counterexample
+         * @description Rebuild and re-run the minimal counterexample of one verdict on fresh sandboxes.
+         */
+        post: operations["replay_counterexample_api_v1_runs__run_id__counterexamples_replay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/runs/{run_id}/export": {
         parameters: {
             query?: never;
@@ -327,6 +347,78 @@ export interface components {
             /** Detail */
             detail?: string | null;
         };
+        /**
+         * Counterexample
+         * @description The smallest data and operation sequence found that shows the behaviours differ.
+         */
+        Counterexample: {
+            /** Verdict Id */
+            verdict_id: string;
+            /** Description */
+            description: string;
+            /** Setup */
+            setup: string[];
+            /** Steps */
+            steps: components["schemas"]["CounterexampleStep"][];
+            /** Difference */
+            difference: string;
+            /**
+             * Tables Differing
+             * @default []
+             */
+            tables_differing?: string[];
+            /**
+             * Rows In Setup
+             * @default 0
+             */
+            rows_in_setup?: number;
+            /**
+             * Minimal
+             * @default true
+             */
+            minimal?: boolean;
+            /**
+             * Reproducible
+             * @default true
+             */
+            reproducible?: boolean;
+            /**
+             * Seed
+             * @default 0
+             */
+            seed?: number;
+        };
+        /**
+         * CounterexampleGap
+         * @description Why no counterexample exists for a BROKEN / CHANGED verdict (never silently missing).
+         */
+        CounterexampleGap: {
+            /** Verdict Id */
+            verdict_id: string;
+            /** Reason */
+            reason: string;
+        };
+        /** CounterexampleReplay */
+        CounterexampleReplay: {
+            /** Verdict Id */
+            verdict_id: string;
+            counterexample?: components["schemas"]["Counterexample"] | null;
+            gap?: components["schemas"]["CounterexampleGap"] | null;
+        };
+        /**
+         * CounterexampleStep
+         * @description One operation of a counterexample, with what each database did.
+         */
+        CounterexampleStep: {
+            /** Description */
+            description: string;
+            /** Sql */
+            sql?: string | null;
+            /** Postgres */
+            postgres: string;
+            /** Mongo */
+            mongo: string;
+        };
         /** Diagnostic */
         Diagnostic: {
             /**
@@ -339,6 +431,38 @@ export interface components {
             /** Message */
             message: string;
             location?: components["schemas"]["SourceSpan"] | null;
+        };
+        /**
+         * EvidenceCondition
+         * @description One condition under which a verdict holds, as data (the text is for humans).
+         */
+        EvidenceCondition: {
+            /** Kind */
+            kind: string;
+            /** Text */
+            text: string;
+            /**
+             * Parameters
+             * @default {}
+             */
+            parameters?: {
+                [key: string]: string | number | boolean;
+            };
+        };
+        /**
+         * EvidenceUpgrade
+         * @description A verification run raised an UNVERIFIED verdict to TESTED, and on what basis.
+         */
+        EvidenceUpgrade: {
+            /** Verdict Id */
+            verdict_id: string;
+            /**
+             * Level
+             * @enum {string}
+             */
+            level: "PROVEN" | "CONDITIONAL" | "TESTED" | "UNVERIFIED";
+            /** Basis */
+            basis: string;
         };
         /** Factor */
         Factor: {
@@ -515,6 +639,11 @@ export interface components {
              * @default []
              */
             examples?: components["schemas"]["RowDiff"][];
+            /**
+             * Operation
+             * @default
+             */
+            operation?: string;
         };
         /** QueryOutcome */
         QueryOutcome: {
@@ -555,6 +684,8 @@ export interface components {
             error?: string | null;
             /** Pg Error */
             pg_error?: string | null;
+            /** Note */
+            note?: string | null;
         };
         /** QueryTranslation */
         QueryTranslation: {
@@ -604,6 +735,16 @@ export interface components {
             postgres?: unknown[] | null;
             /** Mongo */
             mongo?: unknown[] | null;
+        };
+        /**
+         * RuleInput
+         * @description A value the rule consulted ("Why?" trace): placement decision, option or node.
+         */
+        RuleInput: {
+            /** Name */
+            name: string;
+            /** Value */
+            value: string;
         };
         /** RunCreated */
         RunCreated: {
@@ -817,6 +958,29 @@ export interface components {
              */
             conditions_evaluated?: components["schemas"]["ConditionTrace"][];
             source_span?: components["schemas"]["SourceSpan"] | null;
+            /**
+             * Evidence
+             * @default UNVERIFIED
+             * @enum {string}
+             */
+            evidence?: "PROVEN" | "CONDITIONAL" | "TESTED" | "UNVERIFIED";
+            /** Argument */
+            argument?: string | null;
+            /**
+             * Evidence Conditions
+             * @default []
+             */
+            evidence_conditions?: components["schemas"]["EvidenceCondition"][];
+            /**
+             * Decided By
+             * @default
+             */
+            decided_by?: string;
+            /**
+             * Inputs
+             * @default []
+             */
+            inputs?: components["schemas"]["RuleInput"][];
         };
         /** VerificationReport */
         VerificationReport: {
@@ -839,6 +1003,21 @@ export interface components {
              * @default []
              */
             probes?: components["schemas"]["ProbeOutcome"][];
+            /**
+             * Counterexamples
+             * @default []
+             */
+            counterexamples?: components["schemas"]["Counterexample"][];
+            /**
+             * Counterexample Gaps
+             * @default []
+             */
+            counterexample_gaps?: components["schemas"]["CounterexampleGap"][];
+            /**
+             * Evidence Upgrades
+             * @default []
+             */
+            evidence_upgrades?: components["schemas"]["EvidenceUpgrade"][];
             /**
              * Warnings
              * @default []
@@ -995,6 +1174,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replay_counterexample_api_v1_runs__run_id__counterexamples_replay_post: {
+        parameters: {
+            query: {
+                verdict_id: string;
+            };
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CounterexampleReplay"];
                 };
             };
             /** @description Validation Error */

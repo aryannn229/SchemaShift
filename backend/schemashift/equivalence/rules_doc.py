@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import schemashift.equivalence.rules  # noqa: F401
+from schemashift.equivalence.evidence import evidence_for
 from schemashift.equivalence.registry import all_rules
 from schemashift.equivalence.typemap import TYPE_MAP
 
@@ -27,11 +28,19 @@ def render() -> str:
         "**BROKEN** (MongoDB cannot preserve it without application code).",
         "Reason and mitigation text are templates; `{...}` marks values filled from the node.",
         "",
+        "Every outcome also carries an **evidence level** (see `models/evidence.py`):",
+        "**PROVEN** (a stated argument), **CONDITIONAL** (holds only under listed conditions),",
+        "**TESTED** (probe or fuzz evidence from a verification run) or **UNVERIFIED**.",
+        "The table below shows the rule's default; a verification run can upgrade UNVERIFIED",
+        "outcomes to TESTED.",
+        "",
         "| Rule | IR node | Outcomes |",
         "|---|---|---|",
     ]
     for spec in all_rules():
-        outs = ", ".join(f"{o.key}={o.status}" for o in spec.outcomes)
+        outs = ", ".join(
+            f"{o.key}={o.status}/{evidence_for(spec.rule_id, o.key).level}" for o in spec.outcomes
+        )
         lines.append(f"| `{spec.rule_id}` | `{spec.node_type.__name__}` | {outs} |")
     lines.append("")
     for spec in all_rules():
@@ -48,6 +57,12 @@ def render() -> str:
                 lines.append(f"- **Mitigation:** {o.mitigation}")
             if o.mongo_feature:
                 lines.append(f"- **MongoDB feature:** {o.mongo_feature}")
+            ev = evidence_for(spec.rule_id, o.key)
+            lines.append(f"- **Evidence:** {ev.level}")
+            if ev.argument:
+                lines.append(f"  - Argument: {ev.argument}.")
+            for c in ev.conditions:
+                lines.append(f"  - Condition ({c.kind}): {c.text}.")
             lines.append("")
     lines.append("## Type map")
     lines.append("")

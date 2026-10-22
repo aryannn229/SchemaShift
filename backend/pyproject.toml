@@ -61,8 +61,16 @@ select = ["E", "F", "I", "UP", "B"]
 "tests/*" = ["E501"]
 "schemashift/cli.py" = ["B008"]
 "schemashift/metrics/evaluate.py" = ["E501"]
+"schemashift/metrics/report.py" = ["E501"]
+"schemashift/equivalence/evidence.py" = ["E501"]
+"schemashift/verification/counterexample.py" = ["E501"]
 
 [tool.mypy]
 strict = true
 python_version = "3.11"
 plugins = ["pydantic.mypy"]
+
+[tool.mutmut]
+paths_to_mutate = ["schemashift/equivalence/", "schemashift/optimizer/"]
+tests_dir = ["tests/unit/equivalence/", "tests/unit/optimizer/", "tests/unit/metrics/test_corpus.py"]
+also_copy = ["schemashift/", "tests/", "../samples/", "../docs/"]

@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: 'university: 8 tables, junction, SET NULL, multi-level cascades'
 placements:
   fk:office_hours.professor_id->professors.id: EMBED

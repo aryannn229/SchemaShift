@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: 1:1 child embedded as a sub-document
 placements:
   fk:profiles.user_id->users.id: EMBED

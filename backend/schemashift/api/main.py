@@ -65,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     limiter = RateLimiter(
         {"compile": settings.compile_rate_per_minute, "verify": settings.verify_rate_per_minute}
     )
+    app.state.limiter = limiter
     # Added last = outermost: body limit first, then request logging / rate limit, then CORS.
     app.add_middleware(
         CORSMiddleware,

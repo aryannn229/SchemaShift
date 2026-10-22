@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: two-hop cascade, everything by reference
 diagnostics: []
 bulk:

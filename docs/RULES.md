@@ -7,26 +7,32 @@ Each rule maps one IR node type to a verdict: **SAFE** (guarantee preserved),
 **BROKEN** (MongoDB cannot preserve it without application code).
 Reason and mitigation text are templates; `{...}` marks values filled from the node.
 
+Every outcome also carries an **evidence level** (see `models/evidence.py`):
+**PROVEN** (a stated argument), **CONDITIONAL** (holds only under listed conditions),
+**TESTED** (probe or fuzz evidence from a verification run) or **UNVERIFIED**.
+The table below shows the rule's default; a verification run can upgrade UNVERIFIED
+outcomes to TESTED.
+
 | Rule | IR node | Outcomes |
 |---|---|---|
-| `EQ-AGG` | `AggregateSemantics` | AGG_SAFE=SAFE, AGG_CHANGED=CHANGED |
-| `EQ-ATOMIC` | `MultiEntityAtomicity` | SINGLE_DOCUMENT=SAFE, TRANSACTION=CHANGED, NO_TRANSACTION=BROKEN |
-| `EQ-AUTOINC` | `AutoIncrement` | OBJECTID=CHANGED, COUNTER=CHANGED |
-| `EQ-CASCADE-DEL` | `CascadingDelete` | EMBEDDED=SAFE, REFERENCED=BROKEN, CHAIN=BROKEN |
-| `EQ-CASCADE-UPD` | `CascadingUpdate` | EMBEDDED=SAFE, IMMUTABLE_KEY=CHANGED, MUTABLE_KEY=BROKEN |
-| `EQ-CHECK` | `DomainConstraint` | SAFE_JSONSCHEMA=SAFE, SAFE_EXPR=SAFE, UNTRANSLATABLE=CHANGED |
-| `EQ-CROSS-UNIQ` | `CrossEntityUniqueness` | OWN_COLLECTION=SAFE, EMBEDDED=CHANGED, SPLIT=BROKEN |
-| `EQ-DEFAULT` | `DefaultValue` | CONSTANT=CHANGED, NOW=CHANGED, EXPRESSION=CHANGED |
-| `EQ-ENTITY-UNIQ` | `EntityUniqueness` | PK_SINGLE=SAFE, PK_COMPOSITE=SAFE, PK_FOLDED=CHANGED, PK_EMBEDDED=CHANGED |
-| `EQ-ENUM` | `EnumDomain` | ENUM_LIST=SAFE |
-| `EQ-JOIN` | `JoinSemantics` | INNER_EMBEDDED=SAFE, INNER_REFERENCED=SAFE, LEFT_CLEAN=SAFE, LEFT_NULLS=CHANGED |
-| `EQ-NOT-NULL` | `NotNullGuarantee` | VALIDATOR=SAFE |
-| `EQ-REF-INTEGRITY` | `ReferentialIntegrity` | EMBEDDED=SAFE, REFERENCED=CHANGED |
-| `EQ-RESTRICT` | `RestrictDelete` | EMBEDDED=CHANGED, REFERENCED=CHANGED |
-| `EQ-SET-DEFAULT` | `SetDefaultOnDelete` | EMBEDDED=CHANGED, REFERENCED=BROKEN |
-| `EQ-SET-NULL` | `SetNullOnDelete` | EMBEDDED=CHANGED, REFERENCED=BROKEN |
-| `EQ-TYPE` | `TypeGuarantee` | EXACT=SAFE, LOSSY=CHANGED |
-| `EQ-VALUE-UNIQ` | `ValueUniqueness` | EMBEDDED=CHANGED, PARTIAL_OK=SAFE, PARTIAL_UNTRANSLATABLE=CHANGED, NULLABLE=CHANGED, UNIQUE_INDEX=SAFE |
+| `EQ-AGG` | `AggregateSemantics` | AGG_SAFE=SAFE/UNVERIFIED, AGG_CHANGED=CHANGED/PROVEN |
+| `EQ-ATOMIC` | `MultiEntityAtomicity` | SINGLE_DOCUMENT=SAFE/PROVEN, TRANSACTION=CHANGED/CONDITIONAL, NO_TRANSACTION=BROKEN/PROVEN |
+| `EQ-AUTOINC` | `AutoIncrement` | OBJECTID=CHANGED/PROVEN, COUNTER=CHANGED/PROVEN |
+| `EQ-CASCADE-DEL` | `CascadingDelete` | EMBEDDED=SAFE/PROVEN, REFERENCED=BROKEN/PROVEN, CHAIN=BROKEN/PROVEN |
+| `EQ-CASCADE-UPD` | `CascadingUpdate` | EMBEDDED=SAFE/PROVEN, IMMUTABLE_KEY=CHANGED/CONDITIONAL, MUTABLE_KEY=BROKEN/PROVEN |
+| `EQ-CHECK` | `DomainConstraint` | SAFE_JSONSCHEMA=SAFE/CONDITIONAL, SAFE_EXPR=SAFE/CONDITIONAL, UNTRANSLATABLE=CHANGED/CONDITIONAL |
+| `EQ-CROSS-UNIQ` | `CrossEntityUniqueness` | OWN_COLLECTION=SAFE/CONDITIONAL, EMBEDDED=CHANGED/PROVEN, SPLIT=BROKEN/PROVEN |
+| `EQ-DEFAULT` | `DefaultValue` | CONSTANT=CHANGED/PROVEN, NOW=CHANGED/PROVEN, EXPRESSION=CHANGED/PROVEN |
+| `EQ-ENTITY-UNIQ` | `EntityUniqueness` | PK_SINGLE=SAFE/PROVEN, PK_COMPOSITE=SAFE/CONDITIONAL, PK_FOLDED=CHANGED/PROVEN, PK_EMBEDDED=CHANGED/PROVEN |
+| `EQ-ENUM` | `EnumDomain` | ENUM_LIST=SAFE/CONDITIONAL |
+| `EQ-JOIN` | `JoinSemantics` | INNER_EMBEDDED=SAFE/UNVERIFIED, INNER_REFERENCED=SAFE/UNVERIFIED, LEFT_CLEAN=SAFE/UNVERIFIED, LEFT_NULLS=CHANGED/PROVEN |
+| `EQ-NOT-NULL` | `NotNullGuarantee` | VALIDATOR=SAFE/CONDITIONAL |
+| `EQ-REF-INTEGRITY` | `ReferentialIntegrity` | EMBEDDED=SAFE/PROVEN, REFERENCED=CHANGED/CONDITIONAL |
+| `EQ-RESTRICT` | `RestrictDelete` | EMBEDDED=CHANGED/PROVEN, REFERENCED=CHANGED/CONDITIONAL |
+| `EQ-SET-DEFAULT` | `SetDefaultOnDelete` | EMBEDDED=CHANGED/PROVEN, REFERENCED=BROKEN/PROVEN |
+| `EQ-SET-NULL` | `SetNullOnDelete` | EMBEDDED=CHANGED/PROVEN, REFERENCED=BROKEN/PROVEN |
+| `EQ-TYPE` | `TypeGuarantee` | EXACT=SAFE/CONDITIONAL, LOSSY=CHANGED/PROVEN |
+| `EQ-VALUE-UNIQ` | `ValueUniqueness` | EMBEDDED=CHANGED/PROVEN, PARTIAL_OK=SAFE/CONDITIONAL, PARTIAL_UNTRANSLATABLE=CHANGED/PROVEN, NULLABLE=CHANGED/CONDITIONAL, UNIQUE_INDEX=SAFE/CONDITIONAL |
 
 ## EQ-AGG: Aggregate / GROUP BY semantics
 
@@ -37,6 +43,7 @@ IR node: `AggregateSemantics`
 - **Condition:** COUNT(*), COUNT(col), MIN, MAX, SUM over non-empty groups, AVG over floats
 - **Reason:** {node.query_id}: the aggregates map to $group accumulators with identical results (COUNT(col) skips nulls via $sum/$cond).
 - **MongoDB feature:** $group
+- **Evidence:** UNVERIFIED
 
 ### EQ-AGG / AGG_CHANGED -> CHANGED
 
@@ -44,6 +51,8 @@ IR node: `AggregateSemantics`
 - **Reason:** {node.query_id}: results can differ from PostgreSQL: {issues}.
 - **Mitigation:** The harness compares AVG with a 1e-9 tolerance; wrap SUM results with $cond to return null on an empty set.
 - **MongoDB feature:** $group
+- **Evidence:** PROVEN
+  - Argument: PostgreSQL returns NUMERIC for AVG over integers and NULL for SUM of an empty set; the generated pipeline returns a double, and NULL is only emulated: a documented representation difference.
 
 ## EQ-ATOMIC: Multi-table transactions
 
@@ -54,6 +63,8 @@ IR node: `MultiEntityAtomicity`
 - **Condition:** all touched tables embed into one document
 - **Reason:** Transaction {node.txn_id} touches {tables}, which all live in one document of {root}; single-document writes are atomic.
 - **MongoDB feature:** single-document atomicity
+- **Evidence:** PROVEN
+  - Argument: MongoDB guarantees that a write to a single document is atomic.
 
 ### EQ-ATOMIC / TRANSACTION -> CHANGED
 
@@ -61,12 +72,16 @@ IR node: `MultiEntityAtomicity`
 - **Reason:** Transaction {node.txn_id} spans {roots} collections ({tables}). Multi-document transactions work, but cost performance, have a 60s default limit and need a replica set.
 - **Mitigation:** Wrap the writes in a session.with_transaction(...) block (generated helper).
 - **MongoDB feature:** multi-document transactions
+- **Evidence:** CONDITIONAL
+  - Condition (replica_set): MongoDB runs as a replica set (or Atlas) so multi-document transactions are available, and the application retries TransientTransactionError and UnknownTransactionCommitResult.
 
 ### EQ-ATOMIC / NO_TRANSACTION -> BROKEN
 
 - **Condition:** tables are in several collections and transactions are unavailable
 - **Reason:** Transaction {node.txn_id} spans {roots} collections ({tables}) and the target has no multi-document transactions, so partial failure leaves inconsistent data.
 - **Mitigation:** Run MongoDB as a replica set / Atlas, or embed the tables into one document.
+- **Evidence:** PROVEN
+  - Argument: without multi-document transactions MongoDB cannot make writes to several documents atomic.
 
 ## EQ-AUTOINC: SERIAL / IDENTITY
 
@@ -78,6 +93,8 @@ IR node: `AutoIncrement`
 - **Reason:** {node.table}.{node.column} was a monotonic integer; it becomes an ObjectId, which is unique but not gap-free or strictly sequential.
 - **Mitigation:** Use the generated ObjectId, or enable preserve_integer_ids.
 - **MongoDB feature:** ObjectId
+- **Evidence:** PROVEN
+  - Argument: ObjectIds are unique but not sequential or gap-free, unlike SERIAL/IDENTITY values.
 
 ### EQ-AUTOINC / COUNTER -> CHANGED
 
@@ -85,6 +102,8 @@ IR node: `AutoIncrement`
 - **Reason:** {node.table}.{node.column} is generated from a counter collection (findOneAndUpdate $inc); ordering is kept but gaps and rollbacks differ from a PostgreSQL sequence.
 - **Mitigation:** Always allocate ids through the generated next_id() helper.
 - **MongoDB feature:** findOneAndUpdate + $inc
+- **Evidence:** PROVEN
+  - Argument: a counter collection updated with findOneAndUpdate/$inc is atomic per call but can leave gaps when the surrounding write fails, and orders by commit, not by transaction start.
 
 ## EQ-CASCADE-DEL: ON DELETE CASCADE
 
@@ -95,6 +114,8 @@ IR node: `CascadingDelete`
 - **Condition:** child embedded and every deeper cascade hop is embedded too
 - **Reason:** Deleting a {node.parent} document deletes its embedded {node.child} data, matching ON DELETE CASCADE.
 - **MongoDB feature:** embedded sub-document
+- **Evidence:** PROVEN
+  - Argument: deleting the parent document deletes everything embedded in it.
 
 ### EQ-CASCADE-DEL / REFERENCED -> BROKEN
 
@@ -102,6 +123,8 @@ IR node: `CascadingDelete`
 - **Reason:** MongoDB has no native cascade: deleting a {node.parent} leaves its {node.child} documents orphaned.
 - **Mitigation:** Delete the {node.child} documents in the same multi-document transaction as the {node.parent}, or run a change-stream worker that removes orphans.
 - **MongoDB feature:** multi-document transactions
+- **Evidence:** PROVEN
+  - Argument: MongoDB has no feature that provides this guarantee natively (no cascading deletes across collections).
 
 ### EQ-CASCADE-DEL / CHAIN -> BROKEN
 
@@ -109,6 +132,8 @@ IR node: `CascadingDelete`
 - **Reason:** The cascade chain {chain} cannot be preserved: at least one hop is stored by reference, and MongoDB never cascades deletes.
 - **Mitigation:** Delete every level of the chain ({chain}) in one multi-document transaction, or embed the whole chain, or use a change-stream worker.
 - **MongoDB feature:** multi-document transactions
+- **Evidence:** PROVEN
+  - Argument: MongoDB has no feature that provides this guarantee natively (no cascading deletes across collections).
 
 ## EQ-CASCADE-UPD: ON UPDATE CASCADE
 
@@ -119,12 +144,16 @@ IR node: `CascadingUpdate`
 - **Condition:** child is embedded in its parent
 - **Reason:** {node.child} is embedded in {node.parent}, so there are no copies of the key to keep in sync.
 - **MongoDB feature:** embedded sub-document
+- **Evidence:** PROVEN
+  - Argument: an embedded child holds no copy of the parent key, so there is nothing to propagate.
 
 ### EQ-CASCADE-UPD / IMMUTABLE_KEY -> CHANGED
 
 - **Condition:** child referenced and the parent key is the primary key (stored as immutable _id)
 - **Reason:** The key of {node.parent} is its primary key, stored as the immutable _id, so it does not change in practice, but nothing enforces propagation if it did.
 - **Mitigation:** Treat the key as immutable; if it must change, copy the document and update every {node.child} reference in a transaction.
+- **Evidence:** CONDITIONAL
+  - Condition (immutable_keys): the application never updates the parent key (the _id is immutable).
 
 ### EQ-CASCADE-UPD / MUTABLE_KEY -> BROKEN
 
@@ -132,6 +161,8 @@ IR node: `CascadingUpdate`
 - **Reason:** {node.parent}({cols}) is a mutable key and {node.child} stores copies of it; MongoDB will not propagate updates, leaving dangling references.
 - **Mitigation:** Update {node.child} in the same transaction whenever {cols} changes, or reference the immutable _id instead of the natural key.
 - **MongoDB feature:** multi-document transactions
+- **Evidence:** PROVEN
+  - Argument: MongoDB has no feature that provides this guarantee natively (no cascading key updates).
 
 ## EQ-CHECK: CHECK constraints
 
@@ -142,18 +173,25 @@ IR node: `DomainConstraint`
 - **Condition:** translatable predicate on a single column
 - **Reason:** CHECK ({node.expr_sql}) is enforced by $jsonSchema{where}.
 - **MongoDB feature:** $jsonSchema
+- **Evidence:** CONDITIONAL
+  - Condition (validators_installed): the generated $jsonSchema validators are installed (validationLevel strict, validationAction error) and no writer uses bypassDocumentValidation.
 
 ### EQ-CHECK / SAFE_EXPR -> SAFE
 
 - **Condition:** translatable predicate comparing columns or using arithmetic
 - **Reason:** CHECK ({node.expr_sql}) spans columns of the same row and is enforced by a $expr validator{where}.
 - **MongoDB feature:** $expr validator
+- **Evidence:** CONDITIONAL
+  - Condition (validators_installed): the generated $jsonSchema validators are installed (validationLevel strict, validationAction error) and no writer uses bypassDocumentValidation.
 
 ### EQ-CHECK / UNTRANSLATABLE -> CHANGED
 
 - **Condition:** predicate uses functions or subqueries MongoDB validators cannot express
 - **Reason:** CHECK ({node.expr_sql}) cannot be fully translated; untranslated fragment(s): {fragments}.
 - **Mitigation:** Enforce the untranslated fragment(s) in the application layer before writes.
+- **Evidence:** CONDITIONAL
+  - Condition (app_enforcement): every write goes through the generated enforcement helpers (helpers.py), never around them.
+  - Condition (manual_check): the untranslated predicate is re-implemented in the generated helper stub.
 
 ## EQ-CROSS-UNIQ: Uniqueness spanning related entities (junction key)
 
@@ -164,12 +202,16 @@ IR node: `CrossEntityUniqueness`
 - **Condition:** junction keeps its own collection (collapses to one collection)
 - **Reason:** The pair ({cols}) of {tables} lives in the single collection {node.junction}, so it is enforced as a ValueUniqueness: a compound unique index.
 - **MongoDB feature:** compound unique index
+- **Evidence:** CONDITIONAL
+  - Condition (indexes_created): the generated indexes (02_indexes) are created before the first write.
 
 ### EQ-CROSS-UNIQ / EMBEDDED -> CHANGED
 
 - **Condition:** junction rows are embedded inside one side
 - **Reason:** The junction {node.junction} is embedded as an array, so the uniqueness of ({cols}) only holds per document's array and is not enforced by an index.
 - **Mitigation:** Use $addToSet or check for the pair before pushing to the array.
+- **Evidence:** PROVEN
+  - Argument: a unique index does not enforce uniqueness within one document's array.
 
 ### EQ-CROSS-UNIQ / SPLIT -> BROKEN
 
@@ -177,6 +219,8 @@ IR node: `CrossEntityUniqueness`
 - **Reason:** Uniqueness of ({cols}) spans the collections {tables}; no index can enforce a constraint across two collections.
 - **Mitigation:** Keep the junction as its own collection with a compound unique index, or check the pair in the application inside a transaction.
 - **MongoDB feature:** multi-document transactions
+- **Evidence:** PROVEN
+  - Argument: no MongoDB index or constraint can span two collections.
 
 ## EQ-DEFAULT: Column defaults
 
@@ -187,18 +231,24 @@ IR node: `DefaultValue`
 - **Condition:** constant default
 - **Reason:** MongoDB has no server-side defaults: DEFAULT {node.expr_sql} on {node.table}.{node.column} is not applied on insert.
 - **Mitigation:** Generated insert helpers fill in {node.expr_sql} when the field is missing.
+- **Evidence:** PROVEN
+  - Argument: MongoDB has no server-side column defaults.
 
 ### EQ-DEFAULT / NOW -> CHANGED
 
 - **Condition:** now() / CURRENT_TIMESTAMP default
 - **Reason:** MongoDB has no server-side defaults: {node.table}.{node.column} will not be stamped with the insert time automatically.
 - **Mitigation:** Generated insert helpers set {node.column} to the current time when missing.
+- **Evidence:** PROVEN
+  - Argument: MongoDB has no server-side column defaults.
 
 ### EQ-DEFAULT / EXPRESSION -> CHANGED
 
 - **Condition:** any other default expression
 - **Reason:** MongoDB has no server-side defaults and cannot evaluate {node.expr_sql} for {node.table}.{node.column}.
 - **Mitigation:** Compute {node.expr_sql} in the application and set the field on insert.
+- **Evidence:** PROVEN
+  - Argument: MongoDB has no server-side column defaults.
 
 ## EQ-ENTITY-UNIQ: Primary key uniqueness
 
@@ -209,24 +259,32 @@ IR node: `EntityUniqueness`
 - **Condition:** single-column primary key on a top-level collection
 - **Reason:** The primary key {node.table}({cols}) becomes the document _id, which MongoDB keeps unique.
 - **MongoDB feature:** _id (unique by definition)
+- **Evidence:** PROVEN
+  - Argument: the _id field of every document is unique, enforced by MongoDB's built-in _id index.
 
 ### EQ-ENTITY-UNIQ / PK_COMPOSITE -> SAFE
 
 - **Condition:** composite primary key on a top-level collection
 - **Reason:** The composite key {node.table}({cols}) is enforced by a compound unique index (documents keep a generated ObjectId _id).
 - **MongoDB feature:** compound unique index
+- **Evidence:** CONDITIONAL
+  - Condition (indexes_created): the generated indexes (02_indexes) are created before the first write.
 
 ### EQ-ENTITY-UNIQ / PK_FOLDED -> CHANGED
 
 - **Condition:** junction table folded into an array of references
 - **Reason:** The junction {node.table} is folded into an array of references, so the key ({cols}) is only unique per document's array and no index enforces it.
 - **Mitigation:** Add references with $addToSet, or keep the junction as its own collection.
+- **Evidence:** PROVEN
+  - Argument: an array of references can hold duplicates; MongoDB cannot make array elements unique.
 
 ### EQ-ENTITY-UNIQ / PK_EMBEDDED -> CHANGED
 
 - **Condition:** table is embedded as an array inside a parent document
 - **Reason:** {node.table} is embedded as an array: a unique index cannot enforce uniqueness of ({cols}) between elements of one document's array.
 - **Mitigation:** Check for duplicates in the application before pushing to the array, or use $addToSet / an arrayFilters-guarded update.
+- **Evidence:** PROVEN
+  - Argument: a unique index does not enforce uniqueness within one document's array.
 
 ## EQ-ENUM: ENUM types
 
@@ -237,6 +295,8 @@ IR node: `EnumDomain`
 - **Condition:** always
 - **Reason:** {node.table}.{node.column} is restricted to {values} by $jsonSchema enum.
 - **MongoDB feature:** $jsonSchema enum
+- **Evidence:** CONDITIONAL
+  - Condition (validators_installed): the generated $jsonSchema validators are installed (validationLevel strict, validationAction error) and no writer uses bypassDocumentValidation.
 
 ## EQ-JOIN: JOIN semantics
 
@@ -247,18 +307,21 @@ IR node: `JoinSemantics`
 - **Condition:** INNER join along an embedded relationship
 - **Reason:** {node.query_id}: the INNER JOIN {left} -> {right} reads embedded data and becomes $unwind.
 - **MongoDB feature:** $unwind
+- **Evidence:** UNVERIFIED
 
 ### EQ-JOIN / INNER_REFERENCED -> SAFE
 
 - **Condition:** INNER join along a referenced relationship
 - **Reason:** {node.query_id}: the INNER JOIN {left} -> {right} becomes $lookup + $unwind, which drops rows without a match like an inner join.
 - **MongoDB feature:** $lookup + $unwind
+- **Evidence:** UNVERIFIED
 
 ### EQ-JOIN / LEFT_CLEAN -> SAFE
 
 - **Condition:** LEFT join and no column of the right side is projected
 - **Reason:** {node.query_id}: the LEFT JOIN {left} -> {right} becomes $lookup + $unwind with preserveNullAndEmptyArrays: true, keeping unmatched rows.
 - **MongoDB feature:** $lookup + $unwind(preserveNullAndEmptyArrays)
+- **Evidence:** UNVERIFIED
 
 ### EQ-JOIN / LEFT_NULLS -> CHANGED
 
@@ -266,6 +329,8 @@ IR node: `JoinSemantics`
 - **Reason:** {node.query_id}: unmatched rows of the LEFT JOIN {left} -> {right} have the right-side fields missing in MongoDB instead of NULL.
 - **Mitigation:** The generated pipeline adds a $project that maps missing fields to null explicitly; compare with missing == NULL.
 - **MongoDB feature:** $lookup + $unwind(preserveNullAndEmptyArrays)
+- **Evidence:** PROVEN
+  - Argument: an unmatched LEFT JOIN yields NULL columns in SQL and absent fields in MongoDB; the pipeline re-creates NULL only for projected columns.
 
 ## EQ-NOT-NULL: NOT NULL
 
@@ -276,6 +341,8 @@ IR node: `NotNullGuarantee`
 - **Condition:** always
 - **Reason:** {node.table}.{node.column} is listed in $jsonSchema required and its bsonType excludes null.
 - **MongoDB feature:** $jsonSchema required + bsonType
+- **Evidence:** CONDITIONAL
+  - Condition (validators_installed): the generated $jsonSchema validators are installed (validationLevel strict, validationAction error) and no writer uses bypassDocumentValidation.
 
 ## EQ-REF-INTEGRITY: Foreign key referential integrity
 
@@ -286,12 +353,16 @@ IR node: `ReferentialIntegrity`
 - **Condition:** child is embedded in its parent
 - **Reason:** {node.child} rows live inside their {node.parent} document, so a child cannot reference a parent that does not exist.
 - **MongoDB feature:** embedded sub-document
+- **Evidence:** PROVEN
+  - Argument: an embedded child lives inside its parent's document, so it cannot reference a missing parent.
 
 ### EQ-REF-INTEGRITY / REFERENCED -> CHANGED
 
 - **Condition:** child is stored in its own collection
 - **Reason:** MongoDB has no foreign keys: {node.child}({cols}) may point at a {node.parent} that does not exist.
 - **Mitigation:** Validate the parent exists in the application layer, inside a transaction when inserting or updating the child.
+- **Evidence:** CONDITIONAL
+  - Condition (app_enforcement): every write goes through the generated enforcement helpers (helpers.py), never around them.
 
 ## EQ-RESTRICT: ON DELETE RESTRICT / NO ACTION
 
@@ -302,6 +373,8 @@ IR node: `RestrictDelete`
 - **Condition:** child is embedded in its parent
 - **Reason:** Deleting a {node.parent} always removes its embedded {node.child} data; the restriction ({node.action}) is lost.
 - **Mitigation:** Check for embedded {node.child} entries in the application before deleting the parent, or store the child by reference.
+- **Evidence:** PROVEN
+  - Argument: deleting a parent document always removes what is embedded in it, so it cannot be restricted.
 
 ### EQ-RESTRICT / REFERENCED -> CHANGED
 
@@ -309,6 +382,8 @@ IR node: `RestrictDelete`
 - **Reason:** MongoDB will not block deleting a {node.parent} that still has {node.child} documents ({node.action}).
 - **Mitigation:** Count {node.child} documents for the parent before deleting, inside a transaction.
 - **MongoDB feature:** multi-document transactions
+- **Evidence:** CONDITIONAL
+  - Condition (app_enforcement): every write goes through the generated enforcement helpers (helpers.py), never around them.
 
 ## EQ-SET-DEFAULT: ON DELETE SET DEFAULT
 
@@ -320,6 +395,8 @@ IR node: `SetDefaultOnDelete`
 - **Reason:** {node.child} is embedded in {node.parent}: deleting the parent removes the child entirely instead of reset them to their default.
 - **Mitigation:** If the child must outlive the parent, store it by reference instead of embedding it.
 - **MongoDB feature:** embedded sub-document
+- **Evidence:** PROVEN
+  - Argument: deleting the parent deletes the embedded child instead of applying the default.
 
 ### EQ-SET-DEFAULT / REFERENCED -> BROKEN
 
@@ -327,6 +404,8 @@ IR node: `SetDefaultOnDelete`
 - **Reason:** MongoDB will not reset them to their default {node.child}({cols}) when a {node.parent} is deleted; references are left dangling.
 - **Mitigation:** In the delete routine, update the {node.child} documents (reset them to their default) inside a transaction before deleting the parent.
 - **MongoDB feature:** multi-document transactions
+- **Evidence:** PROVEN
+  - Argument: MongoDB has no feature that provides this guarantee natively (no ON DELETE SET DEFAULT).
 
 ## EQ-SET-NULL: ON DELETE SET NULL
 
@@ -338,6 +417,8 @@ IR node: `SetNullOnDelete`
 - **Reason:** {node.child} is embedded in {node.parent}: deleting the parent removes the child entirely instead of set them to NULL.
 - **Mitigation:** If the child must outlive the parent, store it by reference instead of embedding it.
 - **MongoDB feature:** embedded sub-document
+- **Evidence:** PROVEN
+  - Argument: deleting the parent deletes the embedded child instead of nulling its key.
 
 ### EQ-SET-NULL / REFERENCED -> BROKEN
 
@@ -345,6 +426,8 @@ IR node: `SetNullOnDelete`
 - **Reason:** MongoDB will not set them to NULL {node.child}({cols}) when a {node.parent} is deleted; references are left dangling.
 - **Mitigation:** In the delete routine, update the {node.child} documents (set them to NULL) inside a transaction before deleting the parent.
 - **MongoDB feature:** multi-document transactions
+- **Evidence:** PROVEN
+  - Argument: MongoDB has no feature that provides this guarantee natively (no ON DELETE SET NULL).
 
 ## EQ-TYPE: Column types
 
@@ -355,6 +438,8 @@ IR node: `TypeGuarantee`
 - **Condition:** the BSON type preserves the column's values exactly
 - **Reason:** {node.table}.{node.column} ({sqltype}) maps to BSON {bson}: {note}.
 - **MongoDB feature:** bsonType
+- **Evidence:** CONDITIONAL
+  - Condition (validators_installed): the generated $jsonSchema validators are installed (validationLevel strict, validationAction error) and no writer uses bypassDocumentValidation.
 
 ### EQ-TYPE / LOSSY -> CHANGED
 
@@ -362,6 +447,8 @@ IR node: `TypeGuarantee`
 - **Reason:** {node.table}.{node.column} ({sqltype}) maps to BSON {bson}: {note}.
 - **Mitigation:** {fix}.
 - **MongoDB feature:** bsonType
+- **Evidence:** PROVEN
+  - Argument: the BSON type cannot represent every value of the SQL type (offset, scale, padding, time part).
 
 ## EQ-VALUE-UNIQ: UNIQUE constraints and unique indexes
 
@@ -372,18 +459,24 @@ IR node: `ValueUniqueness`
 - **Condition:** table is embedded as an array inside a parent document
 - **Reason:** {node.table}({cols}) lives in an embedded array: a unique index does not enforce uniqueness within one document's array.
 - **Mitigation:** Check for duplicates in the application before inserting into the array.
+- **Evidence:** PROVEN
+  - Argument: a unique index does not enforce uniqueness within one document's array.
 
 ### EQ-VALUE-UNIQ / PARTIAL_OK -> SAFE
 
 - **Condition:** partial unique index whose predicate MongoDB can express
 - **Reason:** The partial unique index on {node.table}({cols}) maps to a unique index with a partialFilterExpression.
 - **MongoDB feature:** partialFilterExpression
+- **Evidence:** CONDITIONAL
+  - Condition (indexes_created): the generated indexes (02_indexes) are created before the first write.
 
 ### EQ-VALUE-UNIQ / PARTIAL_UNTRANSLATABLE -> CHANGED
 
 - **Condition:** partial unique index whose predicate MongoDB cannot express
 - **Reason:** The predicate of the partial unique index on {node.table}({cols}) uses {fragments}, which a partialFilterExpression cannot express.
 - **Mitigation:** Enforce uniqueness for the filtered rows in the application layer.
+- **Evidence:** PROVEN
+  - Argument: a partial index filter MongoDB cannot express cannot be reproduced as an index.
 
 ### EQ-VALUE-UNIQ / NULLABLE -> CHANGED
 
@@ -391,12 +484,16 @@ IR node: `ValueUniqueness`
 - **Reason:** {node.table}({cols}) is nullable: PostgreSQL allows many NULLs but a MongoDB unique index treats a missing/null value as one value, so a second NULL is rejected.
 - **Mitigation:** Use a partial unique index: partialFilterExpression {{field: {{$exists: true}}}} (generated by SchemaShift).
 - **MongoDB feature:** partialFilterExpression
+- **Evidence:** CONDITIONAL
+  - Condition (indexes_created): the generated indexes (02_indexes) are created before the first write.
 
 ### EQ-VALUE-UNIQ / UNIQUE_INDEX -> SAFE
 
 - **Condition:** top-level collection with non-null key columns
 - **Reason:** {node.table}({cols}) is enforced by a unique index.
 - **MongoDB feature:** unique index
+- **Evidence:** CONDITIONAL
+  - Condition (indexes_created): the generated indexes (02_indexes) are created before the first write.
 
 ## Type map
 

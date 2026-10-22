@@ -1,6 +1,6 @@
 {
-  "date": "2026-10-08",
-  "commit": "30f85d8",
+  "date": "2026-10-22",
+  "commit": "cdd1a51",
   "equivalence": {
     "corpus_schemas": 32,
     "labeled_nodes": 883,
@@ -60,6 +60,953 @@
       "match": 5,
       "verified": 5,
       "unexplained": []
+    }
+  },
+  "self_labeled": {
+    "schemas": [
+      "01_single_table",
+      "02_all_types",
+      "03_fk_reference",
+      "04_fk_embedded",
+      "05_cascade_delete_reference",
+      "06_cascade_delete_embedded",
+      "07_cascade_chain_reference",
+      "08_cascade_chain_mixed",
+      "09_cascade_chain_embedded",
+      "10_set_null_default",
+      "11_restrict_actions",
+      "12_update_cascade",
+      "13_one_to_one_embedded",
+      "14_junction_reference",
+      "15_junction_ref_array",
+      "16_self_reference",
+      "17_multi_parent_child",
+      "18_uniqueness_variants",
+      "19_unique_embedded_child",
+      "20_check_constraints",
+      "21_defaults_identity",
+      "22_enums",
+      "23_transactions_embedded",
+      "24_transactions_unavailable",
+      "25_joins",
+      "26_aggregates",
+      "27_circular_fk",
+      "28_semantic_errors",
+      "29_unsupported_constructs",
+      "30_ecommerce",
+      "31_university",
+      "32_banking"
+    ],
+    "labeled_by": [
+      "rule-author"
+    ],
+    "labeled_nodes": 883,
+    "problem_detection": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 225
+    },
+    "classes": {
+      "SAFE": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 658
+      },
+      "CHANGED": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 196
+      },
+      "BROKEN": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 29
+      }
+    },
+    "severity_accuracy": 1.0,
+    "confusion": {
+      "SAFE": {
+        "SAFE": 658,
+        "CHANGED": 0,
+        "BROKEN": 0
+      },
+      "CHANGED": {
+        "SAFE": 0,
+        "CHANGED": 196,
+        "BROKEN": 0
+      },
+      "BROKEN": {
+        "SAFE": 0,
+        "CHANGED": 0,
+        "BROKEN": 29
+      }
+    },
+    "failures": []
+  },
+  "independent": {
+    "schemas": [],
+    "labeled_by": [],
+    "labeled_nodes": 0,
+    "problem_detection": {
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 0
+    },
+    "classes": {
+      "SAFE": {
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "support": 0
+      },
+      "CHANGED": {
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "support": 0
+      },
+      "BROKEN": {
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "support": 0
+      }
+    },
+    "severity_accuracy": 1.0,
+    "confusion": {
+      "SAFE": {
+        "SAFE": 0,
+        "CHANGED": 0,
+        "BROKEN": 0
+      },
+      "CHANGED": {
+        "SAFE": 0,
+        "CHANGED": 0,
+        "BROKEN": 0
+      },
+      "BROKEN": {
+        "SAFE": 0,
+        "CHANGED": 0,
+        "BROKEN": 0
+      }
+    },
+    "failures": []
+  },
+  "agreement": {
+    "mock": {
+      "advisor": "mock",
+      "real_model": false,
+      "pairs": 165,
+      "agreed": 119,
+      "rate": 0.7212121212121212,
+      "kappa": 0.42211055276381904,
+      "disagreements": [
+        {
+          "case": "corpus/03_fk_reference",
+          "relationship_id": "fk:orders.customer_id->customers.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "embed score 0.46 < threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/04_fk_embedded",
+          "relationship_id": "fk:orders.customer_id->customers.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "embed score 0.46 < threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/10_set_null_default",
+          "relationship_id": "fk:c1.p_id->p.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/10_set_null_default",
+          "relationship_id": "fk:c2.p_id->p.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/10_set_null_default",
+          "relationship_id": "fk:c3.p_id->p.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/11_restrict_actions",
+          "relationship_id": "fk:c1.p_id->p.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/11_restrict_actions",
+          "relationship_id": "fk:c2.p_id->p.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/11_restrict_actions",
+          "relationship_id": "fk:c3.p_id->p.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/12_update_cascade",
+          "relationship_id": "fk:c1.p_id->p.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/12_update_cascade",
+          "relationship_id": "fk:c2.p_code->p.code",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/12_update_cascade",
+          "relationship_id": "fk:c3.p_id->p.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/17_multi_parent_child",
+          "relationship_id": "fk:reviews.product_id->products.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.56 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "corpus/19_unique_embedded_child",
+          "relationship_id": "fk:c.p_id->p.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "embed score 0.46 < threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/25_joins",
+          "relationship_id": "fk:notes.order_id->orders.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/27_circular_fk",
+          "relationship_id": "fk:a.b_id->b.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/27_circular_fk",
+          "relationship_id": "fk:b.a_id->a.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/28_semantic_errors",
+          "relationship_id": "fk:b.a_missing->a.nope",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/28_semantic_errors",
+          "relationship_id": "fk:b.a_txt->a.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/28_semantic_errors",
+          "relationship_id": "fk:b.a_x->a.x",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "hard constraint: the foreign key is nullable: a child row without a parent would have no document to live in and would be lost on embedding",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/30_ecommerce",
+          "relationship_id": "fk:order_items.order_id->orders.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.82 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "corpus/30_ecommerce",
+          "relationship_id": "fk:orders.customer_id->customers.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "embed score 0.42 < threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.10"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/30_ecommerce",
+          "relationship_id": "fk:reviews.product_id->products.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.82 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "corpus/31_university",
+          "relationship_id": "fk:enrollments.student_id->students.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.77 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "corpus/31_university",
+          "relationship_id": "fk:prerequisites.requires_id->courses.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "prerequisites is embedded in courses instead (at most one parent)",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "corpus/31_university",
+          "relationship_id": "fk:sections.course_id->courses.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.56 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "corpus/32_banking",
+          "relationship_id": "fk:beneficiaries.account_id->accounts.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.61 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "samples/blog",
+          "relationship_id": "fk:comments.post_id->posts.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.77 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "samples/ecommerce",
+          "relationship_id": "fk:order_items.order_id->orders.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.82 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "samples/ecommerce",
+          "relationship_id": "fk:orders.customer_id->customers.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "embed score 0.42 < threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.10"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "samples/ecommerce",
+          "relationship_id": "fk:reviews.product_id->products.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.82 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "samples/university",
+          "relationship_id": "fk:enrollments.student_id->students.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.77 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "samples/university",
+          "relationship_id": "fk:prerequisites.requires_id->courses.id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "prerequisites is embedded in courses instead (at most one parent)",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "samples/university",
+          "relationship_id": "fk:sections.course_id->courses.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.56 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/chinook",
+          "relationship_id": "fk:invoice.customer_id->customer.customer_id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "embed score 0.47 < threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.10"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "external/graphile_starter",
+          "relationship_id": "fk:organization_invitations.organization_id->organizations.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.61 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/graphile_starter",
+          "relationship_id": "fk:organization_memberships.organization_id->organizations.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.82 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12",
+            "guarantees_needing_embedding +0.10"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/pagila",
+          "relationship_id": "fk:city.country_id->country.country_id",
+          "optimizer": "REFERENCE",
+          "optimizer_reason": "projected country document exceeds 4 MB",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12"
+          ],
+          "advisor": "EMBED",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: small single-parent child read together with its parent"
+        },
+        {
+          "case": "external/pagila",
+          "relationship_id": "fk:payment_p2022_01.customer_id->customer.customer_id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.51 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/pagila",
+          "relationship_id": "fk:payment_p2022_02.customer_id->customer.customer_id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.51 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/pagila",
+          "relationship_id": "fk:payment_p2022_03.customer_id->customer.customer_id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.51 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/pagila",
+          "relationship_id": "fk:payment_p2022_04.customer_id->customer.customer_id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.51 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/pagila",
+          "relationship_id": "fk:payment_p2022_05.customer_id->customer.customer_id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.51 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/pagila",
+          "relationship_id": "fk:payment_p2022_06.customer_id->customer.customer_id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.51 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/pagila",
+          "relationship_id": "fk:rental.customer_id->customer.customer_id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.72 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.30",
+            "relationship_shape +0.12"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/pagila",
+          "relationship_id": "fk:staff.address_id->address.address_id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.51 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.15",
+            "relationship_shape +0.12",
+            "child_independent_access -0.06"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        },
+        {
+          "case": "external/supabase_slack_clone",
+          "relationship_id": "fk:messages.user_id->users.id",
+          "optimizer": "EMBED",
+          "optimizer_reason": "embed score 0.50 >= threshold 0.50",
+          "optimizer_factors": [
+            "read_together_ratio +0.20",
+            "relationship_shape +0.12",
+            "child_independent_access -0.07"
+          ],
+          "advisor": "REFERENCE",
+          "advisor_confidence": 0.6,
+          "advisor_justification": "mock advisor: default to a reference"
+        }
+      ]
+    },
+    "real": null
+  },
+  "external": {
+    "schemas": {
+      "chinook": {
+        "tables": 11,
+        "guarantees": 149,
+        "verdicts": {
+          "SAFE": 121,
+          "CHANGED": 27,
+          "BROKEN": 1
+        },
+        "diagnostics": {
+          "SEM011": 1
+        },
+        "has_errors": false,
+        "queries": 16,
+        "queries_translated": 16,
+        "not_translated": {},
+        "result_set": {
+          "match": 16,
+          "verified": 16,
+          "mismatches": [],
+          "notes": [
+            {
+              "query": "q3",
+              "note": "rows tied on the ORDER BY key at the LIMIT cut-off: which of them is returned is arbitrary in both databases"
+            }
+          ]
+        }
+      },
+      "graphile_starter": {
+        "tables": 12,
+        "guarantees": 196,
+        "verdicts": {
+          "SAFE": 126,
+          "CHANGED": 68,
+          "BROKEN": 2
+        },
+        "diagnostics": {
+          "UNSUPPORTED_STATEMENT": 57,
+          "UNSUPPORTED_FUNCTION": 40,
+          "UNSUPPORTED_TRIGGER": 15,
+          "UNSUPPORTED_ALTER_ACTION": 11,
+          "PARSE008": 5,
+          "PARSE002": 1
+        },
+        "has_errors": true,
+        "queries": 3,
+        "queries_translated": 3,
+        "not_translated": {},
+        "result_set": {
+          "skipped": "the schema has parse/analysis errors"
+        }
+      },
+      "northwind": {
+        "tables": 14,
+        "guarantees": 181,
+        "verdicts": {
+          "SAFE": 148,
+          "CHANGED": 32,
+          "BROKEN": 1
+        },
+        "diagnostics": {
+          "SEM011": 1
+        },
+        "has_errors": false,
+        "queries": 15,
+        "queries_translated": 15,
+        "not_translated": {},
+        "result_set": {
+          "match": 15,
+          "verified": 15,
+          "mismatches": [],
+          "notes": [
+            {
+              "query": "q4",
+              "note": "the query uses REAL (float4) columns: PostgreSQL computes in single precision, MongoDB in double, so results agree to about 1e-5 relative, not exactly"
+            },
+            {
+              "query": "q6",
+              "note": "the query uses REAL (float4) columns: PostgreSQL computes in single precision, MongoDB in double, so results agree to about 1e-5 relative, not exactly"
+            },
+            {
+              "query": "q9",
+              "note": "the query uses REAL (float4) columns: PostgreSQL computes in single precision, MongoDB in double, so results agree to about 1e-5 relative, not exactly"
+            },
+            {
+              "query": "q12",
+              "note": "the query uses REAL (float4) columns: PostgreSQL computes in single precision, MongoDB in double, so results agree to about 1e-5 relative, not exactly"
+            }
+          ]
+        }
+      },
+      "pagila": {
+        "tables": 69,
+        "guarantees": 1150,
+        "verdicts": {
+          "SAFE": 819,
+          "CHANGED": 331,
+          "BROKEN": 0
+        },
+        "diagnostics": {
+          "UNSUPPORTED_ALTER_ACTION": 55,
+          "SEM008": 55,
+          "UNSUPPORTED_STATEMENT": 16,
+          "UNSUPPORTED_TRIGGER": 16,
+          "SEM012": 16,
+          "UNSUPPORTED_FUNCTION": 9,
+          "PARSE006": 9,
+          "UNSUPPORTED_VIEW": 8,
+          "SEM001": 4,
+          "PARSE001": 1,
+          "PARSE008": 1,
+          "UNSUPPORTED_PARTITIONING": 1,
+          "UNSUPPORTED_EXPRESSION_INDEX": 1
+        },
+        "has_errors": true,
+        "queries": 11,
+        "queries_translated": 8,
+        "not_translated": {
+          "q1": "unknown table 'film'",
+          "q6": "unknown table 'film'",
+          "q10": "unknown table 'film'"
+        },
+        "result_set": {
+          "skipped": "the schema has parse/analysis errors"
+        }
+      },
+      "supabase_slack_clone": {
+        "tables": 5,
+        "guarantees": 68,
+        "verdicts": {
+          "SAFE": 49,
+          "CHANGED": 17,
+          "BROKEN": 2
+        },
+        "diagnostics": {
+          "UNSUPPORTED_STATEMENT": 18,
+          "UNSUPPORTED_ALTER_ACTION": 8,
+          "UNSUPPORTED_FUNCTION": 3,
+          "UNSUPPORTED_TRIGGER": 1,
+          "SEM011": 1
+        },
+        "has_errors": true,
+        "queries": 8,
+        "queries_translated": 8,
+        "not_translated": {},
+        "result_set": {
+          "skipped": "the schema has parse/analysis errors"
+        }
+      }
+    },
+    "result_set": {
+      "computed": true,
+      "match": 31,
+      "verified": 31,
+      "rate": 1.0
     }
   }
 }

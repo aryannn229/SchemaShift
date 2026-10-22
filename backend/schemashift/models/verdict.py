@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 from schemashift.models.base import FrozenModel
+from schemashift.models.evidence import EvidenceCondition, EvidenceLevel, RuleInput
 from schemashift.models.source import SourceSpan
 
 Status = Literal["SAFE", "CHANGED", "BROKEN"]
@@ -30,6 +31,12 @@ class Verdict(FrozenModel):
     mongo_feature: str | None = None
     conditions_evaluated: tuple[ConditionTrace, ...] = ()
     source_span: SourceSpan | None = None
+    # How we know (see models/evidence.py) and exactly what decided the verdict.
+    evidence: EvidenceLevel = "UNVERIFIED"
+    argument: str | None = None  # the sound argument behind a PROVEN verdict
+    evidence_conditions: tuple[EvidenceCondition, ...] = ()  # what a CONDITIONAL verdict depends on
+    decided_by: str = ""  # "<rule>/<outcome>: <the condition that fired>"
+    inputs: tuple[RuleInput, ...] = ()  # node, plan decision and options the rule consulted
 
 
 def worst(statuses: list[Status]) -> Status:

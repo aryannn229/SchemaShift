@@ -50,7 +50,7 @@ export function ResultTabs({
       </EmptyState>
     );
   else if (tab === "Summary") body = <SummaryTab result={result} run={run} />;
-  else if (tab === "Verdicts") body = <VerdictsTab result={result} onSelect={onSelectVerdict} />;
+  else if (tab === "Verdicts") body = <VerdictsTab result={result} run={run} onSelect={onSelectVerdict} />;
   else if (tab === "Relationships")
     body = <RelationshipsTab result={result} onOverride={onOverride} />;
   else if (tab === "IR") body = <IRTab result={result} />;

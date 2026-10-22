@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: M:N junction kept as its own collection
 diagnostics: []
 bulk:

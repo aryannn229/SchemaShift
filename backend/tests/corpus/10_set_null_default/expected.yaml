@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: SET NULL / SET DEFAULT, referenced and embedded
 placements:
   fk:c3.p_id->p.id: EMBED

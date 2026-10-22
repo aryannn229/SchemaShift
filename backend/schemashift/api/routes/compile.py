@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import func, select
 
 from schemashift.api.db.models import Run
@@ -16,6 +16,7 @@ from schemashift.api.runs import AppState
 from schemashift.api.schemas import (
     CompileRequest,
     CompileResponse,
+    CounterexampleReplay,
     MetricsResponse,
     RunCreated,
     RunDetail,
@@ -63,10 +64,24 @@ def compile_endpoint(req: CompileRequest, state: AppState = Depends(get_state)) 
     return build_response(result, codegen, state.ai_enabled)
 
 
+def _enforce_verify_limit(request: Request) -> None:
+    """Verified runs execute on real databases: they have their own, stricter limit."""
+    limiter = getattr(request.app.state, "limiter", None)
+    client = request.client.host if request.client else "unknown"
+    if limiter is not None and not limiter.allow(client, "verify"):
+        raise HTTPException(
+            status_code=429, detail="rate limit exceeded", headers={"Retry-After": "60"}
+        )
+
+
 @router.post("/runs", response_model=RunCreated, status_code=202)
-def create_run(req: RunRequest, state: AppState = Depends(get_state)) -> RunCreated:
+def create_run(
+    req: RunRequest, request: Request, state: AppState = Depends(get_state)
+) -> RunCreated:
     if req.verify and not state.settings.verification_enabled:
         raise HTTPException(status_code=503, detail="verification is not configured on this server")
+    if req.verify:
+        _enforce_verify_limit(request)
     run_id = str(uuid.uuid4())
     with state.factory() as s:
         s.add(
@@ -123,6 +138,49 @@ def get_run(run_id: str, state: AppState = Depends(get_state)) -> RunDetail:
         if run is None:
             raise HTTPException(status_code=404, detail="run not found")
         return _detail(run)
+
+
+@router.post("/runs/{run_id}/counterexamples/replay", response_model=CounterexampleReplay)
+def replay_counterexample(
+    run_id: str,
+    verdict_id: str = Query(..., min_length=1, max_length=300),
+    state: AppState = Depends(get_state),
+) -> CounterexampleReplay:
+    """Rebuild and re-run the minimal counterexample of one verdict on fresh sandboxes."""
+    from schemashift.pipeline import CompileOptions
+    from schemashift.verification import SandboxConfig
+    from schemashift.verification.counterexample import counterexample_for
+
+    if not state.settings.verification_enabled:
+        raise HTTPException(status_code=503, detail="verification is not configured on this server")
+    with state.factory() as s:
+        run = s.get(Run, run_id)
+        if run is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        req = CompileRequest(
+            schema_sql=run.schema_sql,
+            queries_sql=run.queries_sql,
+            seed_sql=run.seed_sql,
+            options=CompileOptions.model_validate(run.options),
+        )
+        seed = run.seed
+    result, _ = run_compile(req, state.settings, state.advisor, state.cache)
+    verdict = next((v for v in result.equivalence.final.verdicts if v.node_id == verdict_id), None)
+    if verdict is None:
+        raise HTTPException(status_code=404, detail="no such verdict in this run")
+    if verdict.status == "SAFE":
+        raise HTTPException(status_code=422, detail="SAFE verdicts have no counterexample")
+    config = SandboxConfig(
+        pg_admin_dsn=state.settings.sandbox_admin_database_url,
+        mongo_url=state.settings.mongo_url,
+        mongo_sandbox_url=state.settings.mongo_sandbox_url or None,
+    )
+    out = counterexample_for(result, req.options, config, verdict, seed)
+    from schemashift.models import Counterexample
+
+    if isinstance(out, Counterexample):
+        return CounterexampleReplay(verdict_id=verdict_id, counterexample=out)
+    return CounterexampleReplay(verdict_id=verdict_id, gap=out)
 
 
 @router.get("/runs/{run_id}/export")

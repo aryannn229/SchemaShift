@@ -205,6 +205,60 @@
         }
       }
     },
+    "/api/v1/runs/{run_id}/counterexamples/replay": {
+      "post": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Replay Counterexample",
+        "description": "Rebuild and re-run the minimal counterexample of one verdict on fresh sandboxes.",
+        "operationId": "replay_counterexample_api_v1_runs__run_id__counterexamples_replay_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "verdict_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300,
+              "title": "Verdict Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CounterexampleReplay"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/runs/{run_id}/export": {
       "get": {
         "tags": [
@@ -758,6 +812,161 @@
         "title": "ConditionTrace",
         "description": "One condition a rule evaluated and its result (the UI's \"Why?\" view)."
       },
+      "Counterexample": {
+        "properties": {
+          "verdict_id": {
+            "type": "string",
+            "title": "Verdict Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "setup": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Setup"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/CounterexampleStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "difference": {
+            "type": "string",
+            "title": "Difference"
+          },
+          "tables_differing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tables Differing",
+            "default": []
+          },
+          "rows_in_setup": {
+            "type": "integer",
+            "title": "Rows In Setup",
+            "default": 0
+          },
+          "minimal": {
+            "type": "boolean",
+            "title": "Minimal",
+            "default": true
+          },
+          "reproducible": {
+            "type": "boolean",
+            "title": "Reproducible",
+            "default": true
+          },
+          "seed": {
+            "type": "integer",
+            "title": "Seed",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "verdict_id",
+          "description",
+          "setup",
+          "steps",
+          "difference"
+        ],
+        "title": "Counterexample",
+        "description": "The smallest data and operation sequence found that shows the behaviours differ."
+      },
+      "CounterexampleGap": {
+        "properties": {
+          "verdict_id": {
+            "type": "string",
+            "title": "Verdict Id"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "verdict_id",
+          "reason"
+        ],
+        "title": "CounterexampleGap",
+        "description": "Why no counterexample exists for a BROKEN / CHANGED verdict (never silently missing)."
+      },
+      "CounterexampleReplay": {
+        "properties": {
+          "verdict_id": {
+            "type": "string",
+            "title": "Verdict Id"
+          },
+          "counterexample": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Counterexample"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gap": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CounterexampleGap"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "verdict_id"
+        ],
+        "title": "CounterexampleReplay"
+      },
+      "CounterexampleStep": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "sql": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sql"
+          },
+          "postgres": {
+            "type": "string",
+            "title": "Postgres"
+          },
+          "mongo": {
+            "type": "string",
+            "title": "Mongo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description",
+          "postgres",
+          "mongo"
+        ],
+        "title": "CounterexampleStep",
+        "description": "One operation of a counterexample, with what each database did."
+      },
       "Diagnostic": {
         "properties": {
           "severity": {
@@ -795,6 +1004,76 @@
           "message"
         ],
         "title": "Diagnostic"
+      },
+      "EvidenceCondition": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "parameters": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Parameters",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "EvidenceCondition",
+        "description": "One condition under which a verdict holds, as data (the text is for humans)."
+      },
+      "EvidenceUpgrade": {
+        "properties": {
+          "verdict_id": {
+            "type": "string",
+            "title": "Verdict Id"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "PROVEN",
+              "CONDITIONAL",
+              "TESTED",
+              "UNVERIFIED"
+            ],
+            "title": "Level"
+          },
+          "basis": {
+            "type": "string",
+            "title": "Basis"
+          }
+        },
+        "type": "object",
+        "required": [
+          "verdict_id",
+          "level",
+          "basis"
+        ],
+        "title": "EvidenceUpgrade",
+        "description": "A verification run raised an UNVERIFIED verdict to TESTED, and on what basis."
       },
       "Factor": {
         "properties": {
@@ -1176,6 +1455,11 @@
             "type": "array",
             "title": "Examples",
             "default": []
+          },
+          "operation": {
+            "type": "string",
+            "title": "Operation",
+            "default": ""
           }
         },
         "type": "object",
@@ -1273,6 +1557,17 @@
               }
             ],
             "title": "Pg Error"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
           }
         },
         "type": "object",
@@ -1418,6 +1713,25 @@
           "side"
         ],
         "title": "RowDiff"
+      },
+      "RuleInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "RuleInput",
+        "description": "A value the rule consulted (\"Why?\" trace): placement decision, option or node."
       },
       "RunCreated": {
         "properties": {
@@ -1949,6 +2263,49 @@
                 "type": "null"
               }
             ]
+          },
+          "evidence": {
+            "type": "string",
+            "enum": [
+              "PROVEN",
+              "CONDITIONAL",
+              "TESTED",
+              "UNVERIFIED"
+            ],
+            "title": "Evidence",
+            "default": "UNVERIFIED"
+          },
+          "argument": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Argument"
+          },
+          "evidence_conditions": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceCondition"
+            },
+            "type": "array",
+            "title": "Evidence Conditions",
+            "default": []
+          },
+          "decided_by": {
+            "type": "string",
+            "title": "Decided By",
+            "default": ""
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/RuleInput"
+            },
+            "type": "array",
+            "title": "Inputs",
+            "default": []
           }
         },
         "type": "object",
@@ -1999,6 +2356,30 @@
             },
             "type": "array",
             "title": "Probes",
+            "default": []
+          },
+          "counterexamples": {
+            "items": {
+              "$ref": "#/components/schemas/Counterexample"
+            },
+            "type": "array",
+            "title": "Counterexamples",
+            "default": []
+          },
+          "counterexample_gaps": {
+            "items": {
+              "$ref": "#/components/schemas/CounterexampleGap"
+            },
+            "type": "array",
+            "title": "Counterexample Gaps",
+            "default": []
+          },
+          "evidence_upgrades": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceUpgrade"
+            },
+            "type": "array",
+            "title": "Evidence Upgrades",
             "default": []
           },
           "warnings": {

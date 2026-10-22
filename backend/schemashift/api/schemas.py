@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from schemashift.codegen.emit import GeneratedFile
 from schemashift.equivalence.checker import PlacementChange
-from schemashift.models import PlacementDecision, Verdict
+from schemashift.models import Counterexample, CounterexampleGap, PlacementDecision, Verdict
 from schemashift.models.source import Diagnostic
 from schemashift.pipeline import CompileOptions
 from schemashift.verification import VerificationReport
@@ -130,6 +130,12 @@ class RunDetail(BaseModel):
     error: str | None
     result: CompileResponse | None
     verification: VerificationReport | None
+
+
+class CounterexampleReplay(BaseModel):
+    verdict_id: str
+    counterexample: Counterexample | None = None
+    gap: CounterexampleGap | None = None  # why there is no counterexample
 
 
 class MetricsResponse(BaseModel):

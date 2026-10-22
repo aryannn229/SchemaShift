@@ -1,3 +1,5 @@
+labeled_by: rule-author
+labeled_blind: false
 description: M:N junction folded into an array of references
 placements:
   m2n:enrollments: REF_ARRAY

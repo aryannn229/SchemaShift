@@ -57,3 +57,15 @@ export function useMetrics() {
     queryFn: async () => unwrap(await client.GET("/api/v1/metrics")),
   });
 }
+
+/** Re-run the minimal counterexample of one verdict on fresh sandboxes. */
+export function useReplayCounterexample(runId: string | undefined) {
+  return useMutation({
+    mutationFn: async (verdictId: string) =>
+      unwrap(
+        await client.POST("/api/v1/runs/{run_id}/counterexamples/replay", {
+          params: { path: { run_id: runId! }, query: { verdict_id: verdictId } },
+        }),
+      ),
+  });
+}

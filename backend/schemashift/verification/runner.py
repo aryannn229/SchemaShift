@@ -14,12 +14,14 @@ from schemashift.codegen.layout import TableLayout, build_layouts
 from schemashift.codegen.queries import QueryContext, TranslatedQuery, WriteOp, translate_query
 from schemashift.codegen.values import materialize
 from schemashift.models.base import FrozenModel
+from schemashift.models.evidence import Counterexample, CounterexampleGap, EvidenceUpgrade
 from schemashift.models.query import Query
 from schemashift.optimizer.workload import flatten
 from schemashift.parser import parse
 from schemashift.pipeline import CompileOptions, CompileResult
 from schemashift.verification.ddl import UnsafeSqlError, assert_safe_expression, ddl_statements, q
 from schemashift.verification.diff import ResultDiff, RowDiff, compare
+from schemashift.verification.normalize import TOLERANCE
 from schemashift.verification.sandbox import Sandbox, SandboxConfig
 from schemashift.verification.seed import (
     DEFAULT_ROWS_PER_TABLE,
@@ -27,6 +29,7 @@ from schemashift.verification.seed import (
     SeedData,
     SeedError,
     generate_seed,
+    insertion_order,
     seed_from_inserts,
 )
 
@@ -53,6 +56,7 @@ class QueryOutcome(FrozenModel):
     explained_by: list[str] = []
     error: str | None = None
     pg_error: str | None = None
+    note: str | None = None  # a documented allowance that was needed to call it a MATCH
 
 
 class ProbeOutcome(FrozenModel):
@@ -65,6 +69,7 @@ class ProbeOutcome(FrozenModel):
     demonstrates: bool
     tables_differing: list[str] = []
     examples: list[RowDiff] = []
+    operation: str = ""  # the PostgreSQL statement, parameters inlined (display only)
 
 
 class VerificationReport(FrozenModel):
@@ -74,6 +79,9 @@ class VerificationReport(FrozenModel):
     migrated: dict[str, int]
     queries: list[QueryOutcome]
     probes: list[ProbeOutcome] = []
+    counterexamples: list[Counterexample] = []
+    counterexample_gaps: list[CounterexampleGap] = []
+    evidence_upgrades: list[EvidenceUpgrade] = []
     warnings: list[str] = []
     duration_ms: int = 0
 
@@ -99,10 +107,19 @@ def run_python_source(source: str, entry: str, *args: Any) -> Any:
     return ns[entry](*args) if args else ns
 
 
+def _insertion_order(schema: Any) -> list[str]:
+    """Parents before children (tables may be declared in any order, e.g. alphabetically)."""
+    try:
+        order, _ = insertion_order(schema)
+    except SeedError:
+        return list(schema.tables)  # circular NOT NULL keys: declaration order, PostgreSQL decides
+    return order
+
+
 def insert_seed(pg: Any, schema: Any, seed: SeedData) -> dict[str, int]:
     """Parameterized INSERTs built from the schema (identifiers quoted, values bound)."""
     counts: dict[str, int] = {}
-    for name in schema.tables:
+    for name in _insertion_order(schema):
         rows = seed.rows.get(name, [])
         omitted = seed.omitted.get(name, [])
         types = {c.name: c.sql_type for c in schema.tables[name].columns}
@@ -239,6 +256,7 @@ def verify(
     seed_sql: str = "",
     seed: int = 0,
     run_probes: bool = True,
+    counterexamples: bool = True,
 ) -> VerificationReport:
     """Verify a compile result against real PostgreSQL and MongoDB sandboxes."""
     if config is None:
@@ -265,15 +283,7 @@ def verify(
     warnings.extend(seed_data.warnings)
 
     with Sandbox(config) as sb:
-        for stmt in statements:
-            sb.pg.execute(stmt)
-        rows = insert_seed(sb.pg, result.schema_, seed_data)
-        run_python_source(
-            codegen.file("python/schema.py").content, "create_collections", sb.mongo_db
-        )
-        run_python_source(codegen.file("python/indexes.py").content, "create_indexes", sb.mongo_db)
-        env = Env(result, codegen, layouts, sb, options)
-        migrated = env.migrate()
+        env, rows, migrated = load_env(result, options, sb, codegen, layouts, statements, seed_data)
         outcomes: list[QueryOutcome] = []
         translated = {t.query_id: t for t in codegen.queries}
         for query in flat:
@@ -288,16 +298,72 @@ def verify(
             from schemashift.verification.probes import run_probes as _probes
 
             probes = _probes(env)
+    examples: list[Counterexample] = []
+    gaps: list[CounterexampleGap] = []
+    if counterexamples:
+        from schemashift.verification.counterexample import generate_counterexamples
+
+        examples, gaps = generate_counterexamples(result, options, config, seed_data.seed)
+    sorted_outcomes = sorted(outcomes, key=lambda o: _order_key(o.query_id))
     return VerificationReport(
         run_id=sb.run_id,
         seed=seed_data.seed,
         rows=rows,
         migrated=migrated,
-        queries=sorted(outcomes, key=lambda o: _order_key(o.query_id)),
+        queries=sorted_outcomes,
         probes=probes,
+        counterexamples=examples,
+        counterexample_gaps=gaps,
+        evidence_upgrades=evidence_upgrades(result, sorted_outcomes, seed_data.seed, rows),
         warnings=warnings,
         duration_ms=int((time.monotonic() - started) * 1000),
     )
+
+
+def evidence_upgrades(
+    result: CompileResult, outcomes: list[QueryOutcome], seed: int, rows: dict[str, int]
+) -> list[EvidenceUpgrade]:
+    """UNVERIFIED query-level verdicts whose query MATCHed on real databases become TESTED.
+
+    Only evidence of this kind (a differential comparison on concrete data) is claimed: it is not a
+    proof, so PROVEN and CONDITIONAL verdicts keep their level.
+    """
+    matched = {o.query_id for o in outcomes if o.status == "MATCH"}
+    total = sum(rows.values())
+    out: list[EvidenceUpgrade] = []
+    for v in result.equivalence.final.verdicts:
+        if v.evidence != "UNVERIFIED":
+            continue
+        qid = getattr(result.ir.by_id(v.node_id), "query_id", None)
+        if qid in matched:
+            out.append(
+                EvidenceUpgrade(
+                    verdict_id=v.node_id,
+                    level="TESTED",
+                    basis=f"query {qid} returned the same result on PostgreSQL and MongoDB "
+                    f"(seed {seed}, {total} rows)",
+                )
+            )
+    return out
+
+
+def load_env(
+    result: CompileResult,
+    options: CompileOptions,
+    sb: Sandbox,
+    codegen: CodegenResult,
+    layouts: dict[str, TableLayout],
+    statements: list[str],
+    seed_data: SeedData,
+) -> tuple[Env, dict[str, int], dict[str, int]]:
+    """Create the schema, load the seed, create collections and indexes, then migrate."""
+    for stmt in statements:
+        sb.pg.execute(stmt)
+    rows = insert_seed(sb.pg, result.schema_, seed_data)
+    run_python_source(codegen.file("python/schema.py").content, "create_collections", sb.mongo_db)
+    run_python_source(codegen.file("python/indexes.py").content, "create_indexes", sb.mongo_db)
+    env = Env(result, codegen, layouts, sb, options)
+    return env, rows, env.migrate()
 
 
 def _order_key(query_id: str) -> int:
@@ -341,7 +407,18 @@ def _run_select(env: Env, query: Query, tq: TranslatedQuery) -> QueryOutcome:
         right = mongo_rows(env.sb.mongo_db, tq)
     except PyMongoError as exc:
         return QueryOutcome(**base, status="ERROR", error=str(exc))
-    diff = compare(left, right, tq.ordered, tq.order_positions, tq.global_aggregate)
+    tolerance, real_note = _tolerance_for(query, env.schema)
+    diff = compare(
+        left,
+        right,
+        tq.ordered,
+        tq.order_positions,
+        tq.global_aggregate,
+        limited=tq.limited,
+        tolerance=tolerance,
+    )
+    if diff.status == "MATCH" and diff.note is None and real_note and tolerance > TOLERANCE:
+        diff = diff.model_copy(update={"note": real_note})
     explained = explaining_verdicts(env, query.id) if diff.status == "MISMATCH" else []
     return QueryOutcome(
         **base,
@@ -351,7 +428,32 @@ def _run_select(env: Env, query: Query, tq: TranslatedQuery) -> QueryOutcome:
         differing=diff.differing,
         hypothesis=diff.hypothesis,
         explained_by=explained,
+        note=diff.note,
     )
+
+
+# PostgreSQL REAL is a 32-bit float and does its arithmetic in single precision; MongoDB computes
+# in double precision, so results that involve REAL differ in the 7th significant digit.
+REAL_TOLERANCE = 1e-5
+REAL_NOTE = (
+    "the query uses REAL (float4) columns: PostgreSQL computes in single precision, MongoDB in "
+    "double, so results agree to about 1e-5 relative, not exactly"
+)
+
+
+def _tolerance_for(query: Query, schema: Any) -> tuple[float, str | None]:
+    from sqlglot import exp
+
+    tables = {str(t.name).lower() for t in query.ast.find_all(exp.Table)}
+    columns = {str(c.name).lower() for c in query.ast.find_all(exp.Column)}
+    for name in tables:
+        table = schema.tables.get(name)
+        if table is None:
+            continue
+        for col in table.columns:
+            if col.name in columns and col.sql_type.base == "FLOAT":
+                return REAL_TOLERANCE, REAL_NOTE
+    return TOLERANCE, None
 
 
 def snapshot_mongo(db: Any) -> dict[str, list[dict[str, Any]]]:

@@ -636,3 +636,21 @@ PostgreSQL and as the generated pipeline on MongoDB and the normalised results a
 results under the default, all-REFERENCE and all-EMBED plans. Failures are shrunk and saved to
 `backend/tests/regressions/fuzz_<hash>.yaml`; `tests/integration/test_fuzz.py` replays them all. The known gap "global
 aggregate over an empty input" is **closed**. See `docs/FUZZING.md`.
+
+## 18. Phase 15: Independent benchmark and honest metrics
+
+`samples/external/` holds public schemas (Pagila, Chinook, Northwind, Supabase Slack clone, Graphile Starter) with source,
+license and porting notes, plus a hand-written workload each. `backend/tests/corpus*/*/expected.yaml` carries
+`labeled_by` and `labeled_blind`; `schemashift corpus label-template <schema.sql>` writes an empty label file so a second
+person can label blind. `schemashift corpus report` prints precision, recall, F1 and the confusion matrix for the
+self-labeled and the independent group separately (never merged), the optimizer-vs-advisor agreement and Cohen's kappa,
+the mutation score and the failure cases; `--write-docs` updates `docs/METRICS.md` and `docs/metrics.json` (served by
+`GET /api/v1/metrics` and shown on the About page). See `docs/EVALUATION.md`.
+
+## 19. Phase 16: Explainable verification engine
+
+Verdicts keep SAFE/CHANGED/BROKEN and add an **evidence level** (PROVEN, CONDITIONAL, TESTED, UNVERIFIED), the argument or
+structured conditions behind it, the rule/outcome that decided it and the inputs it consulted. A verification run adds minimal
+counterexamples (setup data, operation, behaviour on each database, resulting difference) or a documented reason, evidence
+upgrades to TESTED, and a replay endpoint. The Verdicts tab shows the evidence badge, conditions, counterexample, side-by-side
+outcome and a replay button. See `docs/VERIFICATION.md`.

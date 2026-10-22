@@ -98,6 +98,8 @@ def bucket_for(request: Request) -> str | None:
     if request.method != "POST":
         return None
     path = request.url.path
+    if path.endswith("/counterexamples/replay"):
+        return "verify"  # runs both databases: the stricter limit
     if path.endswith("/compile") or path.endswith("/runs"):
         return "compile"
     return None
