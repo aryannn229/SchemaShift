@@ -668,3 +668,13 @@ The placement score is `soft factors + workload terms`, compared against `thresh
 non-positive and additive (`parent_write_amplification`, `child_write_share`, `fanout_skew`), so they never change the normalization of
 plans that carry no workload or seed information. The sensitivity analysis perturbs each weight by +/-10% and +/-20% and reports flips as
 fragile / watch / stable / constrained. See `docs/OPTIMIZER.md`.
+
+## 22. Phase 19: Aggregation pipeline optimizer
+Generated SELECT pipelines pass through `aggopt` (rewrite rules with preconditions, bounded search, estimated cost). A rewrite is
+applied only when its stated precondition holds and the estimated cost drops; results must equal the unoptimized pipeline
+(differential, metamorphic and optimizer-vs-original fuzz checks). See `docs/PIPELINE_OPTIMIZER.md`.
+
+## 23. Phase 22: Incremental schema migration
+`evolve(old, new | alter)` returns typed changes, placement changes, ordered migration steps with reversibility (REVERSIBLE,
+REVERSIBLE_WITH_SAVED_DATA, IRREVERSIBLE) and a guarantee diff. Acceptance: migrate(v1) then the incremental migration equals
+migrate(v2) on the same data, and the rollback restores v1. See `docs/EVOLUTION.md`.

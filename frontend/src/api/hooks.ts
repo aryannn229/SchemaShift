@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 
-import { client, unwrap, type CompileRequest, type RunDetail } from "./client";
+import { client, unwrap, type CompileRequest, type DiffRequest, type RunDetail } from "./client";
 
 export function useSamples() {
   return useQuery({
@@ -17,6 +17,12 @@ export function useCompile() {
   return useMutation({
     mutationFn: async (body: CompileRequest) =>
       unwrap(await client.POST("/api/v1/compile", { body })),
+  });
+}
+
+export function useDiff() {
+  return useMutation({
+    mutationFn: async (body: DiffRequest) => unwrap(await client.POST("/api/v1/diff", { body })),
   });
 }
 

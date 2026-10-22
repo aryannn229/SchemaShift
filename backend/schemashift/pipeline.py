@@ -47,6 +47,8 @@ class CompileOptions(FrozenModel):
     # analysis
     workload: WorkloadSpec = WorkloadSpec()
     sensitivity: bool = True
+    # Phase 19: rewrite generated aggregation pipelines (cost-based, semantics preserving)
+    optimize_pipelines: bool = True
 
     def rule_options(self) -> RuleOptions:
         return RuleOptions(
@@ -98,22 +100,66 @@ def compile_sql(
     """Run every compiler stage. Never executes the SQL. The advisor (if any) is advisory only."""
     options = options or CompileOptions()
     parsed = parse(schema_sql + "\n" + queries_sql)
-    seed = parse(seed_sql, "queries") if seed_sql.strip() else None
-    analysis = analyze(parsed.schema_, parsed.queries)
-    program = build_ir(analysis.graph, parsed.queries)
-    seed_queries = seed.queries if seed else ()
-    offset = schema_sql.count("\n") + 1
-    freq = merge_frequencies(
-        annotation_frequencies(queries_sql, parsed.queries, offset), options.workload
+    return _compile_parsed(
+        parsed.schema_,
+        parsed.queries,
+        parsed.diagnostics,
+        queries_sql,
+        schema_sql.count("\n") + 1,
+        seed_sql,
+        options,
+        advisor,
+        cache,
     )
+
+
+def compile_schema(
+    schema: Schema,
+    queries_sql: str = "",
+    seed_sql: str = "",
+    options: CompileOptions | None = None,
+) -> CompileResult:
+    """Compile an already parsed schema (the incremental compiler builds one from ALTER
+    statements)."""
+    options = options or CompileOptions()
+    parsed = parse(queries_sql, "queries") if queries_sql.strip() else None
+    return _compile_parsed(
+        schema,
+        parsed.queries if parsed else (),
+        parsed.diagnostics if parsed else (),
+        queries_sql,
+        1,
+        seed_sql,
+        options,
+        None,
+        None,
+    )
+
+
+def _compile_parsed(
+    schema: Schema,
+    queries: tuple[Query | TransactionBlock, ...],
+    parse_diagnostics: tuple[Diagnostic, ...],
+    queries_sql: str,
+    offset: int,
+    seed_sql: str,
+    options: CompileOptions,
+    advisor: LLMAdvisor | None,
+    cache: AdvisorCache | None,
+) -> CompileResult:
+    seed = parse(seed_sql, "queries") if seed_sql.strip() else None
+    analysis = analyze(schema, queries)
+    program = build_ir(analysis.graph, queries)
+    seed_queries = seed.queries if seed else ()
+    freq = merge_frequencies(annotation_frequencies(queries_sql, queries, offset), options.workload)
     opt_options = options.optimizer_options(freq)
-    plan = plan_placement(analysis.graph, program, parsed.queries, seed_queries, opt_options)
+    plan = plan_placement(analysis.graph, program, queries, seed_queries, opt_options)
     features = None
     if advisor is not None or (options.sensitivity and analysis.graph.relationships):
         features = extract_features(
             analysis.graph,
             program,
-            parsed.queries,
+            queries,
             seed_queries,
             options.access_hints,
             None,
@@ -126,22 +172,22 @@ def compile_sql(
         report = analyze_sensitivity(analysis.graph, features, opt_options, load_weights(), plan)
         plan = attach_fragility(plan, report)
     if advisor is not None and features is not None:
-        plan = attach_opinions(plan, features, parsed.schema_, advisor, cache)
+        plan = attach_opinions(plan, features, schema, advisor, cache)
     equivalence = check_both(program, analysis.graph, plan, options.rule_options())
     concurrency = check_concurrency(program, analysis.graph, plan, options.rule_options())
-    diagnostics = [*parsed.diagnostics, *analysis.diagnostics]
+    diagnostics = [*parse_diagnostics, *analysis.diagnostics]
     if seed:
         diagnostics.extend(seed.diagnostics)
     return CompileResult(
-        schema_=parsed.schema_,
-        queries=parsed.queries,
+        schema_=schema,
+        queries=queries,
         diagnostics=tuple(diagnostics),
         ir=program,
         ir_text=print_ir(program),
         plan=plan,
         equivalence=equivalence,
         concurrency=concurrency,
-        queries_line_offset=schema_sql.count("\n") + 1,
+        queries_line_offset=offset,
         graph=analysis.graph,
         seed_queries=seed_queries,
     )

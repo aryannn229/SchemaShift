@@ -163,6 +163,90 @@
         }
       }
     },
+    "/api/v1/runs/{run_id}/cancel": {
+      "post": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Cancel Run",
+        "operationId": "cancel_run_api_v1_runs__run_id__cancel_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunCancelled"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/diff": {
+      "post": {
+        "tags": [
+          "compiler"
+        ],
+        "summary": "Diff Endpoint",
+        "description": "Compare two schema versions: typed changes, plan changes, ordered steps, guarantee diff.\n\nPure (no database is touched). The new version is ``new_sql`` or ``alter_sql`` applied to\n``old_sql``.",
+        "operationId": "diff_endpoint_api_v1_diff_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiffRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiffResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/runs/{run_id}": {
       "get": {
         "tags": [
@@ -531,6 +615,69 @@
         "title": "AccessHint",
         "description": "User supplied overrides for one relationship (all optional)."
       },
+      "ChangeOp": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "ADD_TABLE",
+              "DROP_TABLE",
+              "RENAME_TABLE",
+              "ADD_COLUMN",
+              "DROP_COLUMN",
+              "RENAME_COLUMN",
+              "RETYPE_COLUMN",
+              "CHANGE_PRIMARY_KEY",
+              "ADD_FOREIGN_KEY",
+              "DROP_FOREIGN_KEY",
+              "ADD_UNIQUE",
+              "DROP_UNIQUE",
+              "ADD_CHECK",
+              "DROP_CHECK",
+              "SET_NOT_NULL",
+              "DROP_NOT_NULL",
+              "SET_DEFAULT",
+              "DROP_DEFAULT",
+              "ADD_INDEX",
+              "DROP_INDEX"
+            ],
+            "title": "Kind"
+          },
+          "table": {
+            "type": "string",
+            "title": "Table"
+          },
+          "column": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Column"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Detail",
+            "default": {}
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "table",
+          "description"
+        ],
+        "title": "ChangeOp",
+        "description": "One typed difference between two schema versions."
+      },
       "CompileOptions": {
         "properties": {
           "target_mongo_version": {
@@ -603,6 +750,11 @@
             "type": "boolean",
             "title": "Sensitivity",
             "default": true
+          },
+          "optimize_pipelines": {
+            "type": "boolean",
+            "title": "Optimize Pipelines",
+            "default": true
           }
         },
         "type": "object",
@@ -642,7 +794,8 @@
                 "default_freq": 1.0,
                 "query_freq": {}
               },
-              "sensitivity": true
+              "sensitivity": true,
+              "optimize_pipelines": true
             }
           }
         },
@@ -1136,6 +1289,127 @@
         ],
         "title": "Diagnostic"
       },
+      "DiffRequest": {
+        "properties": {
+          "old_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Old Sql"
+          },
+          "new_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "New Sql",
+            "default": ""
+          },
+          "alter_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Alter Sql",
+            "default": ""
+          },
+          "queries_sql": {
+            "type": "string",
+            "maxLength": 200000,
+            "title": "Queries Sql",
+            "default": ""
+          },
+          "options": {
+            "$ref": "#/components/schemas/CompileOptions",
+            "default": {
+              "target_mongo_version": "7.0",
+              "transactions_available": true,
+              "preserve_integer_ids": false,
+              "uuid_as": "binary",
+              "string_collation": "en",
+              "rows_per_table": 50,
+              "relationship_overrides": {},
+              "access_hints": {},
+              "workload": {
+                "default_freq": 1.0,
+                "query_freq": {}
+              },
+              "sensitivity": true,
+              "optimize_pipelines": true
+            }
+          },
+          "confirmed_renames": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Confirmed Renames",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "old_sql"
+        ],
+        "title": "DiffRequest",
+        "description": "Two schema versions: the new one as DDL or as an ALTER script applied to the old one."
+      },
+      "DiffResponse": {
+        "properties": {
+          "diff": {
+            "$ref": "#/components/schemas/SchemaDiff"
+          },
+          "plan_changes": {
+            "items": {
+              "$ref": "#/components/schemas/PlanChange"
+            },
+            "type": "array",
+            "title": "Plan Changes"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/MigrationStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "guarantees": {
+            "$ref": "#/components/schemas/GuaranteeDiff"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "default": []
+          },
+          "script": {
+            "type": "string",
+            "title": "Script"
+          },
+          "old_diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/Diagnostic"
+            },
+            "type": "array",
+            "title": "Old Diagnostics",
+            "default": []
+          },
+          "new_diagnostics": {
+            "items": {
+              "$ref": "#/components/schemas/Diagnostic"
+            },
+            "type": "array",
+            "title": "New Diagnostics",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "diff",
+          "plan_changes",
+          "steps",
+          "guarantees",
+          "script"
+        ],
+        "title": "DiffResponse"
+      },
       "EvidenceCondition": {
         "properties": {
           "kind": {
@@ -1205,6 +1479,146 @@
         ],
         "title": "EvidenceUpgrade",
         "description": "A verification run raised an UNVERIFIED verdict to TESTED, and on what basis."
+      },
+      "ExplainedCandidate": {
+        "properties": {
+          "rewrites": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rewrites"
+          },
+          "estimated": {
+            "type": "number",
+            "title": "Estimated"
+          },
+          "observed": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed"
+          },
+          "docs_examined": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Docs Examined"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rewrites",
+          "estimated",
+          "observed"
+        ],
+        "title": "ExplainedCandidate"
+      },
+      "ExplainedQuery": {
+        "properties": {
+          "query_id": {
+            "type": "string",
+            "title": "Query Id"
+          },
+          "chosen": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Chosen"
+          },
+          "chosen_estimated": {
+            "type": "number",
+            "title": "Chosen Estimated"
+          },
+          "baseline_estimated": {
+            "type": "number",
+            "title": "Baseline Estimated"
+          },
+          "baseline_observed": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Observed"
+          },
+          "chosen_observed": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chosen Observed"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ExplainedCandidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          },
+          "rho": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rho"
+          },
+          "chosen_is_cheapest": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chosen Is Cheapest"
+          }
+        },
+        "type": "object",
+        "required": [
+          "query_id",
+          "chosen",
+          "chosen_estimated",
+          "baseline_estimated",
+          "baseline_observed",
+          "chosen_observed",
+          "candidates"
+        ],
+        "title": "ExplainedQuery"
       },
       "Factor": {
         "properties": {
@@ -1396,6 +1810,42 @@
         ],
         "title": "GraphNode"
       },
+      "GuaranteeDiff": {
+        "properties": {
+          "old_overall": {
+            "type": "string",
+            "title": "Old Overall"
+          },
+          "new_overall": {
+            "type": "string",
+            "title": "New Overall"
+          },
+          "changes": {
+            "items": {
+              "$ref": "#/components/schemas/VerdictChange"
+            },
+            "type": "array",
+            "title": "Changes"
+          },
+          "regressions": {
+            "type": "integer",
+            "title": "Regressions"
+          },
+          "improvements": {
+            "type": "integer",
+            "title": "Improvements"
+          }
+        },
+        "type": "object",
+        "required": [
+          "old_overall",
+          "new_overall",
+          "changes",
+          "regressions",
+          "improvements"
+        ],
+        "title": "GuaranteeDiff"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1480,6 +1930,172 @@
           "available"
         ],
         "title": "MetricsResponse"
+      },
+      "MigrationStep": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "CREATE_COLLECTION",
+              "ARCHIVE_COLLECTION",
+              "UPDATE_VALIDATOR",
+              "CREATE_INDEX",
+              "DROP_INDEX",
+              "ADD_FIELD",
+              "UNSET_FIELD",
+              "RENAME_FIELD",
+              "RETYPE_FIELD",
+              "EXTRACT_EMBEDDED",
+              "EMBED_COLLECTION",
+              "MANUAL"
+            ],
+            "title": "Kind"
+          },
+          "collection": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collection"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "depends_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Depends On",
+            "default": []
+          },
+          "reversibility": {
+            "type": "string",
+            "enum": [
+              "REVERSIBLE",
+              "REVERSIBLE_WITH_SAVED_DATA",
+              "IRREVERSIBLE"
+            ],
+            "title": "Reversibility"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "default": ""
+          },
+          "rollback": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rollback"
+          },
+          "saved_data": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved Data"
+          },
+          "recovery": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recovery"
+          },
+          "manual": {
+            "type": "boolean",
+            "title": "Manual",
+            "default": false
+          },
+          "changes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Changes",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "collection",
+          "description",
+          "reversibility",
+          "reason"
+        ],
+        "title": "MigrationStep"
+      },
+      "PipelineExplain": {
+        "properties": {
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/ExplainedQuery"
+            },
+            "type": "array",
+            "title": "Queries"
+          },
+          "rho": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rho"
+          },
+          "points": {
+            "type": "integer",
+            "title": "Points"
+          },
+          "chosen_cheapest": {
+            "type": "integer",
+            "title": "Chosen Cheapest"
+          },
+          "explained_queries": {
+            "type": "integer",
+            "title": "Explained Queries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "queries",
+          "rho",
+          "points",
+          "chosen_cheapest",
+          "explained_queries"
+        ],
+        "title": "PipelineExplain"
       },
       "PlacementChange": {
         "properties": {
@@ -1612,6 +2228,64 @@
           "decision"
         ],
         "title": "PlacementDecision"
+      },
+      "PlanChange": {
+        "properties": {
+          "relationship_id": {
+            "type": "string",
+            "title": "Relationship Id"
+          },
+          "old": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "EMBED",
+                  "REFERENCE",
+                  "REF_ARRAY"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old"
+          },
+          "new": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "EMBED",
+                  "REFERENCE",
+                  "REF_ARRAY"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New"
+          },
+          "restructures": {
+            "type": "boolean",
+            "title": "Restructures"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "relationship_id",
+          "old",
+          "new",
+          "restructures",
+          "reason"
+        ],
+        "title": "PlanChange",
+        "description": "A relationship whose placement differs between the two versions."
       },
       "ProbeOutcome": {
         "properties": {
@@ -1854,6 +2528,49 @@
               }
             ],
             "title": "Transaction Id"
+          },
+          "rewrites": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rewrites",
+            "default": []
+          },
+          "cost_before": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Before"
+          },
+          "cost_after": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost After"
+          },
+          "index_hints": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Index Hints",
+            "default": []
+          },
+          "original_mongosh": {
+            "type": "string",
+            "title": "Original Mongosh",
+            "default": ""
           }
         },
         "type": "object",
@@ -1863,6 +2580,49 @@
           "kind"
         ],
         "title": "QueryTranslation"
+      },
+      "RenameCandidate": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "table",
+              "column"
+            ],
+            "title": "Kind"
+          },
+          "table": {
+            "type": "string",
+            "title": "Table"
+          },
+          "old": {
+            "type": "string",
+            "title": "Old"
+          },
+          "new": {
+            "type": "string",
+            "title": "New"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "title": "Confirmed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "table",
+          "old",
+          "new",
+          "score"
+        ],
+        "title": "RenameCandidate",
+        "description": "A drop + add that looks like a rename. Never applied without confirmation."
       },
       "RowDiff": {
         "properties": {
@@ -1936,6 +2696,31 @@
         "title": "RuleInput",
         "description": "A value the rule consulted (\"Why?\" trace): placement decision, option or node."
       },
+      "RunCancelled": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "running",
+              "done",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "status"
+        ],
+        "title": "RunCancelled"
+      },
       "RunCreated": {
         "properties": {
           "run_id": {
@@ -1966,7 +2751,8 @@
               "pending",
               "running",
               "done",
-              "failed"
+              "failed",
+              "cancelled"
             ],
             "title": "Status"
           },
@@ -2148,7 +2934,8 @@
                 "default_freq": 1.0,
                 "query_freq": {}
               },
-              "sensitivity": true
+              "sensitivity": true,
+              "optimize_pipelines": true
             }
           },
           "verify": {
@@ -2185,7 +2972,8 @@
               "pending",
               "running",
               "done",
-              "failed"
+              "failed",
+              "cancelled"
             ],
             "title": "Status"
           },
@@ -2296,6 +3084,38 @@
           "name"
         ],
         "title": "SampleInfo"
+      },
+      "SchemaDiff": {
+        "properties": {
+          "ops": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeOp"
+            },
+            "type": "array",
+            "title": "Ops"
+          },
+          "rename_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/RenameCandidate"
+            },
+            "type": "array",
+            "title": "Rename Candidates",
+            "default": []
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "ops"
+        ],
+        "title": "SchemaDiff"
       },
       "SourceSpan": {
         "properties": {
@@ -2527,6 +3347,74 @@
         ],
         "title": "Verdict"
       },
+      "VerdictChange": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "rule_id": {
+            "type": "string",
+            "title": "Rule Id"
+          },
+          "old": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old"
+          },
+          "new": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "worse",
+              "better",
+              "added",
+              "removed",
+              "same"
+            ],
+            "title": "Direction"
+          },
+          "because": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Because"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id",
+          "rule_id",
+          "old",
+          "new",
+          "direction",
+          "because",
+          "reason"
+        ],
+        "title": "VerdictChange",
+        "description": "A guarantee verdict that differs between the old and the new version."
+      },
       "VerificationReport": {
         "properties": {
           "run_id": {
@@ -2605,6 +3493,16 @@
             "type": "array",
             "title": "Evidence Upgrades",
             "default": []
+          },
+          "pipeline_explain": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PipelineExplain"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "warnings": {
             "items": {

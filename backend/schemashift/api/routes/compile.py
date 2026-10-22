@@ -17,7 +17,10 @@ from schemashift.api.schemas import (
     CompileRequest,
     CompileResponse,
     CounterexampleReplay,
+    DiffRequest,
+    DiffResponse,
     MetricsResponse,
+    RunCancelled,
     RunCreated,
     RunDetail,
     RunPage,
@@ -99,6 +102,47 @@ def create_run(
         s.commit()
     state.submit(run_id, req)
     return RunCreated(run_id=run_id)
+
+
+@router.post("/runs/{run_id}/cancel", response_model=RunCancelled)
+def cancel_run(run_id: str, state: AppState = Depends(get_state)) -> RunCancelled:
+    status = state.cancel(run_id)
+    if status == "missing":
+        raise HTTPException(status_code=404, detail="run not found")
+    return RunCancelled(run_id=run_id, status=status)
+
+
+@router.post("/diff", response_model=DiffResponse)
+def diff_endpoint(req: DiffRequest, state: AppState = Depends(get_state)) -> DiffResponse:
+    """Compare two schema versions: typed changes, plan changes, ordered steps, guarantee diff.
+
+    Pure (no database is touched). The new version is ``new_sql`` or ``alter_sql`` applied to
+    ``old_sql``.
+    """
+    from schemashift.api.service import check_limits
+    from schemashift.evolve import evolve, render_script
+
+    if not req.new_sql.strip() and not req.alter_sql.strip():
+        raise HTTPException(status_code=422, detail="give new_sql or alter_sql")
+    plan, old, new = evolve(
+        req.old_sql,
+        req.new_sql,
+        alter_sql=req.alter_sql,
+        queries_sql=req.queries_sql,
+        options=req.options,
+        confirmed_renames=req.confirmed_renames,
+    )
+    try:
+        check_limits(old, state.settings)
+        check_limits(new, state.settings)
+    except RequestTooLarge as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return DiffResponse(
+        **plan.model_dump(),
+        script=render_script(plan),
+        old_diagnostics=[d for d in old.diagnostics],
+        new_diagnostics=[d for d in new.diagnostics],
+    )
 
 
 @router.get("/runs", response_model=RunPage)

@@ -18,6 +18,8 @@ export type CounterexampleReplay = Schemas["CounterexampleReplay"];
 export type EvidenceUpgrade = Schemas["EvidenceUpgrade"];
 export type ConcurrencyResult = Schemas["ConcurrencyResult"];
 export type ConcurrencySkip = Schemas["ConcurrencySkip"];
+export type DiffRequest = Schemas["DiffRequest"];
+export type DiffResponse = Schemas["DiffResponse"];
 export type Status = "SAFE" | "CHANGED" | "BROKEN";
 
 export class ApiError extends Error {}

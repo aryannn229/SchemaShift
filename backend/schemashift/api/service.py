@@ -90,6 +90,17 @@ def build_response(
             mongosh=MongoshEmitter().queries([q], header).content,
             python=PymongoEmitter().queries([q], header).content,
             transaction_id=q.transaction_id,
+            rewrites=q.rewrites,
+            cost_before=q.cost_before,
+            cost_after=q.cost_after,
+            index_hints=q.index_hints,
+            original_mongosh=(
+                MongoshEmitter()
+                .queries([q.model_copy(update={"pipeline": q.original_pipeline})], header)
+                .content
+                if q.original_pipeline
+                else ""
+            ),
         )
         for q in codegen.queries
     ]

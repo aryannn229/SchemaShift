@@ -234,6 +234,109 @@ def evaluate(
 
 
 @app.command()
+def diff(
+    old: Path = typer.Argument(..., exists=True, readable=True, help="Old DDL (version 1)"),
+    new: Path = typer.Argument(None, exists=True, readable=True, help="New DDL (version 2)"),
+    alter: Path = typer.Option(None, "--alter", exists=True, help="ALTER script applied to OLD"),
+    queries: Path = typer.Option(None, "--queries", "-q", help="Optional SQL queries file"),
+    confirm: list[str] = typer.Option(
+        [], "--confirm-rename", help="old=new, e.g. users.fullname=name"
+    ),
+    out: Path = typer.Option(None, "--out", help="Directory for evolve.py and plan.json"),
+    fail_on_regression: bool = typer.Option(False, help="Exit 1 when a guarantee gets worse"),
+) -> None:
+    """Compare two schema versions and plan the incremental MongoDB migration."""
+    from schemashift.evolve import plan_evolution, render_script
+
+    if new is None and alter is None:
+        typer.echo("give a NEW ddl file or --alter", err=True)
+        raise typer.Exit(2)
+    renames = dict(item.split("=", 1) for item in confirm if "=" in item)
+    plan = plan_evolution(
+        old.read_text(encoding="utf-8"),
+        new.read_text(encoding="utf-8") if new else "",
+        alter_sql=alter.read_text(encoding="utf-8") if alter else "",
+        queries_sql=queries.read_text(encoding="utf-8") if queries else "",
+        confirmed_renames=renames,
+    )
+    for w in plan.warnings:
+        typer.echo(f"WARNING {w}")
+    typer.echo(f"{len(plan.diff.ops)} schema change(s):")
+    for op in plan.diff.ops:
+        typer.echo(f"  {op.kind:18} {op.description}")
+    for cand in plan.diff.rename_candidates:
+        if not cand.confirmed:
+            typer.echo(
+                f"  ? rename {cand.kind} {cand.key} -> {cand.new} (score {cand.score}); "
+                f"confirm with --confirm-rename {cand.key}={cand.new}"
+            )
+    for pc in plan.plan_changes:
+        typer.echo(
+            f"placement {pc.relationship_id}: {pc.old} -> {pc.new}"
+            + (" (restructures)" if pc.restructures else "")
+        )
+    typer.echo(f"{len(plan.steps)} migration step(s):")
+    for st in plan.steps:
+        typer.echo(f"  {st.id:4} {st.reversibility:27} {st.kind:19} {st.description}")
+    g = plan.guarantees
+    typer.echo(
+        f"guarantees: {g.old_overall} -> {g.new_overall}; "
+        f"{g.regressions} worse, {g.improvements} better"
+    )
+    for c in g.changes:
+        typer.echo(f"  {c.direction:8} {c.rule_id:14} {c.node_id}: {c.old} -> {c.new}")
+    if out is not None:
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "evolve.py").write_text(render_script(plan), encoding="utf-8", newline="\n")
+        (out / "plan.json").write_text(plan.model_dump_json(indent=2), encoding="utf-8")
+        typer.echo(f"wrote {out / 'evolve.py'} and {out / 'plan.json'}")
+    raise typer.Exit(1 if fail_on_regression and g.regressions else 0)
+
+
+@app.command()
+def bench(
+    schema: Path = typer.Argument(..., exists=True, readable=True, help="PostgreSQL DDL file"),
+    queries: Path = typer.Option(..., "--queries", "-q", exists=True, help="SQL queries file"),
+    scale: str = typer.Option("1k", "--scale", help="Rows per table: 1k, 100k, 1M, ..."),
+    reps: int = typer.Option(20, help="Timed repetitions per query"),
+    warmups: int = typer.Option(3, help="Untimed warm-up runs per query"),
+    seed: int = typer.Option(0, help="Seed for the generated data"),
+    out: Path = typer.Option(
+        Path("bench-out"), "--out", help="Directory for results.json and report.html"
+    ),
+    admin_dsn: str = typer.Option(None, envvar="SANDBOX_ADMIN_DATABASE_URL"),
+    mongo_url: str = typer.Option(None, envvar="MONGO_URL"),
+) -> None:
+    """Benchmark PostgreSQL vs MongoDB under three placement plans (CLI only)."""
+    from schemashift.bench import parse_scale, run_bench, write_report
+    from schemashift.verification import SandboxConfig
+
+    if not admin_dsn or not mongo_url:
+        typer.echo("bench needs SANDBOX_ADMIN_DATABASE_URL and MONGO_URL", err=True)
+        raise typer.Exit(2)
+    config = SandboxConfig(
+        pg_admin_dsn=admin_dsn,
+        mongo_url=mongo_url,
+        statement_timeout_ms=600_000,
+        idle_in_transaction_timeout_ms=600_000,
+    )
+    report = run_bench(
+        schema.read_text(encoding="utf-8"),
+        queries.read_text(encoding="utf-8"),
+        config,
+        scale=parse_scale(scale),
+        seed=seed,
+        warmups=warmups,
+        reps=reps,
+        log=typer.echo,
+    )
+    js, page = write_report(report, out)
+    for line in report.findings:
+        typer.echo(line)
+    typer.echo(f"wrote {js} and {page}")
+
+
+@app.command()
 def fuzz(
     cases: int = typer.Option(100, "--cases", "-n", help="Number of generated cases"),
     seed: int = typer.Option(0, "--seed", "-s", help="Hypothesis seed (reproducible runs)"),
@@ -281,6 +384,7 @@ def fuzz(
         f"fuzz seed={seed} cases={result.cases} queries={st.queries} compared={st.compared} "
         f"not_translated={st.not_translated} pg_errors={st.pg_errors} "
         f"relation_checks={st.relation_checks} relation_skipped={st.relation_skipped} "
+        f"optimizer_checked={st.optimizer_checked} "
         f"duration={result.duration_s}s "
         f"failures={len(result.failures)}"
     )

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from schemashift.codegen.emit import GeneratedFile
 from schemashift.equivalence.checker import PlacementChange
+from schemashift.evolve import EvolutionPlan
 from schemashift.models import Counterexample, CounterexampleGap, PlacementDecision, Verdict
 from schemashift.models.source import Diagnostic
 from schemashift.pipeline import CompileOptions
@@ -22,6 +23,23 @@ class CompileRequest(BaseModel):
     queries_sql: str = Field(default="", max_length=MAX_SQL_CHARS)
     seed_sql: str = Field(default="", max_length=MAX_SQL_CHARS)
     options: CompileOptions = CompileOptions()
+
+
+class DiffRequest(BaseModel):
+    """Two schema versions: the new one as DDL or as an ALTER script applied to the old one."""
+
+    old_sql: str = Field(max_length=MAX_SQL_CHARS)
+    new_sql: str = Field(default="", max_length=MAX_SQL_CHARS)
+    alter_sql: str = Field(default="", max_length=MAX_SQL_CHARS)
+    queries_sql: str = Field(default="", max_length=MAX_SQL_CHARS)
+    options: CompileOptions = CompileOptions()
+    confirmed_renames: dict[str, str] = {}  # "table" or "table.column" -> new name
+
+
+class DiffResponse(EvolutionPlan):
+    script: str  # the executable incremental migration (Python, pymongo)
+    old_diagnostics: list[Diagnostic] = []
+    new_diagnostics: list[Diagnostic] = []
 
 
 class RunRequest(CompileRequest):
@@ -58,6 +76,12 @@ class QueryTranslation(BaseModel):
     mongosh: str = ""
     python: str = ""
     transaction_id: str | None = None
+    # Phase 19: the pipeline optimizer (empty rewrites = nothing to do)
+    rewrites: list[str] = []
+    cost_before: float | None = None
+    cost_after: float | None = None
+    index_hints: list[str] = []
+    original_mongosh: str = ""
 
 
 class UntranslatedCheckDTO(BaseModel):
@@ -94,11 +118,16 @@ class CompileResponse(BaseModel):
     warnings: list[str]
 
 
-RunStatus = Literal["pending", "running", "done", "failed"]
+RunStatus = Literal["pending", "running", "done", "failed", "cancelled"]
 
 
 class RunCreated(BaseModel):
     run_id: str
+
+
+class RunCancelled(BaseModel):
+    run_id: str
+    status: RunStatus
 
 
 class RunSummary(BaseModel):

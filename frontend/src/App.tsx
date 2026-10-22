@@ -6,6 +6,7 @@ import { useTheme } from "./lib/ThemeContext";
 import { useDocumentTitle } from "./lib/useDocumentTitle";
 import About from "./pages/About";
 import Benchmarks from "./pages/Benchmarks";
+import Compare from "./pages/Compare";
 import History from "./pages/History";
 import Home from "./pages/Home";
 import RunPage from "./pages/RunPage";
@@ -22,6 +23,7 @@ const REPO_URL = "https://github.com/aryannn229/SchemaShift";
 
 const NAV = [
   { to: "/", label: "Compile", end: true },
+  { to: "/compare", label: "Compare versions", end: false },
   { to: "/history", label: "History", end: false },
   { to: "/benchmarks", label: "Benchmarks", end: false },
   { to: "/about", label: "About", end: false },
@@ -112,6 +114,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="runs/:id" element={<RunPage />} />
+          <Route path="compare" element={<Compare />} />
           <Route path="history" element={<History />} />
           <Route path="benchmarks" element={<Benchmarks />} />
           <Route path="about" element={<About />} />

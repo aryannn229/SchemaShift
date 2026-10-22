@@ -59,6 +59,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/runs/{run_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Run */
+        post: operations["cancel_run_api_v1_runs__run_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Diff Endpoint
+         * @description Compare two schema versions: typed changes, plan changes, ordered steps, guarantee diff.
+         *
+         *     Pure (no database is touched). The new version is ``new_sql`` or ``alter_sql`` applied to
+         *     ``old_sql``.
+         */
+        post: operations["diff_endpoint_api_v1_diff_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/runs/{run_id}": {
         parameters: {
             query?: never;
@@ -210,6 +250,30 @@ export interface components {
             /** Estimated Child Count Per Parent */
             estimated_child_count_per_parent?: number | null;
         };
+        /**
+         * ChangeOp
+         * @description One typed difference between two schema versions.
+         */
+        ChangeOp: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "ADD_TABLE" | "DROP_TABLE" | "RENAME_TABLE" | "ADD_COLUMN" | "DROP_COLUMN" | "RENAME_COLUMN" | "RETYPE_COLUMN" | "CHANGE_PRIMARY_KEY" | "ADD_FOREIGN_KEY" | "DROP_FOREIGN_KEY" | "ADD_UNIQUE" | "DROP_UNIQUE" | "ADD_CHECK" | "DROP_CHECK" | "SET_NOT_NULL" | "DROP_NOT_NULL" | "SET_DEFAULT" | "DROP_DEFAULT" | "ADD_INDEX" | "DROP_INDEX";
+            /** Table */
+            table: string;
+            /** Column */
+            column?: string | null;
+            /**
+             * Detail
+             * @default {}
+             */
+            detail?: {
+                [key: string]: unknown;
+            };
+            /** Description */
+            description: string;
+        };
         /** CompileOptions */
         CompileOptions: {
             /**
@@ -270,6 +334,11 @@ export interface components {
              * @default true
              */
             sensitivity?: boolean;
+            /**
+             * Optimize Pipelines
+             * @default true
+             */
+            optimize_pipelines?: boolean;
         };
         /** CompileRequest */
         CompileRequest: {
@@ -299,7 +368,8 @@ export interface components {
              *         "default_freq": 1,
              *         "query_freq": {}
              *       },
-             *       "sensitivity": true
+             *       "sensitivity": true,
+             *       "optimize_pipelines": true
              *     }
              */
             options?: components["schemas"]["CompileOptions"];
@@ -518,6 +588,81 @@ export interface components {
             location?: components["schemas"]["SourceSpan"] | null;
         };
         /**
+         * DiffRequest
+         * @description Two schema versions: the new one as DDL or as an ALTER script applied to the old one.
+         */
+        DiffRequest: {
+            /** Old Sql */
+            old_sql: string;
+            /**
+             * New Sql
+             * @default
+             */
+            new_sql?: string;
+            /**
+             * Alter Sql
+             * @default
+             */
+            alter_sql?: string;
+            /**
+             * Queries Sql
+             * @default
+             */
+            queries_sql?: string;
+            /**
+             * @default {
+             *       "target_mongo_version": "7.0",
+             *       "transactions_available": true,
+             *       "preserve_integer_ids": false,
+             *       "uuid_as": "binary",
+             *       "string_collation": "en",
+             *       "rows_per_table": 50,
+             *       "relationship_overrides": {},
+             *       "access_hints": {},
+             *       "workload": {
+             *         "default_freq": 1,
+             *         "query_freq": {}
+             *       },
+             *       "sensitivity": true,
+             *       "optimize_pipelines": true
+             *     }
+             */
+            options?: components["schemas"]["CompileOptions"];
+            /**
+             * Confirmed Renames
+             * @default {}
+             */
+            confirmed_renames?: {
+                [key: string]: string;
+            };
+        };
+        /** DiffResponse */
+        DiffResponse: {
+            diff: components["schemas"]["SchemaDiff"];
+            /** Plan Changes */
+            plan_changes: components["schemas"]["PlanChange"][];
+            /** Steps */
+            steps: components["schemas"]["MigrationStep"][];
+            guarantees: components["schemas"]["GuaranteeDiff"];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings?: string[];
+            /** Script */
+            script: string;
+            /**
+             * Old Diagnostics
+             * @default []
+             */
+            old_diagnostics?: components["schemas"]["Diagnostic"][];
+            /**
+             * New Diagnostics
+             * @default []
+             */
+            new_diagnostics?: components["schemas"]["Diagnostic"][];
+        };
+        /**
          * EvidenceCondition
          * @description One condition under which a verdict holds, as data (the text is for humans).
          */
@@ -548,6 +693,40 @@ export interface components {
             level: "PROVEN" | "CONDITIONAL" | "TESTED" | "UNVERIFIED";
             /** Basis */
             basis: string;
+        };
+        /** ExplainedCandidate */
+        ExplainedCandidate: {
+            /** Rewrites */
+            rewrites: string[];
+            /** Estimated */
+            estimated: number;
+            /** Observed */
+            observed: number | null;
+            /** Docs Examined */
+            docs_examined?: number | null;
+            /** Error */
+            error?: string | null;
+        };
+        /** ExplainedQuery */
+        ExplainedQuery: {
+            /** Query Id */
+            query_id: string;
+            /** Chosen */
+            chosen: string[];
+            /** Chosen Estimated */
+            chosen_estimated: number;
+            /** Baseline Estimated */
+            baseline_estimated: number;
+            /** Baseline Observed */
+            baseline_observed: number | null;
+            /** Chosen Observed */
+            chosen_observed: number | null;
+            /** Candidates */
+            candidates: components["schemas"]["ExplainedCandidate"][];
+            /** Rho */
+            rho?: number | null;
+            /** Chosen Is Cheapest */
+            chosen_is_cheapest?: boolean | null;
         };
         /** Factor */
         Factor: {
@@ -636,6 +815,19 @@ export interface components {
             /** Collection */
             collection: string;
         };
+        /** GuaranteeDiff */
+        GuaranteeDiff: {
+            /** Old Overall */
+            old_overall: string;
+            /** New Overall */
+            new_overall: string;
+            /** Changes */
+            changes: components["schemas"]["VerdictChange"][];
+            /** Regressions */
+            regressions: number;
+            /** Improvements */
+            improvements: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -673,6 +865,66 @@ export interface components {
             data?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** MigrationStep */
+        MigrationStep: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "CREATE_COLLECTION" | "ARCHIVE_COLLECTION" | "UPDATE_VALIDATOR" | "CREATE_INDEX" | "DROP_INDEX" | "ADD_FIELD" | "UNSET_FIELD" | "RENAME_FIELD" | "RETYPE_FIELD" | "EXTRACT_EMBEDDED" | "EMBED_COLLECTION" | "MANUAL";
+            /** Collection */
+            collection: string | null;
+            /** Description */
+            description: string;
+            /**
+             * Depends On
+             * @default []
+             */
+            depends_on?: string[];
+            /**
+             * Reversibility
+             * @enum {string}
+             */
+            reversibility: "REVERSIBLE" | "REVERSIBLE_WITH_SAVED_DATA" | "IRREVERSIBLE";
+            /** Reason */
+            reason: string;
+            /**
+             * Code
+             * @default
+             */
+            code?: string;
+            /** Rollback */
+            rollback?: string | null;
+            /** Saved Data */
+            saved_data?: string | null;
+            /** Recovery */
+            recovery?: string | null;
+            /**
+             * Manual
+             * @default false
+             */
+            manual?: boolean;
+            /**
+             * Changes
+             * @default []
+             */
+            changes?: string[];
+        };
+        /** PipelineExplain */
+        PipelineExplain: {
+            /** Queries */
+            queries: components["schemas"]["ExplainedQuery"][];
+            /** Rho */
+            rho: number | null;
+            /** Points */
+            points: number;
+            /** Chosen Cheapest */
+            chosen_cheapest: number;
+            /** Explained Queries */
+            explained_queries: number;
         };
         /**
          * PlacementChange
@@ -734,6 +986,22 @@ export interface components {
             ai?: components["schemas"]["AIOpinion"] | null;
             /** Agree */
             agree?: boolean | null;
+        };
+        /**
+         * PlanChange
+         * @description A relationship whose placement differs between the two versions.
+         */
+        PlanChange: {
+            /** Relationship Id */
+            relationship_id: string;
+            /** Old */
+            old: ("EMBED" | "REFERENCE" | "REF_ARRAY") | null;
+            /** New */
+            new: ("EMBED" | "REFERENCE" | "REF_ARRAY") | null;
+            /** Restructures */
+            restructures: boolean;
+            /** Reason */
+            reason: string;
         };
         /** ProbeOutcome */
         ProbeOutcome: {
@@ -843,6 +1111,49 @@ export interface components {
             python?: string;
             /** Transaction Id */
             transaction_id?: string | null;
+            /**
+             * Rewrites
+             * @default []
+             */
+            rewrites?: string[];
+            /** Cost Before */
+            cost_before?: number | null;
+            /** Cost After */
+            cost_after?: number | null;
+            /**
+             * Index Hints
+             * @default []
+             */
+            index_hints?: string[];
+            /**
+             * Original Mongosh
+             * @default
+             */
+            original_mongosh?: string;
+        };
+        /**
+         * RenameCandidate
+         * @description A drop + add that looks like a rename. Never applied without confirmation.
+         */
+        RenameCandidate: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "table" | "column";
+            /** Table */
+            table: string;
+            /** Old */
+            old: string;
+            /** New */
+            new: string;
+            /** Score */
+            score: number;
+            /**
+             * Confirmed
+             * @default false
+             */
+            confirmed?: boolean;
         };
         /** RowDiff */
         RowDiff: {
@@ -868,6 +1179,16 @@ export interface components {
             /** Value */
             value: string;
         };
+        /** RunCancelled */
+        RunCancelled: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "running" | "done" | "failed" | "cancelled";
+        };
         /** RunCreated */
         RunCreated: {
             /** Run Id */
@@ -886,7 +1207,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pending" | "running" | "done" | "failed";
+            status: "pending" | "running" | "done" | "failed" | "cancelled";
             /** Verify */
             verify: boolean;
             /** Schema Sql */
@@ -953,7 +1274,8 @@ export interface components {
              *         "default_freq": 1,
              *         "query_freq": {}
              *       },
-             *       "sensitivity": true
+             *       "sensitivity": true,
+             *       "optimize_pipelines": true
              *     }
              */
             options?: components["schemas"]["CompileOptions"];
@@ -981,7 +1303,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "pending" | "running" | "done" | "failed";
+            status: "pending" | "running" | "done" | "failed" | "cancelled";
             /** Overall Verdict */
             overall_verdict: string | null;
             /** Counts */
@@ -1019,6 +1341,21 @@ export interface components {
              * @default
              */
             description?: string;
+        };
+        /** SchemaDiff */
+        SchemaDiff: {
+            /** Ops */
+            ops: components["schemas"]["ChangeOp"][];
+            /**
+             * Rename Candidates
+             * @default []
+             */
+            rename_candidates?: components["schemas"]["RenameCandidate"][];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings?: string[];
         };
         /**
          * SourceSpan
@@ -1109,6 +1446,29 @@ export interface components {
              */
             inputs?: components["schemas"]["RuleInput"][];
         };
+        /**
+         * VerdictChange
+         * @description A guarantee verdict that differs between the old and the new version.
+         */
+        VerdictChange: {
+            /** Node Id */
+            node_id: string;
+            /** Rule Id */
+            rule_id: string;
+            /** Old */
+            old: string | null;
+            /** New */
+            new: string | null;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "worse" | "better" | "added" | "removed" | "same";
+            /** Because */
+            because: string[];
+            /** Reason */
+            reason: string;
+        };
         /** VerificationReport */
         VerificationReport: {
             /** Run Id */
@@ -1155,6 +1515,7 @@ export interface components {
              * @default []
              */
             evidence_upgrades?: components["schemas"]["EvidenceUpgrade"][];
+            pipeline_explain?: components["schemas"]["PipelineExplain"] | null;
             /**
              * Warnings
              * @default []
@@ -1303,6 +1664,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_run_api_v1_runs__run_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunCancelled"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diff_endpoint_api_v1_diff_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiffRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiffResponse"];
                 };
             };
             /** @description Validation Error */
