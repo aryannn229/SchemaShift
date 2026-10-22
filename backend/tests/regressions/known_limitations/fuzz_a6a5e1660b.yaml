@@ -1,0 +1,67 @@
+id: fuzz_a6a5e1660b
+found_on: '2026-10-22'
+fuzz_seed: 7
+violated: differential
+summary: 'same rows, different order: NULL placement or the ORDER BY keys differ'
+schema_sql: "CREATE TYPE mood AS ENUM ('draft', 'open', 'closed');\nCREATE TABLE t0\
+  \ (\n  id SERIAL,\n  c0 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  PRIMARY KEY (id)\n\
+  );\nCREATE TABLE t1 (\n  id SERIAL,\n  c0 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c1\
+  \ TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c2 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  f0\
+  \ INTEGER,\n  PRIMARY KEY (id),\n  FOREIGN KEY (f0) REFERENCES t1(id)\n);\nCREATE\
+  \ TABLE t2 (\n  id INTEGER NOT NULL,\n  k2 INTEGER NOT NULL,\n  c0 INTEGER NOT NULL\
+  \ UNIQUE DEFAULT 0 CHECK (c0 >= -2147483648),\n  c1 INTEGER NOT NULL UNIQUE DEFAULT\
+  \ 0 CHECK (c1 >= -2147483648),\n  c2 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c2\
+  \ >= -2147483648),\n  c3 VARCHAR(10) NOT NULL UNIQUE DEFAULT 'd',\n  PRIMARY KEY\
+  \ (id, k2)\n);\n"
+seed_sql: 'INSERT INTO t0 (id, c0) VALUES (1, ''A'');
+
+  INSERT INTO t0 (id, c0) VALUES (2, ''a%'');
+
+  '
+queries:
+- SELECT a0.id AS c0 FROM t0 a0 ORDER BY a0.c0 ASC, a0.id ASC;
+plan: default
+observed:
+  status: MISMATCH
+  pg:
+  - - 2
+  - - 1
+  mongo:
+  - - 1
+  - - 2
+  pipeline:
+  - $replaceRoot:
+      newRoot:
+        a0: $$ROOT
+  - $addFields:
+      _n0:
+        $cond:
+        - $lte:
+          - $a0.c0
+          - null
+        - 1
+        - 0
+      _n1:
+        $cond:
+        - $lte:
+          - $a0._id
+          - null
+        - 1
+        - 0
+  - $sort:
+      _n0: 1
+      a0.c0: 1
+      _n1: 1
+      a0._id: 1
+  - $project:
+      _id: 0
+      c0:
+        $ifNull:
+        - $a0._id
+        - null
+status: known-limitation
+note: PostgreSQL's libc collation ignores punctuation/spaces at the first comparison
+  level ('a%' sorts before 'A'); the ICU 'en' collation used for MongoDB does not.
+  Equality stays exact, ordering of strings that differ only in punctuation can differ.
+  Use string_collation='binary' with a C-collated PostgreSQL database for exact agreement.
+  The fuzzer's text pool excludes punctuation.

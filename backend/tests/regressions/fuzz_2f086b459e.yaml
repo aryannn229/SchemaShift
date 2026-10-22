@@ -1,0 +1,105 @@
+id: fuzz_2f086b459e
+found_on: '2026-10-22'
+fuzz_seed: 1
+violated: differential
+summary: 'different row counts: a join or filter treats NULL / missing values differently'
+schema_sql: "CREATE TYPE mood AS ENUM ('draft', 'open', 'closed');\nCREATE TABLE t0\
+  \ (\n  id SERIAL,\n  c0 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c0 >= -2147483648),\n\
+  \  c1 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c1 >= -2147483648),\n  c2 INTEGER\
+  \ NOT NULL UNIQUE DEFAULT 0 CHECK (c2 >= -2147483648),\n  PRIMARY KEY (id)\n);\n\
+  CREATE TABLE t1 (\n  id SERIAL,\n  c0 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c0\
+  \ >= -2147483648),\n  f0 INTEGER,\n  PRIMARY KEY (id)\n);\nCREATE TABLE t2 (\n \
+  \ id SERIAL,\n  c0 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c0 >= -2147483648),\n\
+  \  c1 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c2 INTEGER NOT NULL UNIQUE DEFAULT 0\
+  \ CHECK (c2 >= -2147483648),\n  f0 INTEGER NOT NULL,\n  PRIMARY KEY (id),\n  FOREIGN\
+  \ KEY (f0) REFERENCES t0(id) ON DELETE CASCADE\n);\nALTER TABLE t1 ADD CONSTRAINT\
+  \ fk_t1_f0 FOREIGN KEY (f0) REFERENCES t2(id);\n"
+seed_sql: 'INSERT INTO t1 (id, c0, f0) VALUES (1, 0, NULL);
+
+  '
+queries:
+- SELECT a0.id AS c0, a1.id AS c1, a2.id AS c2 FROM t1 a0 LEFT JOIN t2 a1 ON a0.f0
+  = a1.id INNER JOIN t0 a2 ON a1.f0 = a2.id ORDER BY a0.id ASC, a1.id ASC, a2.id ASC;
+plan: default
+observed:
+  status: MISMATCH
+  pg: []
+  mongo:
+  - - 1
+    - null
+    - null
+  pipeline:
+  - $replaceRoot:
+      newRoot:
+        a0: $$ROOT
+  - $lookup:
+      from: t0
+      localField: a0.f0
+      foreignField: t2.id
+      as: a1__host
+  - $unwind:
+      path: $a1__host
+      preserveNullAndEmptyArrays: true
+  - $addFields:
+      a1__host.t2:
+        $filter:
+          input: $a1__host.t2
+          as: el
+          cond:
+            $and:
+            - $gt:
+              - $a0.f0
+              - null
+            - $eq:
+              - $$el.id
+              - $a0.f0
+  - $unwind:
+      path: $a1__host.t2
+      preserveNullAndEmptyArrays: true
+  - $addFields:
+      _n0:
+        $cond:
+        - $lte:
+          - $a0._id
+          - null
+        - 1
+        - 0
+      _n1:
+        $cond:
+        - $lte:
+          - $a1__host.t2.id
+          - null
+        - 1
+        - 0
+      _n2:
+        $cond:
+        - $lte:
+          - $a1__host._id
+          - null
+        - 1
+        - 0
+  - $sort:
+      _n0: 1
+      a0._id: 1
+      _n1: 1
+      a1__host.t2.id: 1
+      _n2: 1
+      a1__host._id: 1
+  - $project:
+      _id: 0
+      c0:
+        $ifNull:
+        - $a0._id
+        - null
+      c1:
+        $ifNull:
+        - $a1__host.t2.id
+        - null
+      c2:
+        $ifNull:
+        - $a1__host._id
+        - null
+status: fixed
+fix: An INNER JOIN to the host table of an embedded alias that an earlier LEFT JOIN
+  left absent kept the row; the translation now requires the embedded document to
+  be present.

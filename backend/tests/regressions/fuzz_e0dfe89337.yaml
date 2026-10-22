@@ -1,0 +1,64 @@
+id: fuzz_e0dfe89337
+found_on: '2026-10-22'
+fuzz_seed: 9
+violated: differential
+summary: 'numeric precision: NUMERIC (exact) in PostgreSQL vs double in MongoDB'
+schema_sql: "CREATE TYPE mood AS ENUM ('draft', 'open', 'closed');\nCREATE TABLE t0\
+  \ (\n  id SERIAL,\n  c0 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c0 >= -2147483648),\n\
+  \  c1 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c1 >= -2147483648),\n  c2 INTEGER\
+  \ NOT NULL UNIQUE DEFAULT 0 CHECK (c2 >= -2147483648),\n  c3 TEXT NOT NULL UNIQUE\
+  \ DEFAULT 'd',\n  f0 INTEGER,\n  PRIMARY KEY (id),\n  FOREIGN KEY (f0) REFERENCES\
+  \ t0(id)\n);\nCREATE TABLE t1 (\n  id INTEGER NOT NULL,\n  k2 INTEGER NOT NULL,\n\
+  \  c0 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c1 TEXT NOT NULL UNIQUE DEFAULT 'd',\n\
+  \  c2 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c3 INTEGER NOT NULL UNIQUE DEFAULT 0\
+  \ CHECK (c3 >= -2147483648),\n  PRIMARY KEY (id, k2)\n);\n"
+seed_sql: 'INSERT INTO t0 (id, c0, c1, c2, c3, f0) VALUES (1, 0, 0, 0, '''', NULL);
+
+  '
+queries:
+- SELECT a0.id AS c0, a0.c0 AS c1, a0.id / 2 AS c2 FROM t0 a0 ORDER BY a0.id ASC;
+plan: default
+observed:
+  status: MISMATCH
+  pg:
+  - - 1
+    - 0
+    - 0
+  mongo:
+  - - 1
+    - 0
+    - 0.5
+  pipeline:
+  - $replaceRoot:
+      newRoot:
+        a0: $$ROOT
+  - $addFields:
+      _n0:
+        $cond:
+        - $lte:
+          - $a0._id
+          - null
+        - 1
+        - 0
+  - $sort:
+      _n0: 1
+      a0._id: 1
+  - $project:
+      _id: 0
+      c0:
+        $ifNull:
+        - $a0._id
+        - null
+      c1:
+        $ifNull:
+        - $a0.c0
+        - null
+      c2:
+        $ifNull:
+        - $divide:
+          - $a0._id
+          - 2
+        - null
+status: fixed
+fix: integer / integer is integer division (truncation toward zero) in PostgreSQL
+  but $divide returns a double; integer-typed operands now use $trunc($divide).

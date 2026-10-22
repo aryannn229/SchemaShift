@@ -1,0 +1,19 @@
+id: fuzz_fe53dc8cee
+found_on: '2026-10-22'
+fuzz_seed: 1
+violated: differential
+summary: rows whose nullable foreign key is NULL disappeared when the child was embedded
+schema_sql: "CREATE TABLE t1 (\n  id SERIAL,\n  PRIMARY KEY (id)\n);\nCREATE TABLE\
+  \ t0 (\n  id SERIAL,\n  f1 INTEGER,\n  PRIMARY KEY (id),\n  FOREIGN KEY (f1) REFERENCES\
+  \ t1(id) ON DELETE CASCADE\n);\n"
+seed_sql: 'INSERT INTO t0 (id, f1) VALUES (1, NULL);
+
+  '
+queries:
+- SELECT a0.id AS c0 FROM t0 a0 ORDER BY a0.id ASC;
+plan: default
+observed: {}
+status: fixed
+fix: The optimizer chose to embed t0 into t1; a child with a NULL foreign key has
+  no parent document and was lost. Nullable foreign keys are now a hard constraint
+  (never embedded, forced EMBED overrides ignored).

@@ -1,0 +1,17 @@
+id: fuzz_dce92179d9
+found_on: '2026-10-22'
+fuzz_seed: 1
+violated: differential
+summary: global aggregate over an empty input returned no row
+schema_sql: "CREATE TABLE t0 (\n  id SERIAL,\n  c0 INTEGER,\n  PRIMARY KEY (id)\n\
+  );\n"
+seed_sql: ''
+queries:
+- SELECT COUNT(*) AS c0 FROM t0 a0;
+- SELECT COUNT(*) AS c0, SUM(a0.c0) AS c1, AVG(a0.c0) AS c2, MIN(a0.c0) AS c3 FROM
+  t0 a0;
+plan: default
+observed: {}
+status: fixed
+fix: Global aggregates are wrapped in $facet with an empty-input default row (COUNT
+  0, others NULL), closing the documented gap.

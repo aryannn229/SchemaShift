@@ -1,0 +1,114 @@
+id: fuzz_53d4667663
+found_on: '2026-10-22'
+fuzz_seed: 2
+violated: differential
+summary: 'same rows, different order: NULL placement or the ORDER BY keys differ'
+schema_sql: "CREATE TYPE mood AS ENUM ('draft', 'open', 'closed');\nCREATE TABLE t0\
+  \ (\n  id SERIAL,\n  c0 TEXT UNIQUE DEFAULT 'd',\n  c1 mood,\n  c2 TEXT UNIQUE DEFAULT\
+  \ 'd',\n  f0 INTEGER,\n  PRIMARY KEY (id),\n  FOREIGN KEY (f0) REFERENCES t0(id)\n\
+  );\n"
+seed_sql: 'INSERT INTO t0 (id, c0, c1, c2, f0) VALUES (1, '''', ''draft'', '''', NULL);
+
+  INSERT INTO t0 (id, c0, c1, c2, f0) VALUES (2, NULL, ''draft'', NULL, 1);
+
+  INSERT INTO t0 (id, c0, c1, c2, f0) VALUES (3, NULL, NULL, NULL, 1);
+
+  '
+queries:
+- SELECT a0.c0 AS c0, a0.c1 AS c1, COUNT(*) AS c2 FROM t0 a0 GROUP BY a0.c0, a0.c1
+  HAVING COUNT(*) > 0 ORDER BY a0.c0 ASC, a0.c1 ASC;
+plan: default
+observed:
+  status: MISMATCH
+  pg:
+  - - ''
+    - draft
+    - 1
+  - - null
+    - draft
+    - 1
+  - - null
+    - null
+    - 1
+  mongo:
+  - - ''
+    - draft
+    - 1
+  - - null
+    - null
+    - 1
+  - - null
+    - draft
+    - 1
+  pipeline:
+  - $replaceRoot:
+      newRoot:
+        a0: $$ROOT
+  - $group:
+      _id:
+        g0: $a0.c0
+        g1: $a0.c1
+      __a0:
+        $sum: 1
+  - $addFields:
+      c0:
+        $ifNull:
+        - $_id.g0
+        - null
+      c1:
+        $ifNull:
+        - $_id.g1
+        - null
+      c2:
+        $ifNull:
+        - $__a0
+        - null
+  - $match:
+      $expr:
+        $and:
+        - $gt:
+          - $__a0
+          - null
+        - $gt:
+          - $__a0
+          - 0
+  - $addFields:
+      _n0:
+        $cond:
+        - $lte:
+          - $c0
+          - null
+        - 1
+        - 0
+      _k1:
+        $cond:
+        - $gt:
+          - $c1
+          - null
+        - $indexOfArray:
+          - - draft
+            - open
+            - closed
+          - $c1
+        - null
+      _n1:
+        $cond:
+        - $lte:
+          - $_k1
+          - null
+        - 1
+        - 0
+  - $sort:
+      _n0: 1
+      c0: 1
+      _n1: 1
+      _k1: 1
+  - $project:
+      _id: 0
+      c0: 1
+      c1: 1
+      c2: 1
+status: fixed
+fix: The NULL-ordering flag of an ORDER BY key was computed in the same $addFields
+  stage as the key it reads (invisible there), so keys computed by expression always
+  sorted as NULL; keys and flags are now computed in two stages.

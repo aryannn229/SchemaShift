@@ -1,0 +1,99 @@
+id: fuzz_c39b98ec5b
+found_on: '2026-10-22'
+fuzz_seed: 1
+violated: differential
+summary: 'different row counts: a join or filter treats NULL / missing values differently'
+schema_sql: "CREATE TYPE mood AS ENUM ('draft', 'open', 'closed');\nCREATE TABLE t0\
+  \ (\n  id SERIAL,\n  c0 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c1 INTEGER NOT NULL\
+  \ UNIQUE DEFAULT 0 CHECK (c1 >= -2147483648),\n  f0 INTEGER,\n  f1 INTEGER,\n  PRIMARY\
+  \ KEY (id),\n  FOREIGN KEY (f0) REFERENCES t0(id)\n);\nCREATE TABLE t1 (\n  id SERIAL,\n\
+  \  c0 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c1 TEXT NOT NULL UNIQUE DEFAULT 'd',\n\
+  \  f0 INTEGER,\n  f1 INTEGER,\n  PRIMARY KEY (id),\n  FOREIGN KEY (f0) REFERENCES\
+  \ t1(id)\n);\nCREATE TABLE t2 (\n  id SERIAL,\n  c0 TEXT NOT NULL UNIQUE DEFAULT\
+  \ 'd',\n  c1 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c2 INTEGER NOT NULL UNIQUE DEFAULT\
+  \ 0 CHECK (c2 >= -2147483648),\n  c3 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  PRIMARY\
+  \ KEY (id)\n);\nALTER TABLE t0 ADD CONSTRAINT fk_t0_f1 FOREIGN KEY (f1) REFERENCES\
+  \ t1(id);\nALTER TABLE t1 ADD CONSTRAINT fk_t1_f1 FOREIGN KEY (f1) REFERENCES t2(id);\n"
+seed_sql: 'INSERT INTO t0 (id, c0, c1, f0, f1) VALUES (1, '''', 0, NULL, NULL);
+
+  INSERT INTO t2 (id, c0, c1, c2, c3) VALUES (1, '''', '''', 0, '''');
+
+  '
+queries:
+- SELECT a0.id AS c0, a1.id AS c1, a2.id AS c2 FROM t2 a0 LEFT JOIN t1 a1 ON a0.id
+  = a1.f1 INNER JOIN t0 a2 ON a1.id = a2.f1 ORDER BY a0.id ASC, a1.id ASC, a2.id ASC;
+plan: default
+observed:
+  status: MISMATCH
+  pg: []
+  mongo:
+  - - 1
+    - null
+    - 1
+  pipeline:
+  - $replaceRoot:
+      newRoot:
+        a0: $$ROOT
+  - $lookup:
+      from: t1
+      localField: a0._id
+      foreignField: f1
+      as: a1
+  - $unwind:
+      path: $a1
+      preserveNullAndEmptyArrays: true
+  - $lookup:
+      from: t0
+      localField: a1._id
+      foreignField: f1
+      as: a2
+  - $unwind:
+      path: $a2
+      preserveNullAndEmptyArrays: false
+  - $addFields:
+      _n0:
+        $cond:
+        - $lte:
+          - $a0._id
+          - null
+        - 1
+        - 0
+      _n1:
+        $cond:
+        - $lte:
+          - $a1._id
+          - null
+        - 1
+        - 0
+      _n2:
+        $cond:
+        - $lte:
+          - $a2._id
+          - null
+        - 1
+        - 0
+  - $sort:
+      _n0: 1
+      a0._id: 1
+      _n1: 1
+      a1._id: 1
+      _n2: 1
+      a2._id: 1
+  - $project:
+      _id: 0
+      c0:
+        $ifNull:
+        - $a0._id
+        - null
+      c1:
+        $ifNull:
+        - $a1._id
+        - null
+      c2:
+        $ifNull:
+        - $a2._id
+        - null
+status: fixed
+fix: A $lookup keyed on a LEFT-joined (possibly absent) row matched foreign documents
+  whose key is null/missing, because MongoDB equality matches null with missing; the
+  join key is now treated as nullable and guarded.

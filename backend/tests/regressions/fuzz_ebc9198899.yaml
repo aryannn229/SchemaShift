@@ -1,0 +1,26 @@
+id: fuzz_ebc9198899
+found_on: '2026-10-22'
+fuzz_seed: 2
+violated: plan
+summary: result differs between the default plan and all-EMBED
+schema_sql: "CREATE TYPE mood AS ENUM ('draft', 'open', 'closed');\nCREATE TABLE t0\
+  \ (\n  id SERIAL,\n  c0 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  PRIMARY KEY (id)\n\
+  );\nCREATE TABLE t1 (\n  id SERIAL,\n  c0 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK\
+  \ (c0 >= -2147483648),\n  c1 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c1 >= -2147483648),\n\
+  \  c2 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c2 >= -2147483648),\n  c3 INTEGER\
+  \ NOT NULL UNIQUE DEFAULT 0 CHECK (c3 >= -2147483648),\n  f0 INTEGER NOT NULL,\n\
+  \  PRIMARY KEY (id),\n  FOREIGN KEY (f0) REFERENCES t0(id)\n);\n"
+seed_sql: 'INSERT INTO t0 (id, c0) VALUES (1, '''');
+
+  '
+queries:
+- SELECT a0.id AS c0, a0.c0 AS c1, a1.f0 AS c2, a1.id AS c3 FROM t0 a0 LEFT JOIN t1
+  a1 ON a0.id = a1.f0 ORDER BY a0.id ASC, a1.id ASC;
+plan: compare-default-vs-reference-and-embed
+observed:
+  default: 1
+  embed: 1
+status: fixed
+fix: A dropped foreign-key column of a LEFT-joined embedded table read the host key
+  even when no child row matched; it is now NULL when the embedded document is absent
+  (ColRef.present).

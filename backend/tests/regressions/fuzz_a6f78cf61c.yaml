@@ -1,0 +1,22 @@
+id: fuzz_a6f78cf61c
+found_on: '2026-10-22'
+fuzz_seed: 1
+violated: differential
+summary: a repeated ORDER BY key used the last direction instead of the first
+schema_sql: "CREATE TABLE t1 (\n  id INTEGER NOT NULL,\n  k2 INTEGER NOT NULL,\n \
+  \ PRIMARY KEY (id, k2)\n);\n"
+seed_sql: 'INSERT INTO t1 (id, k2) VALUES (1, 0);
+
+  INSERT INTO t1 (id, k2) VALUES (2, 0);
+
+  INSERT INTO t1 (id, k2) VALUES (2, 1);
+
+  '
+queries:
+- SELECT a0.id AS c0, a0.k2 AS c1 FROM t1 a0 ORDER BY a0.id DESC, a0.id ASC, a0.k2
+  ASC;
+plan: default
+observed: {}
+status: fixed
+fix: Duplicate keys collapsed in the $sort document (last wins); the first occurrence
+  now wins.

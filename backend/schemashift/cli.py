@@ -184,6 +184,62 @@ def evaluate(
     )
 
 
+@app.command()
+def fuzz(
+    cases: int = typer.Option(100, "--cases", "-n", help="Number of generated cases"),
+    seed: int = typer.Option(0, "--seed", "-s", help="Hypothesis seed (reproducible runs)"),
+    metamorphic: bool = typer.Option(
+        False, "--metamorphic", help="Also check metamorphic relations"
+    ),
+    max_tables: int = typer.Option(3, help="Maximum tables per generated schema"),
+    save_dir: Path = typer.Option(None, help="Where to write minimal reproducers (YAML)"),
+    admin_dsn: str = typer.Option(
+        None,
+        envvar="SANDBOX_ADMIN_DATABASE_URL",
+        help="PostgreSQL role allowed to CREATE ROLE/SCHEMA",
+    ),
+    mongo_url: str = typer.Option(None, envvar="MONGO_URL", help="MongoDB URI (replica set)"),
+) -> None:
+    """Differential (and metamorphic) fuzzing: PostgreSQL vs the generated MongoDB code."""
+    from schemashift.fuzz.driver import run_fuzz
+    from schemashift.fuzz.regression import DEFAULT_DIR, entry_for, save
+    from schemashift.verification import SandboxConfig
+
+    if not admin_dsn or not mongo_url:
+        raise typer.BadParameter(
+            "set SANDBOX_ADMIN_DATABASE_URL and MONGO_URL (or pass the options)"
+        )
+    directory = save_dir or DEFAULT_DIR
+
+    def on_failure(case, findings) -> None:  # type: ignore[no-untyped-def]
+        path = save(entry_for(case, findings, seed), directory)
+        typer.echo(f"saved minimal reproducer: {path}")
+        for f in findings:
+            typer.echo(f"  [{f.kind}] {f.summary}")
+            for q in f.sqls:
+                typer.echo(f"    {q}")
+
+    result = run_fuzz(
+        SandboxConfig(pg_admin_dsn=admin_dsn, mongo_url=mongo_url),
+        cases_n=cases,
+        seed=seed,
+        metamorphic=metamorphic,
+        max_tables=max_tables,
+        on_failure=on_failure,
+    )
+    st = result.stats
+    typer.echo(
+        f"fuzz seed={seed} cases={result.cases} queries={st.queries} compared={st.compared} "
+        f"not_translated={st.not_translated} pg_errors={st.pg_errors} "
+        f"relation_checks={st.relation_checks} relation_skipped={st.relation_skipped} "
+        f"duration={result.duration_s}s "
+        f"failures={len(result.failures)}"
+    )
+    for reason, n in sorted(st.untranslated.items(), key=lambda kv: -kv[1])[:8]:
+        typer.echo(f"  untranslatable x{n}: {reason}")
+    raise typer.Exit(1 if result.failures else 0)
+
+
 @app.callback()
 def main() -> None:
     """SchemaShift: SQL to MongoDB migration compiler."""

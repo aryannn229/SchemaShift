@@ -1,0 +1,16 @@
+id: fuzz_4b564d252d
+found_on: '2026-10-22'
+fuzz_seed: 1
+violated: differential
+summary: 'LIMIT 0 made MongoDB fail: $limit must be positive'
+schema_sql: "CREATE TABLE t0 (\n  id SERIAL,\n  PRIMARY KEY (id)\n);\n"
+seed_sql: 'INSERT INTO t0 (id) VALUES (1);
+
+  '
+queries:
+- SELECT a0.id AS c0 FROM t0 a0 ORDER BY a0.id ASC LIMIT 0;
+plan: default
+observed: {}
+status: fixed
+fix: 'LIMIT 0 is translated to {$match: {$expr: false}} because MongoDB rejects {$limit:
+  0}.'

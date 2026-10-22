@@ -1,0 +1,36 @@
+id: fuzz_da29ff585a
+found_on: '2026-10-22'
+fuzz_seed: 6
+violated: plan
+summary: result differs between the default plan and all-EMBED
+schema_sql: "CREATE TYPE mood AS ENUM ('draft', 'open', 'closed');\nCREATE TABLE t0\
+  \ (\n  id SERIAL,\n  c0 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c0 >= -2147483648),\n\
+  \  c1 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c2 TEXT UNIQUE DEFAULT 'd',\n  c3 INTEGER\
+  \ NOT NULL UNIQUE DEFAULT 0 CHECK (c3 >= -2147483648),\n  f0 INTEGER,\n  PRIMARY\
+  \ KEY (id),\n  FOREIGN KEY (f0) REFERENCES t0(id)\n);\nCREATE TABLE t1 (\n  id SERIAL,\n\
+  \  c0 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c0 >= -2147483648),\n  c1 INTEGER\
+  \ NOT NULL UNIQUE DEFAULT 0 CHECK (c1 >= -2147483648),\n  f0 INTEGER,\n  PRIMARY\
+  \ KEY (id)\n);\nCREATE TABLE t2 (\n  id SERIAL,\n  c0 INTEGER NOT NULL UNIQUE DEFAULT\
+  \ 0 CHECK (c0 >= -2147483648),\n  c1 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c2 INTEGER\
+  \ NOT NULL UNIQUE DEFAULT 0 CHECK (c2 >= -2147483648),\n  c3 TEXT NOT NULL UNIQUE\
+  \ DEFAULT 'd',\n  f0 INTEGER NOT NULL,\n  PRIMARY KEY (id),\n  FOREIGN KEY (f0)\
+  \ REFERENCES t0(id)\n);\nALTER TABLE t1 ADD CONSTRAINT fk_t1_f0 FOREIGN KEY (f0)\
+  \ REFERENCES t2(id);\n"
+seed_sql: 'INSERT INTO t0 (id, c0, c1, c2, c3, f0) VALUES (1, 0, ''a'', '''', 0, NULL);
+
+  INSERT INTO t0 (id, c0, c1, c2, c3, f0) VALUES (2, 7, '''', NULL, 2147483647, 1);
+
+  INSERT INTO t1 (id, c0, c1, f0) VALUES (1, 0, 0, NULL);
+
+  '
+queries:
+- SELECT a0.id AS c0, a1.id AS c1 FROM t1 a0 LEFT JOIN t2 a1 ON a0.f0 = a1.id ORDER
+  BY a0.id ASC, a1.id ASC;
+plan: compare-default-vs-reference-and-embed
+observed:
+  default: 1
+  embed: 2
+status: fixed
+fix: 'A $lookup into an embedding host with a null local key matched every host document
+  lacking the embedded field (MongoDB equality matches null with missing); nullable
+  keys are now guarded (INNER: $match first; LEFT: clear the joined array).'

@@ -1,0 +1,85 @@
+id: fuzz_d12d459614
+found_on: '2026-10-22'
+fuzz_seed: 1
+violated: differential
+summary: 'same rows, different order: NULL placement or the ORDER BY keys differ'
+schema_sql: "CREATE TYPE mood AS ENUM ('draft', 'open', 'closed');\nCREATE TABLE t0\
+  \ (\n  id SERIAL,\n  c0 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c1 TEXT NOT NULL UNIQUE\
+  \ DEFAULT 'd',\n  c2 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c2 >= -2147483648),\n\
+  \  c3 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  PRIMARY KEY (id)\n);\nCREATE TABLE t1\
+  \ (\n  id SERIAL,\n  c0 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c0 >= -2147483648),\n\
+  \  f0 INTEGER,\n  PRIMARY KEY (id),\n  FOREIGN KEY (f0) REFERENCES t1(id)\n);\n\
+  CREATE TABLE t2 (\n  id SERIAL,\n  c0 BIGINT UNIQUE CHECK (c0 >= -2147483648),\n\
+  \  c1 TEXT UNIQUE DEFAULT 'd',\n  c2 mood NOT NULL,\n  f0 INTEGER NOT NULL,\n  f1\
+  \ INTEGER,\n  PRIMARY KEY (id),\n  FOREIGN KEY (f0) REFERENCES t0(id),\n  FOREIGN\
+  \ KEY (f1) REFERENCES t2(id)\n);\n"
+seed_sql: 'INSERT INTO t0 (id, c0, c1, c2, c3) VALUES (1, '''', '''', 0, '''');
+
+  INSERT INTO t2 (id, c0, c1, c2, f0, f1) VALUES (1, 0, '''', ''draft'', 1, NULL);
+
+  INSERT INTO t2 (id, c0, c1, c2, f0, f1) VALUES (2, NULL, NULL, ''draft'', 1, 1);
+
+  INSERT INTO t2 (id, c0, c1, c2, f0, f1) VALUES (3, NULL, NULL, ''closed'', 1, 1);
+
+  '
+queries:
+- SELECT a0.c2 AS c0, COUNT(*) AS c1 FROM t2 a0 GROUP BY a0.c2 HAVING COUNT(*) > 0
+  ORDER BY a0.c2 ASC;
+plan: default
+observed:
+  status: MISMATCH
+  pg:
+  - - draft
+    - 2
+  - - closed
+    - 1
+  mongo:
+  - - closed
+    - 1
+  - - draft
+    - 2
+  pipeline:
+  - $replaceRoot:
+      newRoot:
+        a0: $$ROOT
+  - $group:
+      _id:
+        g0: $a0.c2
+      __a0:
+        $sum: 1
+  - $addFields:
+      c0:
+        $ifNull:
+        - $_id.g0
+        - null
+      c1:
+        $ifNull:
+        - $__a0
+        - null
+  - $match:
+      $expr:
+        $and:
+        - $gt:
+          - $__a0
+          - null
+        - $gt:
+          - $__a0
+          - 0
+  - $addFields:
+      _n0:
+        $cond:
+        - $lte:
+          - $c0
+          - null
+        - 1
+        - 0
+  - $sort:
+      _n0: 1
+      c0: 1
+  - $project:
+      _id: 0
+      c0: 1
+      c1: 1
+status: fixed
+fix: ORDER BY on a grouped/aliased enum output column also sorted alphabetically;
+  it now sorts by declared enum position.
