@@ -294,6 +294,75 @@ def diff(
 
 
 @app.command()
+def check(
+    files: list[Path] = typer.Argument(..., exists=True, readable=True, help="Changed DDL files"),
+    baseline: Path = typer.Option(None, "--baseline", help="Baseline DDL (single file)"),
+    baseline_ref: str = typer.Option(
+        None, "--baseline-ref", help="git ref holding the baseline, e.g. origin/main"
+    ),
+    queries: Path = typer.Option(None, "--queries", "-q", help="Optional SQL queries file"),
+    policy_file: Path = typer.Option(
+        Path("schemashift.policy.yaml"), "--policy", help="Policy file (defaults apply if missing)"
+    ),
+    fmt: str = typer.Option("text", "--format", help="text | json | sarif | markdown"),
+    output: Path = typer.Option(None, "--output", "-o", help="Write the report here"),
+    no_fail: bool = typer.Option(False, "--no-fail", help="Always exit 0 (report only)"),
+) -> None:
+    """Check schema changes against a baseline and a policy. Exit 1 when the policy is violated."""
+    import json
+    import subprocess
+
+    from schemashift.ci import Policy, check_schemas, to_json, to_markdown, to_sarif, to_text
+
+    if baseline is None and baseline_ref is None:
+        typer.echo("give --baseline FILE or --baseline-ref REF", err=True)
+        raise typer.Exit(2)
+    if baseline is not None and len(files) != 1:
+        typer.echo(
+            "--baseline works with exactly one file; use --baseline-ref for several", err=True
+        )
+        raise typer.Exit(2)
+    policy = Policy.load(policy_file)
+    queries_sql = queries.read_text(encoding="utf-8") if queries else ""
+    reports = []
+    for f in files:
+        if baseline is not None:
+            old_sql = baseline.read_text(encoding="utf-8")
+            old_name = str(baseline)
+        else:
+            git = subprocess.run(
+                ["git", "show", f"{baseline_ref}:{f.as_posix()}"], capture_output=True, text=True
+            )
+            old_sql = git.stdout if git.returncode == 0 else ""  # a new file has no baseline
+            old_name = f.as_posix()
+        report, *_ = check_schemas(
+            old_sql,
+            f.read_text(encoding="utf-8"),
+            queries_sql=queries_sql,
+            policy=policy,
+            file=f.as_posix(),
+            baseline_file=old_name,
+        )
+        reports.append(report)
+    if fmt == "json":
+        text = to_json(reports)
+    elif fmt == "sarif":
+        text = json.dumps(to_sarif(reports), indent=2)
+    elif fmt == "markdown":
+        text = to_markdown(reports)
+    elif fmt == "text":
+        text = to_text(reports)
+    else:
+        typer.echo(f"unknown format {fmt!r}", err=True)
+        raise typer.Exit(2)
+    if output is not None:
+        output.write_text(text + "\n", encoding="utf-8", newline="\n")
+    else:
+        typer.echo(text)
+    raise typer.Exit(0 if no_fail or all(r.passed for r in reports) else 1)
+
+
+@app.command()
 def bench(
     schema: Path = typer.Argument(..., exists=True, readable=True, help="PostgreSQL DDL file"),
     queries: Path = typer.Option(..., "--queries", "-q", exists=True, help="SQL queries file"),

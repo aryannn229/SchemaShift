@@ -1,0 +1,87 @@
+name: SchemaShift check
+description: >
+  Check changed .sql files against their baseline and a policy, upload SARIF to code scanning,
+  comment on the pull request and fail according to the policy.
+inputs:
+  policy:
+    description: Path of the policy file (defaults apply when it does not exist)
+    default: schemashift.policy.yaml
+  paths:
+    description: Space separated globs of the DDL files to check
+    default: "**/*.sql"
+  baseline-ref:
+    description: Git ref holding the baseline (defaults to the pull request base)
+    default: ""
+  comment:
+    description: Post a summary comment on the pull request
+    default: "true"
+  upload-sarif:
+    description: Upload SARIF to GitHub code scanning
+    default: "true"
+  schemashift-source:
+    description: pip requirement for SchemaShift
+    default: "git+https://github.com/aryannn229/SchemaShift.git#subdirectory=backend"
+outputs:
+  passed:
+    description: "true when no error-level policy violation was found"
+    value: ${{ steps.check.outputs.passed }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install SchemaShift
+      shell: bash
+      run: pip install "${{ inputs.schemashift-source }}"
+    - name: Find the changed SQL files
+      id: files
+      shell: bash
+      run: |
+        base="${{ inputs.baseline-ref }}"
+        if [ -z "$base" ]; then base="origin/${{ github.base_ref }}"; fi
+        git fetch --no-tags --depth=50 origin "${base#origin/}" || true
+        echo "base=$base" >> "$GITHUB_OUTPUT"
+        files=$(git diff --name-only --diff-filter=AM "$base"...HEAD -- ${{ inputs.paths }} | tr '\n' ' ')
+        echo "files=$files" >> "$GITHUB_OUTPUT"
+    - name: schemashift check
+      id: check
+      if: steps.files.outputs.files != ''
+      shell: bash
+      run: |
+        set +e
+        schemashift check ${{ steps.files.outputs.files }} --baseline-ref "${{ steps.files.outputs.base }}" \
+          --policy "${{ inputs.policy }}" --format sarif --output schemashift.sarif --no-fail
+        schemashift check ${{ steps.files.outputs.files }} --baseline-ref "${{ steps.files.outputs.base }}" \
+          --policy "${{ inputs.policy }}" --format markdown --output schemashift-comment.md --no-fail
+        schemashift check ${{ steps.files.outputs.files }} --baseline-ref "${{ steps.files.outputs.base }}" \
+          --policy "${{ inputs.policy }}" --format text
+        code=$?
+        if [ "$code" = "0" ]; then echo "passed=true" >> "$GITHUB_OUTPUT"; else echo "passed=false" >> "$GITHUB_OUTPUT"; fi
+        exit 0
+    - name: Upload SARIF
+      if: inputs.upload-sarif == 'true' && steps.files.outputs.files != ''
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: schemashift.sarif
+        category: schemashift
+    - name: Comment on the pull request
+      if: inputs.comment == 'true' && github.event_name == 'pull_request' && steps.files.outputs.files != ''
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require("fs");
+          const body = fs.readFileSync("schemashift-comment.md", "utf8");
+          const marker = "<!-- schemashift-check -->";
+          const { data: comments } = await github.rest.issues.listComments({
+            ...context.repo, issue_number: context.issue.number,
+          });
+          const mine = comments.find((c) => c.body && c.body.includes(marker));
+          if (mine) await github.rest.issues.updateComment({ ...context.repo, comment_id: mine.id, body });
+          else await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+    - name: Fail according to the policy
+      if: steps.check.outputs.passed == 'false'
+      shell: bash
+      run: |
+        echo "SchemaShift: the policy found error-level violations (see the comment and code scanning)."
+        exit 1

@@ -1,0 +1,21 @@
+# Copy to .github/workflows/schemashift.yml in the repository that holds your .sql files.
+name: schemashift
+on:
+  pull_request:
+    paths: ["**/*.sql", "schemashift.policy.yaml"]
+
+permissions:
+  contents: read
+  pull-requests: write          # the summary comment
+  security-events: write        # SARIF upload to code scanning
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: aryannn229/SchemaShift/.github/actions/schemashift-check@main
+        with:
+          policy: schemashift.policy.yaml
+          paths: "db/**/*.sql"

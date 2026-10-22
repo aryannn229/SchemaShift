@@ -1,0 +1,25 @@
+{
+  "name": "schemashift-vscode",
+  "displayName": "SchemaShift",
+  "description": "SchemaShift diagnostics and MongoDB verdict hints on SQL files",
+  "version": "0.1.0",
+  "publisher": "schemashift",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Linters"],
+  "activationEvents": ["onLanguage:sql"],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "SchemaShift",
+      "properties": {
+        "schemashift.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Python interpreter that has schemashift-lsp installed (pip install schemashift-lsp)."
+        }
+      }
+    }
+  },
+  "dependencies": { "vscode-languageclient": "^9.0.1" },
+  "scripts": { "package": "vsce package" }
+}

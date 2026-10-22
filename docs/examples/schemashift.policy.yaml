@@ -1,0 +1,14 @@
+# What is unacceptable in a schema change. Every key is optional; these are the defaults.
+version: 1
+rules:
+  guarantee_regression:
+    fail_on: ["SAFE->BROKEN", "CHANGED->BROKEN"]
+    warn_on: ["SAFE->CHANGED"]
+  removed_constraints:
+    fail_on: [unique, primary_key, foreign_key, not_null, check]
+  risk:
+    max_increase: 10        # points on the 0-100 risk score
+    # max_score: 80
+  irreversible_steps: warn  # fail | warn | off
+  overall_verdict: never    # CHANGED | BROKEN | never
+paths: ["**/*.sql"]

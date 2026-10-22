@@ -1,0 +1,16 @@
+[project]
+name = "schemashift-lsp"
+version = "0.1.0"
+description = "Language server for SchemaShift: diagnostics and verdict hints on .sql files"
+requires-python = ">=3.11"
+dependencies = ["schemashift>=0.1", "pygls>=2.0"]
+
+[project.scripts]
+schemashift-lsp = "schemashift_lsp.server:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["schemashift_lsp*"]

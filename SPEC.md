@@ -702,3 +702,7 @@ Tests: `tests/unit/test_risk_simulate.py` (every point traces to a finding, the 
 **Simulator.** `POST /api/v1/simulate` compiles the schema as the optimizer decides and again with the user's overrides / workload frequencies / ALTER
 (constraint toggles), and returns placements (blocked overrides with the reason), verdict and evidence changes, index and validator changes, pipeline
 changes with estimated cost, and the risk before/after. The optimizer's output is never modified; the answer is labeled "simulated plan".
+
+## 26. Phase 25: CI/CD tooling
+`schemashift check --baseline | --baseline-ref` with `schemashift.policy.yaml`; text, JSON, SARIF 2.1.0 and Markdown output; a composite GitHub Action
+(SARIF upload, one updating PR comment, policy-based failure); optional LSP server and VS Code client. See `docs/CI.md`.
