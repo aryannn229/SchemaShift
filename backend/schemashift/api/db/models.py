@@ -43,7 +43,7 @@ class Run(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     status: Mapped[str] = mapped_column(
         String(16), default="pending"
-    )  # pending/running/done/failed
+    )  # pending (queued) / running / done / failed / cancelled
     schema_sql: Mapped[str] = mapped_column(Text)
     queries_sql: Mapped[str] = mapped_column(Text, default="")
     seed_sql: Mapped[str] = mapped_column(Text, default="")
@@ -51,6 +51,7 @@ class Run(Base):
     overall_verdict: Mapped[str | None] = mapped_column(String(8), nullable=True)
     counts: Mapped[dict[str, Any] | None] = mapped_column(Json, nullable=True)
     seed: Mapped[int] = mapped_column(Integer, default=0)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)

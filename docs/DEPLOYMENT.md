@@ -1,5 +1,7 @@
 # Deployment
 
+> Superseded by [DEPLOY.md](DEPLOY.md) (Redis, the job queue, the smoke test and the status badge).
+
 Target: free or cheap tiers. Frontend on Vercel, backend on Render (Railway and Fly.io work the same
 way: they run `backend/Dockerfile`), PostgreSQL on Neon, MongoDB on Atlas.
 

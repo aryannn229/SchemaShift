@@ -11,7 +11,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from schemashift import __version__
-from schemashift.api.middleware import BodyLimitMiddleware, RateLimiter, RequestMiddleware
+from schemashift.api.middleware import (
+    BodyLimitMiddleware,
+    RateLimiter,
+    RedisRateLimiter,
+    RequestMiddleware,
+)
 from schemashift.api.routes import compile as compile_routes
 from schemashift.api.routes import health
 from schemashift.api.runs import AppState
@@ -62,8 +67,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
-    limiter = RateLimiter(
-        {"compile": settings.compile_rate_per_minute, "verify": settings.verify_rate_per_minute}
+    limits = {
+        "compile": settings.compile_rate_per_minute,
+        "verify": settings.verify_rate_per_minute,
+    }
+    limiter: RateLimiter = (
+        RedisRateLimiter(settings.redis_url, limits) if settings.redis_url else RateLimiter(limits)
     )
     app.state.limiter = limiter
     # Added last = outermost: body limit first, then request logging / rate limit, then CORS.

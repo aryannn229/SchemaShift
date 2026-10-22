@@ -1,5 +1,7 @@
 # SchemaShift
 
+[![smoke test / uptime](https://github.com/aryannn229/SchemaShift/actions/workflows/smoke.yml/badge.svg)](https://github.com/aryannn229/SchemaShift/actions/workflows/smoke.yml)
+
 SchemaShift is a compiler that migrates a PostgreSQL schema and its queries to MongoDB. It does not
 just move data: it works out which **guarantees** the SQL schema gave you (foreign keys, cascades,
 uniqueness, NULL and ordering semantics, atomic multi-table writes) and reports, per guarantee,

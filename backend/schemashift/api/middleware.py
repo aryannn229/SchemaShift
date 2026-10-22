@@ -94,13 +94,54 @@ class RateLimiter:
         return True
 
 
+class RedisRateLimiter(RateLimiter):
+    """Sliding window shared by every worker process through Redis.
+
+    Falls back to the in-process window when Redis is unreachable (fail open, logged), so an outage
+    degrades to per-process limits instead of taking the API down.
+    """
+
+    blocking = True  # callers in async code run ``allow`` in a thread
+
+    def __init__(self, url: str, limits: dict[str, int], window: float = 60.0, client: Any = None):
+        super().__init__(limits, window)
+        if client is None:
+            import redis
+
+            client = redis.Redis.from_url(url, socket_timeout=1.0, socket_connect_timeout=1.0)
+        self.redis = client
+
+    def allow(self, client: str, bucket: str, now: float | None = None) -> bool:
+        limit = self.limits.get(bucket)
+        if limit is None:
+            return True
+        key = f"schemashift:rl:{bucket}:{client}"
+        stamp = time.time() if now is None else now
+        try:
+            pipe = self.redis.pipeline()
+            pipe.zremrangebyscore(key, 0, stamp - self.window)
+            pipe.zcard(key)
+            _, count = pipe.execute()
+            if int(count) >= limit:
+                return False
+            member = f"{stamp}:{uuid.uuid4().hex[:8]}"
+            pipe = self.redis.pipeline()
+            pipe.zadd(key, {member: stamp})
+            pipe.expire(key, int(self.window) + 1)
+            pipe.execute()
+            return True
+        except Exception as exc:  # noqa: BLE001 - any Redis failure must not break requests
+            log.warning("rate_limit_redis_unavailable", error=str(exc))
+            return super().allow(client, bucket, now)
+
+
 def bucket_for(request: Request) -> str | None:
     if request.method != "POST":
         return None
     path = request.url.path
     if path.endswith("/counterexamples/replay"):
         return "verify"  # runs both databases: the stricter limit
-    if path.endswith("/compile") or path.endswith("/runs"):
+    if path.endswith(("/compile", "/runs", "/diff")):
         return "compile"
     return None
 
@@ -111,6 +152,13 @@ class RequestMiddleware:
     def __init__(self, app: ASGIApp, limiter: RateLimiter) -> None:
         self.app = app
         self.limiter = limiter
+
+    async def _allowed(self, client: str, bucket: str) -> bool:
+        if getattr(self.limiter, "blocking", False):
+            from starlette.concurrency import run_in_threadpool
+
+            return bool(await run_in_threadpool(self.limiter.allow, client, bucket))
+        return self.limiter.allow(client, bucket)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -136,7 +184,7 @@ class RequestMiddleware:
 
         structlog.contextvars.bind_contextvars(request_id=request_id)
         try:
-            if bucket and not self.limiter.allow(client, bucket):
+            if bucket and not await self._allowed(client, bucket):
                 response: Response = JSONResponse(
                     {"detail": "rate limit exceeded"},
                     status_code=429,

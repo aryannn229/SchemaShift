@@ -1,0 +1,21 @@
+name: smoke
+
+# Post-deploy smoke test against the live API. Set the repository variables API_URL and APP_ORIGIN
+# (Settings > Secrets and variables > Actions > Variables). The badge in the README shows this workflow.
+on:
+  workflow_dispatch:
+  deployment_status:
+  schedule:
+    - cron: "17 */6 * * *"   # also acts as an uptime check
+
+jobs:
+  smoke:
+    if: ${{ vars.API_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Smoke test the live deployment
+        run: python scripts/smoke_test.py "${{ vars.API_URL }}" --origin "${{ vars.APP_ORIGIN }}" --verify --wait 120

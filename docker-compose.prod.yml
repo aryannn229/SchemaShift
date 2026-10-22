@@ -1,0 +1,82 @@
+# A production-like stack for local verification of the deployment configuration:
+#   docker compose -f docker-compose.prod.yml up -d --build --wait
+#   python scripts/smoke_test.py http://localhost:${API_PORT:-8010} --origin http://localhost:5173 --verify
+# Same image and commands as Render (API with migrations + 2 workers, arq worker), Redis for shared rate
+# limits and the job queue, PostgreSQL 16, MongoDB 7 replica set. Passwords here are for local use only.
+name: schemashift-prod
+
+x-backend-env: &backend-env
+  APP_DATABASE_URL: postgresql+psycopg://schemashift:local-only@postgres:5432/schemashift_app
+  SANDBOX_ADMIN_DATABASE_URL: postgresql://schemashift:local-only@postgres:5432/schemashift_sandbox
+  MONGO_URL: mongodb://mongo:27017/?directConnection=true
+  REDIS_URL: redis://redis:6379/0
+  CORS_ORIGINS: http://localhost:5173
+  ENVIRONMENT: production
+  JOB_TIMEOUT_S: "300"
+  JOB_MAX_TRIES: "3"
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: schemashift
+      POSTGRES_PASSWORD: local-only
+      POSTGRES_DB: schemashift_app
+    volumes:
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schemashift"]
+      interval: 3s
+      retries: 20
+
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 3s
+      retries: 20
+
+  mongo-init:
+    image: mongo:7
+    depends_on:
+      mongo: { condition: service_healthy }
+    restart: "no"
+    entrypoint:
+      - mongosh
+      - --host
+      - mongo
+      - --quiet
+      - --eval
+      - "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'mongo:27017'}]}) }"
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment: *backend-env
+    ports: ["${API_PORT:-8010}:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      mongo-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health').status==200 else 1)"]
+      interval: 5s
+      retries: 30
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: ["arq", "schemashift.worker.WorkerSettings"]
+    environment: *backend-env
+    depends_on:
+      api: { condition: service_healthy }

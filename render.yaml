@@ -1,3 +1,5 @@
+# Render blueprint: API (migrations + 2 uvicorn workers), background worker (arq) and Redis.
+# Secrets (sync: false) are entered in the Render dashboard; nothing secret lives in this file.
 services:
   - type: web
     name: schemashift-api
@@ -5,7 +7,7 @@ services:
     dockerfilePath: backend/Dockerfile
     dockerContext: .
     healthCheckPath: /api/v1/health
-    envVars:
+    envVars: &env
       - key: APP_DATABASE_URL
         sync: false
       - key: SANDBOX_ADMIN_DATABASE_URL
@@ -20,3 +22,26 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: schemashift-redis
+          property: connectionString
+      - key: JOB_TIMEOUT_S
+        value: "300"
+      - key: JOB_MAX_TRIES
+        value: "3"
+
+  - type: worker
+    name: schemashift-worker
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: .
+    dockerCommand: arq schemashift.worker.WorkerSettings
+    envVars: *env
+
+  - type: keyvalue
+    name: schemashift-redis
+    plan: free
+    ipAllowList: []   # internal connections only
+    maxmemoryPolicy: noeviction

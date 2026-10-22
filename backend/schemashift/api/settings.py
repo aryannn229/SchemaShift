@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # databases
     app_database_url: str = ""  # empty -> a local SQLite file (development only)
     mongo_url: str = ""
+    redis_url: str = ""  # empty -> in-process rate limits and thread-pool runs (local development)
     sandbox_admin_database_url: str = ""
     mongo_sandbox_url: str = ""
     db_auto_create: bool = True  # create tables on start (production runs Alembic instead)
@@ -30,6 +31,8 @@ class Settings(BaseSettings):
     max_queries: int = 30
     compile_rate_per_minute: int = 30
     verify_rate_per_minute: int = 5
+    job_timeout_s: int = 300  # a queued run is stopped after this long
+    job_max_tries: int = 3  # attempts for transient infrastructure errors
 
     # AI
     anthropic_api_key: str = ""
