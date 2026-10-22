@@ -19,7 +19,7 @@ def decisions(p) -> dict[str, str]:  # type: ignore[no-untyped-def]
 # ----------------------------------------------------------------------- basics
 def test_every_relationship_gets_a_decision_with_factors() -> None:
     p = plan(
-        f"CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT REFERENCES p(id) {CASC});"
+        f"CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT NOT NULL REFERENCES p(id) {CASC});"
     )
     d = p.decisions["fk:c.p_id->p.id"]
     assert d.decision == "EMBED" and d.host == "p" and d.score >= 0.5 and d.top_factors
@@ -28,7 +28,7 @@ def test_every_relationship_gets_a_decision_with_factors() -> None:
 
 def test_default_one_to_many_without_guarantees_is_referenced() -> None:
     p = plan(
-        "CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT REFERENCES p(id));"
+        "CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT NOT NULL REFERENCES p(id));"
     )
     assert p.decisions["fk:c.p_id->p.id"].decision == "REFERENCE"
 
@@ -43,20 +43,20 @@ def test_one_to_one_is_embedded_by_default() -> None:
 def test_planning_is_deterministic() -> None:
     sql = (
         f"CREATE TABLE a (id INT PRIMARY KEY); CREATE TABLE b (id INT PRIMARY KEY);"
-        f"CREATE TABLE r (id INT PRIMARY KEY, a_id INT REFERENCES a(id) {CASC}, b_id INT REFERENCES b(id) {CASC});"
+        f"CREATE TABLE r (id INT PRIMARY KEY, a_id INT NOT NULL REFERENCES a(id) {CASC}, b_id INT NOT NULL REFERENCES b(id) {CASC});"
     )
     assert plan(sql).model_dump() == plan(sql).model_dump()
 
 
 # ------------------------------------------------------------ hard constraints
 def test_self_reference_never_embedded() -> None:
-    p = plan(f"CREATE TABLE e (id INT PRIMARY KEY, m INT UNIQUE REFERENCES e(id) {CASC});")
+    p = plan(f"CREATE TABLE e (id INT PRIMARY KEY, m INT NOT NULL UNIQUE REFERENCES e(id) {CASC});")
     d = p.decisions["fk:e.m->e.id"]
     assert d.decision == "REFERENCE" and "self-referencing" in d.reason
 
 
 def test_unbounded_growth_forces_reference() -> None:
-    sql = f"CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT REFERENCES p(id) {CASC});"
+    sql = f"CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT NOT NULL REFERENCES p(id) {CASC});"
     hint = {"fk:c.p_id->p.id": AccessHint(estimated_child_count_per_parent=2000)}
     d = plan(sql, hints=hint).decisions["fk:c.p_id->p.id"]
     assert d.decision == "REFERENCE" and "unbounded" in d.reason
@@ -64,7 +64,7 @@ def test_unbounded_growth_forces_reference() -> None:
 
 def test_size_ceiling_forces_reference() -> None:
     cols = ", ".join(f"j{i} JSONB" for i in range(10))
-    sql = f"CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT REFERENCES p(id) {CASC}, {cols});"
+    sql = f"CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT NOT NULL REFERENCES p(id) {CASC}, {cols});"
     hint = {
         "fk:c.p_id->p.id": AccessHint(
             estimated_child_count_per_parent=1000, read_together_ratio=1.0
@@ -78,7 +78,7 @@ def test_size_ceiling_forces_reference() -> None:
 # ------------------------------------------------------------ multi-parent
 MULTI = (
     "CREATE TABLE a (id INT PRIMARY KEY); CREATE TABLE b (id INT PRIMARY KEY);"
-    "CREATE TABLE r (id INT PRIMARY KEY, a_id INT REFERENCES a(id) {a}, b_id INT REFERENCES b(id) {b});"
+    "CREATE TABLE r (id INT PRIMARY KEY, a_id INT NOT NULL REFERENCES a(id) {a}, b_id INT NOT NULL REFERENCES b(id) {b});"
 )
 
 
@@ -118,8 +118,8 @@ def test_two_forced_embeds_for_one_child_warn() -> None:
 # ----------------------------------------------------------------- cycle breaking
 def test_two_cycle_is_broken() -> None:
     sql = (
-        "CREATE TABLE a (id INT PRIMARY KEY, b_id INT UNIQUE);"
-        f"CREATE TABLE b (id INT PRIMARY KEY, a_id INT UNIQUE REFERENCES a(id) {CASC});"
+        "CREATE TABLE a (id INT PRIMARY KEY, b_id INT NOT NULL UNIQUE);"
+        f"CREATE TABLE b (id INT PRIMARY KEY, a_id INT NOT NULL UNIQUE REFERENCES a(id) {CASC});"
         f"ALTER TABLE a ADD FOREIGN KEY (b_id) REFERENCES b(id) {CASC};"
     )
     p = plan(sql)
@@ -131,9 +131,9 @@ def test_two_cycle_is_broken() -> None:
 
 def test_three_cycle_is_broken_at_lowest_score() -> None:
     sql = (
-        "CREATE TABLE a (id INT PRIMARY KEY, c_id INT UNIQUE);"
-        f"CREATE TABLE b (id INT PRIMARY KEY, a_id INT UNIQUE REFERENCES a(id) {CASC});"
-        f"CREATE TABLE c (id INT PRIMARY KEY, b_id INT UNIQUE REFERENCES b(id) {CASC});"
+        "CREATE TABLE a (id INT PRIMARY KEY, c_id INT NOT NULL UNIQUE);"
+        f"CREATE TABLE b (id INT PRIMARY KEY, a_id INT NOT NULL UNIQUE REFERENCES a(id) {CASC});"
+        f"CREATE TABLE c (id INT PRIMARY KEY, b_id INT NOT NULL UNIQUE REFERENCES b(id) {CASC});"
         "ALTER TABLE a ADD FOREIGN KEY (c_id) REFERENCES c(id);"  # no cascade: lowest score
     )
     p = plan(sql)
@@ -144,7 +144,7 @@ def test_three_cycle_is_broken_at_lowest_score() -> None:
 
 def test_self_loop_forced_embed_is_ignored_with_warning() -> None:
     p = plan(
-        "CREATE TABLE e (id INT PRIMARY KEY, m INT REFERENCES e(id));",
+        "CREATE TABLE e (id INT PRIMARY KEY, m INT NOT NULL REFERENCES e(id));",
         overrides={"fk:e.m->e.id": "EMBED"},
     )
     assert decisions(p)["fk:e.m->e.id"] == "REFERENCE" and p.warnings
@@ -183,8 +183,8 @@ def test_nested_size_limit_references_the_biggest_branch() -> None:
     cols = ", ".join(f"j{i} JSONB" for i in range(10))
     sql = (
         "CREATE TABLE p (id INT PRIMARY KEY);"
-        f"CREATE TABLE c (id INT PRIMARY KEY, p_id INT REFERENCES p(id) {CASC});"
-        f"CREATE TABLE g (id INT PRIMARY KEY, c_id INT REFERENCES c(id) {CASC}, {cols});"
+        f"CREATE TABLE c (id INT PRIMARY KEY, p_id INT NOT NULL REFERENCES p(id) {CASC});"
+        f"CREATE TABLE g (id INT PRIMARY KEY, c_id INT NOT NULL REFERENCES c(id) {CASC}, {cols});"
     )
     hints = {
         "fk:c.p_id->p.id": AccessHint(estimated_child_count_per_parent=50),
@@ -201,7 +201,7 @@ def test_nested_size_limit_references_the_biggest_branch() -> None:
 # -------------------------------------------------------------------- junctions
 JUNC = (
     "CREATE TABLE a (id INT PRIMARY KEY); CREATE TABLE b (id INT PRIMARY KEY);"
-    "CREATE TABLE ab (a_id INT REFERENCES a(id) {c}, b_id INT REFERENCES b(id) {c} {extra}"
+    "CREATE TABLE ab (a_id INT NOT NULL REFERENCES a(id) {c}, b_id INT NOT NULL REFERENCES b(id) {c} {extra}"
 )
 
 
@@ -231,7 +231,7 @@ def test_pure_junction_without_embed_candidate_stays_collection() -> None:
 def test_junction_with_payload_embeds_through_the_fk_edge() -> None:
     sql = (
         "CREATE TABLE a (id INT PRIMARY KEY); CREATE TABLE b (id INT PRIMARY KEY);"
-        f"CREATE TABLE ab (a_id INT REFERENCES a(id) {CASC}, b_id INT REFERENCES b(id), qty INT, PRIMARY KEY (a_id, b_id));"
+        f"CREATE TABLE ab (a_id INT NOT NULL REFERENCES a(id) {CASC}, b_id INT NOT NULL REFERENCES b(id), qty INT, PRIMARY KEY (a_id, b_id));"
     )
     p = plan(sql)
     assert (
@@ -268,7 +268,7 @@ def test_ref_array_host_is_the_lower_fanout_side() -> None:
 
 # --------------------------------------------------------------------- overrides
 BASIC = (
-    "CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT REFERENCES p(id)"
+    "CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT NOT NULL REFERENCES p(id)"
     + " {a});"
 )
 
@@ -292,8 +292,8 @@ def test_override_unknown_relationship_warns() -> None:
 
 def test_override_embed_still_respects_cycle_breaking() -> None:
     sql = (
-        "CREATE TABLE a (id INT PRIMARY KEY, b_id INT UNIQUE);"
-        "CREATE TABLE b (id INT PRIMARY KEY, a_id INT UNIQUE REFERENCES a(id));"
+        "CREATE TABLE a (id INT PRIMARY KEY, b_id INT NOT NULL UNIQUE);"
+        "CREATE TABLE b (id INT PRIMARY KEY, a_id INT NOT NULL UNIQUE REFERENCES a(id));"
         "ALTER TABLE a ADD FOREIGN KEY (b_id) REFERENCES b(id);"
     )
     p = plan(sql, overrides={"fk:b.a_id->a.id": "EMBED", "fk:a.b_id->b.id": "EMBED"})
@@ -326,3 +326,23 @@ def test_overrides_typed_as_placement(value: Placement) -> None:
         CompileOptions(relationship_overrides={"fk:x": value}).relationship_overrides["fk:x"]
         == value
     )
+
+
+# ------------------------------------------------------- optional (nullable) foreign key
+NULLABLE = "CREATE TABLE p (id INT PRIMARY KEY); CREATE TABLE c (id INT PRIMARY KEY, p_id INT REFERENCES p(id) ON DELETE CASCADE);"
+
+
+def test_nullable_foreign_key_is_never_embedded() -> None:
+    d = plan(NULLABLE).decisions["fk:c.p_id->p.id"]
+    assert d.decision == "REFERENCE" and "nullable" in d.reason
+
+
+def test_forced_embed_on_a_nullable_foreign_key_is_ignored_with_warning() -> None:
+    p = plan(NULLABLE, overrides={"fk:c.p_id->p.id": "EMBED"})
+    assert decisions(p)["fk:c.p_id->p.id"] == "REFERENCE"
+    assert any("nullable" in w for w in p.warnings)
+
+
+def test_not_null_foreign_key_still_embeds() -> None:
+    sql = NULLABLE.replace("p_id INT REFERENCES", "p_id INT NOT NULL REFERENCES")
+    assert plan(sql).decisions["fk:c.p_id->p.id"].decision == "EMBED"

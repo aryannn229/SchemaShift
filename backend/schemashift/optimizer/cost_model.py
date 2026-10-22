@@ -37,6 +37,12 @@ def hard_constraint(f: RelationshipFeatures, w: Weights) -> tuple[str, str] | No
             "self_reference",
             "self-referencing relationships form a hierarchy and are never embedded",
         )
+    if f.child_fk_nullable:
+        return (
+            "optional_parent",
+            "the foreign key is nullable: a child row without a parent would have no document "
+            "to live in and would be lost on embedding",
+        )
     if f.estimated_child_count_per_parent > w.hard.max_children_per_parent:
         return (
             "unbounded_growth",

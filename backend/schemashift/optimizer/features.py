@@ -83,7 +83,13 @@ class RelationshipFeatures(FrozenModel):
     child_has_other_parents: bool
     guarantees_needing_embedding: int
     is_junction_edge: bool = False
+    child_fk_nullable: bool = False  # a child with a NULL foreign key has no parent document
     sources: dict[str, str] = {}  # feature -> "default" | "workload" | "seed" | "hint"
+
+
+def _fk_nullable(child: Table, rel: Relationship) -> bool:
+    cols = [child.column(c) for c in rel.fk.columns]
+    return any(c is not None and c.nullable for c in cols)
 
 
 def _other_parents(graph: SchemaGraph, rel: Relationship) -> bool:
@@ -191,6 +197,7 @@ def extract_features(
             child_has_other_parents=_other_parents(graph, rel),
             guarantees_needing_embedding=_guarantee_count(rel, program),
             is_junction_edge=rel.child in graph.junctions,
+            child_fk_nullable=_fk_nullable(schema.tables[rel.child], rel),
             sources=src,
         )
     return result

@@ -138,6 +138,15 @@ def _apply_overrides(st: _State, overrides: dict[str, Placement]) -> set[str]:
                 )
                 st.reasons[rid] = "self-references cannot be embedded"
                 continue
+            if st.feats[rid].child_fk_nullable:
+                st.warnings.append(
+                    f"override EMBED on {rid} ignored: the foreign key is nullable, so children "
+                    "without a parent would be lost"
+                )
+                st.reasons[rid] = (
+                    "nullable foreign key: children without a parent cannot be embedded"
+                )
+                continue
             st.forced.add(rid)
             candidates.add(rid)
             st.reasons[rid] = "user override: EMBED"
