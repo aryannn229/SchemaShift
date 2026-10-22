@@ -171,3 +171,29 @@ def test_the_solver_finds_a_strlen_validator_that_raises_on_missing_fields() -> 
     s = z3.Solver()
     s.add(z3.Not(v.present), MongoExpr({"s": v}).truth(bad))
     assert s.check() == z3.unsat  # a row with s missing can never satisfy it: the error rejects it
+
+
+def test_concurrent_compiles_do_not_crash_the_process() -> None:
+    """Regression: Z3's default context is not thread safe. The API runs requests on a thread pool and
+    two simultaneous compiles crashed the server with an access violation inside libz3."""
+    import threading
+
+    sql = (
+        "CREATE TABLE t (id INT PRIMARY KEY, a INT, b INT NOT NULL, s VARCHAR(8), p NUMERIC(8,2), "
+        "CHECK (a < b OR a IS NULL), CHECK (LENGTH(s) >= 2 OR s IS NULL), CHECK (p >= 0));"
+    )
+    errors: list[BaseException] = []
+
+    def work() -> None:
+        try:
+            for _ in range(6):
+                compile_sql(sql)
+        except BaseException as exc:  # noqa: BLE001 - the test reports whatever escaped
+            errors.append(exc)
+
+    threads = [threading.Thread(target=work) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert errors == []

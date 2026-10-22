@@ -110,6 +110,8 @@ jobs:
         env:
           SANDBOX_ADMIN_DATABASE_URL: postgresql://test:test@localhost:5433/test
           MONGO_URL: mongodb://localhost:27018/?directConnection=true
+          COMPILE_RATE_PER_MINUTE: "1000"   # the end-to-end run compiles far more than 30 times a minute
+          VERIFY_RATE_PER_MINUTE: "100"
         run: |
           (cd backend && nohup uvicorn schemashift.api.main:app --port 8000 > ../api.log 2>&1 &)
           (cd frontend && VITE_PROXY_TARGET=http://127.0.0.1:8000 nohup npm run dev -- --host 127.0.0.1 > ../web.log 2>&1 &)
@@ -124,10 +126,25 @@ jobs:
           E2E_BASE_URL: http://127.0.0.1:5173
           E2E_VERIFY: "1"
 
+  prod-stack:
+    # the deployment configuration, exercised locally: same image and commands as Render, plus Redis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f docker-compose.prod.yml up -d --build --wait
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/smoke_test.py http://localhost:8010 --origin http://localhost:5173 --verify --wait 120
+      - if: failure()
+        run: docker compose -f docker-compose.prod.yml logs --tail=100
+      - if: always()
+        run: docker compose -f docker-compose.prod.yml down -v
+
   docker:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    needs: [backend, frontend, integration]
+    needs: [backend, frontend, integration, prod-stack]
     permissions:
       contents: read
       packages: write

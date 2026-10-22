@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import time
 from typing import TYPE_CHECKING, Any
 
@@ -23,6 +24,10 @@ from schemashift.equivalence.smt.sql import (
 from schemashift.models.evidence import EvidenceCondition
 from schemashift.models.schema import Column, Table
 from schemashift.models.verdict import Status, Verdict, worst
+
+# Z3's default context is not thread safe: two threads building formulas at once crashed the API
+# process (access violation inside libz3). Every use of the solver happens under this lock.
+_Z3_LOCK = threading.Lock()
 
 if TYPE_CHECKING:  # the pipeline imports this package: avoid the cycle at runtime
     from schemashift.pipeline import CompileOptions, CompileResult
@@ -265,7 +270,7 @@ def _table_result(
     )
 
 
-def run_smt(
+def _run_smt(
     result: CompileResult, options: CompileOptions | None = None, timeout_ms: int = 2000
 ) -> SmtReport:
     from schemashift.pipeline import CompileOptions as _Options
@@ -301,6 +306,14 @@ def run_smt(
     return SmtReport(
         solver=f"z3 {z3.get_version_string()}", timeout_ms=timeout_ms, tables=tuple(out)
     )
+
+
+def run_smt(
+    result: CompileResult, options: CompileOptions | None = None, timeout_ms: int = 2000
+) -> SmtReport:
+    """Z3 check of every root table (serialized: see ``_Z3_LOCK``)."""
+    with _Z3_LOCK:
+        return _run_smt(result, options, timeout_ms)
 
 
 def apply_smt(report: EquivalenceReport, smt: SmtReport) -> EquivalenceReport:

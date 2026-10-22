@@ -1,6 +1,6 @@
 {
   "date": "2026-10-23",
-  "commit": "2c8bcbd",
+  "commit": "01b25b0",
   "equivalence": {
     "corpus_schemas": 32,
     "labeled_nodes": 883,
@@ -1035,5 +1035,61 @@
     ],
     "command": "scripts/mutation.sh 8",
     "date": "2026-10-22"
+  },
+  "evaluation": {
+    "smt_soundness": {
+      "computed": true,
+      "examples": 150,
+      "passed": true,
+      "stats": {
+        "timeouts": 0,
+        "tables": 150,
+        "unsupported": 0,
+        "counterexamples_confirmed": 69,
+        "proofs": 102,
+        "rows_agreeing": 6120
+      },
+      "seconds": 39.2,
+      "note": "hypothesis (derandomized); counterexample rows are inserted into both databases"
+    },
+    "fuzz": {
+      "computed": true,
+      "cases": 100,
+      "seed": 52,
+      "queries": 221,
+      "compared": 221,
+      "relation_checks": 451,
+      "optimizer_checked": 8,
+      "failures": 0,
+      "seconds": 60.5,
+      "bugs_found_to_date": {
+        "fixed": 14,
+        "open": 0
+      }
+    },
+    "pooled_pipeline_rho": 0.8069,
+    "pooled_points": 20,
+    "bench": {
+      "chosen_fastest_overall": "1/6"
+    },
+    "evidence": {
+      "computed": true,
+      "schemas": 41,
+      "without_smt": {
+        "CONDITIONAL": 2116,
+        "PROVEN": 864,
+        "UNVERIFIED": 93
+      },
+      "with_smt": {
+        "PROVEN": 1384,
+        "CONDITIONAL": 1596,
+        "UNVERIFIED": 93
+      },
+      "smt_table_outcomes": {
+        "EQUIVALENT": 94,
+        "COUNTEREXAMPLE": 64,
+        "UNSUPPORTED": 74
+      }
+    }
   }
 }

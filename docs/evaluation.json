@@ -1,12 +1,12 @@
 {
   "environment": {
     "date": "2026-10-23",
-    "commit": "2c8bcbd",
+    "commit": "01b25b0",
     "python": "3.13.0",
     "platform": "Windows-11-10.0.26200-SP0",
     "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
     "cpu_count": 20,
-    "memory_gb": null,
+    "memory_gb": 15.7,
     "versions": {
       "sqlglot": "30.24.0",
       "z3": "5.3.1",
@@ -25,7 +25,7 @@
   },
   "corpus": {
     "date": "2026-10-23",
-    "commit": "2c8bcbd",
+    "commit": "01b25b0",
     "equivalence": {
       "corpus_schemas": 32,
       "labeled_nodes": 883,
@@ -1093,7 +1093,7 @@
       "proofs": 102,
       "rows_agreeing": 6120
     },
-    "seconds": 32.6,
+    "seconds": 39.2,
     "note": "hypothesis (derandomized); counterexample rows are inserted into both databases"
   },
   "fuzz": {
@@ -1105,7 +1105,7 @@
     "relation_checks": 451,
     "optimizer_checked": 8,
     "failures": 0,
-    "seconds": 64.0,
+    "seconds": 60.5,
     "bugs_found_to_date": {
       "fixed": 14,
       "open": 0
@@ -1125,7 +1125,7 @@
         "concurrency": {
           "probes": 18,
           "generated_violations": 0,
-          "unguarded_violations": 57
+          "unguarded_violations": 56
         }
       },
       "blog": {
@@ -1139,7 +1139,7 @@
         "concurrency": {
           "probes": 9,
           "generated_violations": 0,
-          "unguarded_violations": 25
+          "unguarded_violations": 30
         }
       },
       "banking": {
@@ -1153,7 +1153,7 @@
         "concurrency": {
           "probes": 18,
           "generated_violations": 0,
-          "unguarded_violations": 176
+          "unguarded_violations": 175
         }
       },
       "university": {
@@ -1167,7 +1167,7 @@
         "concurrency": {
           "probes": 12,
           "generated_violations": 0,
-          "unguarded_violations": 107
+          "unguarded_violations": 111
         }
       }
     },
@@ -1187,9 +1187,9 @@
         "chosen_fastest": 1,
         "chosen_not_fastest": 2,
         "findings": [
-          "q1: MongoDB p50 chosen 22.35 ms, all_reference 21.02 ms, all_embed 3.21 ms; PostgreSQL 1.29 ms; all_embed beat the chosen plan",
-          "q2: MongoDB p50 chosen 6.20 ms, all_reference 27.78 ms, all_embed 5.58 ms; PostgreSQL 1.47 ms; all_embed beat the chosen plan",
-          "q3: MongoDB p50 chosen 2.29 ms, all_reference 5.98 ms, all_embed 3.06 ms; PostgreSQL 0.56 ms; chosen plan is the fastest"
+          "q1: MongoDB p50 chosen 24.88 ms, all_reference 27.61 ms, all_embed 3.84 ms; PostgreSQL 1.19 ms; all_embed beat the chosen plan",
+          "q2: MongoDB p50 chosen 5.37 ms, all_reference 27.80 ms, all_embed 5.35 ms; PostgreSQL 1.43 ms; all_embed beat the chosen plan",
+          "q3: MongoDB p50 chosen 1.84 ms, all_reference 5.56 ms, all_embed 2.93 ms; PostgreSQL 0.59 ms; chosen plan is the fastest"
         ]
       },
       "blog": {
@@ -1202,9 +1202,9 @@
         "chosen_fastest": 0,
         "chosen_not_fastest": 3,
         "findings": [
-          "q1: MongoDB p50 chosen 2.69 ms, all_reference 9.23 ms, all_embed 2.16 ms; PostgreSQL 0.63 ms; all_embed beat the chosen plan",
-          "q2: MongoDB p50 chosen 7.38 ms, all_reference 26.55 ms, all_embed 5.66 ms; PostgreSQL 1.21 ms; all_embed beat the chosen plan",
-          "q3: MongoDB p50 chosen 5.45 ms, all_reference 25.73 ms, all_embed 4.23 ms; PostgreSQL 1.22 ms; all_embed beat the chosen plan"
+          "q1: MongoDB p50 chosen 2.23 ms, all_reference 9.97 ms, all_embed 2.21 ms; PostgreSQL 0.63 ms; all_embed beat the chosen plan",
+          "q2: MongoDB p50 chosen 5.85 ms, all_reference 29.74 ms, all_embed 5.62 ms; PostgreSQL 1.66 ms; all_embed beat the chosen plan",
+          "q3: MongoDB p50 chosen 4.40 ms, all_reference 27.15 ms, all_embed 4.01 ms; PostgreSQL 0.88 ms; all_embed beat the chosen plan"
         ]
       }
     },

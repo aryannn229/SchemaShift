@@ -13,3 +13,8 @@ Each of these was found by the random soundness test (a counterexample or proof 
 | `CHECK (LENGTH(s) >= 2 OR s IS NULL)`: MongoDB rejected rows with `s` missing (the guard `$lte: [{$strLenCP: "$s"}, null]` raises on a missing `s`) | **code generator** | guards test the argument of `$strLenCP` |
 
 Two of the five are genuine bugs in the generated MongoDB validators that no earlier test had found; three were mistakes in the first version of the encoder.
+
+## Not found by the soundness test: thread safety
+Z3's default context is not thread safe. The API serves requests on a thread pool, and two simultaneous compiles crashed the server process (an access violation
+inside `libz3`); Playwright found it. `run_smt` now holds a process-wide lock (`tests/unit/equivalence/test_smt.py::test_concurrent_compiles_do_not_crash_the_process`
+fails with "Context mismatch" errors when the lock is removed).

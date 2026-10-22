@@ -3,7 +3,7 @@
 Computed by `schemashift corpus report` (see `docs/EVALUATION.md` for methodology).
 
 - **Date:** 2026-10-23
-- **Commit:** 2c8bcbd
+- **Commit:** 01b25b0
 
 The two label groups are scored **separately and never merged into one headline number**: the
 self-labeled corpus is written by the author of the rules, so agreement shows internal consistency,
