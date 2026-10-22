@@ -16,11 +16,12 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any, Literal
 
 from sqlglot import exp
 
-from schemashift.codegen.values import DateValue, RegexValue, UuidValue
+from schemashift.codegen.values import DateValue, DecimalValue, RegexValue, UuidValue
 from schemashift.models.schema import NormalizedType, Schema
 
 Mode = Literal["where", "check"]
@@ -226,12 +227,14 @@ def parse_timestamp(text: str) -> str:
     return value.astimezone(UTC).isoformat()
 
 
-def literal_value(node: exp.Expr, hint: NormalizedType | None) -> Any:
+def literal_value(node: exp.Expr, hint: NormalizedType | None, exact_decimal: bool = False) -> Any:
     """Python value for a SQL literal, converted to the BSON type of the compared column."""
     if isinstance(node, exp.Paren):
-        return literal_value(node.this, hint)
+        return literal_value(node.this, hint, exact_decimal)
     if isinstance(node, exp.Neg):
-        inner = literal_value(node.this, hint)
+        inner = literal_value(node.this, hint, exact_decimal)
+        if isinstance(inner, DecimalValue):
+            return DecimalValue(str(-Decimal(inner.text)))
         if isinstance(inner, (int, float)):
             return -inner
         raise Untranslatable(node.sql(dialect="postgres"))
@@ -254,6 +257,10 @@ def literal_value(node: exp.Expr, hint: NormalizedType | None) -> Any:
         number: int | float = int(text) if re.fullmatch(r"-?\d+", text) else float(text)
         if hint is not None and hint.base in ("FLOAT", "DOUBLE") and isinstance(number, int):
             return float(number)
+        if exact_decimal and isinstance(number, float) and hint is not None:
+            if hint.base == "DECIMAL" and not hint.is_array:
+                # a double literal is inexact and never equals the stored Decimal128
+                return DecimalValue(str(Decimal(text)))
         return number
     raise Untranslatable(node.sql(dialect="postgres"))
 
@@ -295,7 +302,7 @@ def value_expr(
     if isinstance(node, exp.Column):
         return resolve(node).expr
     if is_literal(node):
-        value = literal_value(node, hint)
+        value = literal_value(node, hint, True)
         if isinstance(value, str) and value.startswith("$"):
             return {"$literal": value}
         return value
@@ -468,7 +475,7 @@ def _simple_leaf_unguarded(pred: Pred, resolve: Resolver) -> dict[str, Any] | No
         if col is None or not is_literal(other) or isinstance(_strip(other), exp.Null):
             return None
         ref = resolve(col)
-        value = literal_value(other, ref.type)
+        value = literal_value(other, ref.type, True)
         if ref.enum_values and op not in ("eq", "ne"):
             if value not in ref.enum_values:
                 return None
@@ -491,7 +498,7 @@ def _simple_leaf_unguarded(pred: Pred, resolve: Resolver) -> dict[str, Any] | No
         if col is None or not all(is_literal(i) for i in pred.items):
             return None
         ref = resolve(col)
-        values = [literal_value(i, ref.type) for i in pred.items]
+        values = [literal_value(i, ref.type, True) for i in pred.items]
         has_null = any(v is None for v in values)
         values = [v for v in values if v is not None]
         if pred.neg:

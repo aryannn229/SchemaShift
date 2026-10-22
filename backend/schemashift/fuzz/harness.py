@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from types import TracebackType
 from typing import Any, Literal
 
@@ -44,6 +45,10 @@ class SelectOutcome(FrozenModel):
     hypothesis: str | None = None
     detail: str | None = None
     pipeline: list[dict[str, Any]] | None = None
+    # Phase 19: optimized vs unoptimized pipeline run on MongoDB directly
+    optimizer_check: str | None = (
+        None  # None = not rewritten, "OK" or a description of the difference
+    )
 
     @property
     def comparable(self) -> bool:
@@ -66,6 +71,7 @@ class FuzzSession:
         self.options = options or CompileOptions()
         self._sb: Sandbox | None = None
         self.env: Env | None = None
+        self.optimized_checked = 0
         self.untranslated: dict[str, int] = {}  # reason -> count (every untranslatable SELECT)
 
     @property
@@ -145,6 +151,7 @@ class FuzzSession:
                 pipeline=tq.pipeline,
             )
         diff: ResultDiff = compare(left, right, tq.ordered, tq.order_positions, tq.global_aggregate)
+        opt_check = self._optimizer_check(query, tq, right)
         return SelectOutcome(
             sql=sql,
             status=diff.status,
@@ -153,4 +160,23 @@ class FuzzSession:
             differing=diff.differing,
             hypothesis=diff.hypothesis,
             pipeline=tq.pipeline,
+            optimizer_check=opt_check,
+        )
+
+    def _optimizer_check(self, query: Any, tq: Any, optimized_rows: list[Any]) -> str | None:
+        """Run the unoptimized pipeline on MongoDB and require identical rows."""
+        if not tq.rewrites:
+            return None
+        assert self.env is not None
+        plain = translate_query(query, dataclasses.replace(self.env.ctx, optimize=False))
+        if plain.error or plain.pipeline is None:
+            return None
+        self.optimized_checked += 1
+        try:
+            base = mongo_rows(self.env.sb.mongo_db, plain)
+        except PyMongoError as exc:
+            return f"unoptimized pipeline failed: {str(exc).splitlines()[0]}"
+        d = compare(base, optimized_rows, tq.ordered, tq.order_positions, tq.global_aggregate)
+        return (
+            "OK" if d.status == "MATCH" else f"{','.join(tq.rewrites)}: {d.hypothesis or d.status}"
         )

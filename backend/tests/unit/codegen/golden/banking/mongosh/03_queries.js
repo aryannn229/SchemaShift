@@ -30,8 +30,8 @@ const q1 = db.getCollection("accounts").aggregate([
 // q2: SELECT c.full_name, k.national_id FROM customers c JOIN kyc_profiles k ON k.customer_id = c.id
 // columns: full_name, national_id
 const q2 = db.getCollection("customers").aggregate([
+  {$match: {kyc_profiles: {$exists: true}}},
   {$replaceRoot: {newRoot: {c: "$$ROOT"}}},
-  {$match: {"c.kyc_profiles": {$exists: true}}},
   {
     $project: {
       _id: 0,

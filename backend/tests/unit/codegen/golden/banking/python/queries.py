@@ -44,8 +44,8 @@ def q2(db):
     # q2: SELECT c.full_name, k.national_id FROM customers c JOIN kyc_profiles k ON k.customer_id = c.id
     # columns: full_name, national_id
     result = list(db['customers'].aggregate([
+            {'$match': {'kyc_profiles': {'$exists': True}}},
             {'$replaceRoot': {'newRoot': {'c': '$$ROOT'}}},
-            {'$match': {'c.kyc_profiles': {'$exists': True}}},
             {
                 '$project': {
                     '_id': 0,

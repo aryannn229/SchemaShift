@@ -40,6 +40,8 @@ class QueryContext:
     layouts: dict[str, TableLayout]
     uuid_as: str = "binary"
     preserve_integer_ids: bool = False
+    optimize: bool = False  # run the aggregation pipeline optimizer (Phase 19) on SELECTs
+    indexed: dict[str, set[str]] | None = None  # collection -> indexed fields, for the cost model
 
 
 class WriteOp(FrozenModel):
@@ -66,6 +68,12 @@ class TranslatedQuery(FrozenModel):
     notes: list[str] = []
     error: str | None = None
     transaction_id: str | None = None
+    # Phase 19: what the pipeline optimizer did (empty when it changed nothing or was off)
+    original_pipeline: list[Any] | None = None
+    rewrites: list[str] = []
+    cost_before: float | None = None
+    cost_after: float | None = None
+    index_hints: list[str] = []
 
 
 # ============================================================================= helpers
@@ -1414,6 +1422,25 @@ class _Dml:
 
 
 # ======================================================================== entry points
+def _optimized(tq: TranslatedQuery, ctx: QueryContext) -> TranslatedQuery:
+    from schemashift.aggopt import Stats, optimize_pipeline
+
+    if not ctx.optimize or not tq.pipeline:
+        return tq
+    stats = Stats(indexed=ctx.indexed or {})
+    opt = optimize_pipeline(tq.pipeline, tq.collection, stats)
+    update: dict[str, Any] = {"index_hints": list(opt.index_hints)}
+    if opt.applied:
+        update.update(
+            pipeline=opt.pipeline,
+            original_pipeline=tq.pipeline,
+            rewrites=list(opt.applied),
+            cost_before=opt.baseline.total,
+            cost_after=opt.best.cost.total,
+        )
+    return tq.model_copy(update=update)
+
+
 def translate_query(
     q: Query, ctx: QueryContext, transaction_id: str | None = None
 ) -> TranslatedQuery:
@@ -1427,16 +1454,19 @@ def translate_query(
         if q.kind == "SELECT":
             sel = _Select(q, ctx)
             collection, pipeline, outputs, ordered = sel.translate()
-            return TranslatedQuery(
-                **base,
-                collection=collection,
-                pipeline=pipeline,
-                output_columns=outputs,
-                ordered=ordered,
-                order_positions=sel.order_positions,
-                global_aggregate=sel.global_aggregate,
-                limited=sel.limited,
-                notes=sel.notes,
+            return _optimized(
+                TranslatedQuery(
+                    **base,
+                    collection=collection,
+                    pipeline=pipeline,
+                    output_columns=outputs,
+                    ordered=ordered,
+                    order_positions=sel.order_positions,
+                    global_aggregate=sel.global_aggregate,
+                    limited=sel.limited,
+                    notes=sel.notes,
+                ),
+                ctx,
             )
         dml = _Dml(q, ctx)
         if q.kind == "INSERT":

@@ -1,0 +1,54 @@
+id: fuzz_7e9ed92281
+found_on: '2026-10-23'
+fuzz_seed: 41
+violated: differential
+summary: 'different row counts: a join or filter treats NULL / missing values differently'
+schema_sql: "CREATE TYPE mood AS ENUM ('draft', 'open', 'closed');\nCREATE TABLE t0\
+  \ (\n  id SERIAL,\n  c0 INTEGER NOT NULL UNIQUE DEFAULT 0 CHECK (c0 >= -2147483648),\n\
+  \  c1 TEXT NOT NULL UNIQUE DEFAULT 'd',\n  c2 INTEGER NOT NULL UNIQUE DEFAULT 0\
+  \ CHECK (c2 >= -2147483648),\n  c3 NUMERIC(10,2) NOT NULL DEFAULT 0,\n  PRIMARY\
+  \ KEY (id)\n);\n"
+seed_sql: 'INSERT INTO t0 (id, c0, c1, c2, c3) VALUES (1, 0, '''', 0, 99999999.99);
+
+  '
+queries:
+- SELECT a0.id AS c0, a0.id + 1 AS c1 FROM t0 a0 WHERE a0.c3 = 99999999.99 ORDER BY
+  a0.id ASC;
+plan: default
+observed:
+  status: MISMATCH
+  pg:
+  - - 1
+    - 2
+  mongo: []
+  pipeline:
+  - $match:
+      c3: 99999999.99
+  - $replaceRoot:
+      newRoot:
+        a0: $$ROOT
+  - $addFields:
+      _n0:
+        $cond:
+        - $lte:
+          - $a0._id
+          - null
+        - 1
+        - 0
+  - $sort:
+      _n0: 1
+      a0._id: 1
+  - $project:
+      _id: 0
+      c0:
+        $ifNull:
+        - $a0._id
+        - null
+      c1:
+        $ifNull:
+        - $add:
+          - $a0._id
+          - 1
+        - null
+status: fixed
+fix: A comparison of a NUMERIC column with a decimal literal sent the literal as a double, which never equals the stored Decimal128; decimal literals are now sent as Decimal128.

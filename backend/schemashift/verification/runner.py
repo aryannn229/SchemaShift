@@ -22,6 +22,7 @@ from schemashift.parser import parse
 from schemashift.pipeline import CompileOptions, CompileResult
 from schemashift.verification.ddl import UnsafeSqlError, assert_safe_expression, ddl_statements, q
 from schemashift.verification.diff import ResultDiff, RowDiff, compare
+from schemashift.verification.explain import PipelineExplain
 from schemashift.verification.normalize import TOLERANCE
 from schemashift.verification.sandbox import Sandbox, SandboxConfig
 from schemashift.verification.seed import (
@@ -85,6 +86,7 @@ class VerificationReport(FrozenModel):
     counterexamples: list[Counterexample] = []
     counterexample_gaps: list[CounterexampleGap] = []
     evidence_upgrades: list[EvidenceUpgrade] = []
+    pipeline_explain: PipelineExplain | None = None
     warnings: list[str] = []
     duration_ms: int = 0
 
@@ -208,7 +210,12 @@ class Env:
         )
         self.schema = result.schema_
         self.ctx = QueryContext(
-            result.schema_, result.graph, layouts, options.uuid_as, options.preserve_integer_ids
+            result.schema_,
+            result.graph,
+            layouts,
+            options.uuid_as,
+            options.preserve_integer_ids,
+            options.optimize_pipelines,
         )
         self.migrate_ns: dict[str, Any] | None = None
 
@@ -251,6 +258,22 @@ class Env:
         self.migrate()
 
 
+def _explain(env: Env, codegen: CodegenResult) -> PipelineExplain | None:
+    from schemashift.codegen import build_indexes
+    from schemashift.verification.explain import explain_pipelines
+
+    indexed: dict[str, set[str]] = {}
+    for ix in build_indexes(env.result.schema_, env.result.graph, env.layouts):
+        indexed.setdefault(ix.collection, set()).add(ix.keys[0][0])
+    selects = [q for q in codegen.queries if q.pipeline and not q.error]
+    if not selects:
+        return None
+    try:
+        return explain_pipelines(env.sb.mongo_db, selects, indexed)
+    except PyMongoError:
+        return None
+
+
 def verify(
     result: CompileResult,
     options: CompileOptions | None = None,
@@ -262,6 +285,7 @@ def verify(
     counterexamples: bool = True,
     concurrency: bool = True,
     concurrency_iterations: int = 30,
+    explain: bool = True,
 ) -> VerificationReport:
     """Verify a compile result against real PostgreSQL and MongoDB sandboxes."""
     if config is None:
@@ -298,6 +322,9 @@ def verify(
         for query in flat:
             if query.kind != "SELECT":
                 outcomes.append(_run_dml(env, query, translated[query.id]))
+        pipeline_explain = None
+        if explain:
+            pipeline_explain = _explain(env, codegen)
         probes: list[ProbeOutcome] = []
         if run_probes:
             from schemashift.verification.probes import run_probes as _probes
@@ -325,6 +352,7 @@ def verify(
         migrated=migrated,
         queries=sorted_outcomes,
         probes=probes,
+        pipeline_explain=pipeline_explain,
         concurrency=conc_results,
         concurrency_skips=conc_skips,
         counterexamples=examples,

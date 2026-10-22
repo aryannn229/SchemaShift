@@ -64,8 +64,17 @@ def generate_code(
     layouts = build_layouts(result.graph, result.plan)
     cols = build_collections(result.schema_, layouts, options.uuid_as, options.string_collation)
     indexes = build_indexes(result.schema_, result.graph, layouts)
+    indexed: dict[str, set[str]] = {}
+    for ix in indexes:
+        indexed.setdefault(ix.collection, set()).add(ix.keys[0][0])
     ctx = QueryContext(
-        result.schema_, result.graph, layouts, options.uuid_as, options.preserve_integer_ids
+        result.schema_,
+        result.graph,
+        layouts,
+        options.uuid_as,
+        options.preserve_integer_ids,
+        options.optimize_pipelines,
+        indexed,
     )
     queries = translate_all(result.queries, ctx)
     files: list[GeneratedFile] = []

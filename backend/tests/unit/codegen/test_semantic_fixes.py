@@ -293,3 +293,12 @@ def test_generated_scripts_apply_collation_only_at_creation() -> None:
     py = code.file("python/schema.py").content
     assert 'collation: {locale: "en"}' in js and "const { collation, ...modifiable }" in js
     assert "'collation': {'locale': 'en'}" in py and 'if k != "collation"' in py
+
+
+def test_decimal_literal_is_sent_as_decimal128_not_double() -> None:
+    from schemashift.codegen.values import DecimalValue
+
+    (stage,) = pipeline("SELECT id FROM p WHERE amount = 99999999.99")[:1]
+    assert stage["$match"]["amount"] == DecimalValue("99999999.99")
+    # whole numbers stay plain numbers: an int equals the Decimal128 of the same value
+    assert pipeline("SELECT id FROM p WHERE amount = 5")[0]["$match"]["amount"] == 5

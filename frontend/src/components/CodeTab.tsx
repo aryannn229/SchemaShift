@@ -13,6 +13,45 @@ const GROUPS = [
   ["helpers", "Enforcement Helpers"],
 ] as const;
 
+function PipelineOptimizer({ result }: { result: CompileResponse }) {
+  const rewritten = result.queries.filter((q) => (q.rewrites ?? []).length > 0);
+  const [id, setId] = useState<string | null>(null);
+  const current = rewritten.find((q) => q.query_id === id) ?? rewritten[0];
+  if (!current) {
+    return (
+      <p className="text-sm text-muted" data-testid="pipeline-optimizer-none">
+        The pipeline optimizer found nothing to rewrite in these queries.
+      </p>
+    );
+  }
+  return (
+    <section aria-label="Pipeline optimizer" data-testid="pipeline-optimizer" className="space-y-2">
+      <h3 className="text-sm font-semibold">Pipeline optimizer</h3>
+      <div className="flex flex-wrap gap-2">
+        {rewritten.map((q) => (
+          <Button
+            key={q.query_id}
+            size="sm"
+            aria-pressed={q.query_id === current.query_id}
+            onClick={() => setId(q.query_id)}
+          >
+            {q.query_id}
+          </Button>
+        ))}
+      </div>
+      <p className="text-xs text-muted tabular">
+        Rewrites: {(current.rewrites ?? []).join(", ")}. Estimated cost {current.cost_before} to{" "}
+        {current.cost_after}
+        {(current.index_hints ?? []).length > 0 && `; indexes it can use: ${(current.index_hints ?? []).join(", ")}`}
+      </p>
+      <div className="grid gap-2 md:grid-cols-2">
+        <CodeBlock code={current.original_mongosh ?? ""} title="Before" maxHeight="16rem" />
+        <CodeBlock code={current.mongosh ?? ""} title="After" maxHeight="16rem" />
+      </div>
+    </section>
+  );
+}
+
 export function CodeTab({ result }: { result: CompileResponse }) {
   const [purpose, setPurpose] = useState<string>("validators");
   const [path, setPath] = useState<string | null>(null);
@@ -84,7 +123,8 @@ export function CodeTab({ result }: { result: CompileResponse }) {
             );
           })}
         </nav>
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-3">
+          {purpose === "queries" && <PipelineOptimizer result={result} />}
           {current ? (
             <CodeBlock code={current.content} title={current.path} maxHeight="32rem" />
           ) : (

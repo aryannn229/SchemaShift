@@ -28,6 +28,7 @@ class CaseStats(FrozenModel):
     pg_errors: int = 0
     relation_checks: int = 0
     relation_skipped: int = 0
+    optimizer_checked: int = 0  # rewritten pipelines compared with the original on MongoDB
     untranslated: dict[str, int] = {}
 
 
@@ -50,6 +51,15 @@ def _differential(outcomes: list[SelectOutcome]) -> list[Finding]:
                         "mongo": [list(r) for r in o.mongo[:5]],
                         "pipeline": o.pipeline,
                     },
+                )
+            )
+        if o.optimizer_check not in (None, "OK"):
+            found.append(
+                Finding(
+                    kind="optimizer",
+                    summary=o.optimizer_check or "optimizer changed the result",
+                    sqls=(o.sql,),
+                    detail={"pipeline": o.pipeline},
                 )
             )
     return found
@@ -75,6 +85,7 @@ def check_case(
         "pg_errors": 0,
         "relation_checks": 0,
         "relation_skipped": 0,
+        "optimizer_checked": 0,
     }
 
     def record(result: relations.Result) -> None:
@@ -89,6 +100,7 @@ def check_case(
         stats["not_translated"] = sum(o.status == "NOT_TRANSLATED" for o in outcomes)
         stats["pg_errors"] = sum(o.status == "PG_ERROR" for o in outcomes)
         findings.extend(_differential(outcomes))
+        stats["optimizer_checked"] = session.optimized_checked
         untranslated = session.untranslated
         if metamorphic:
             for spec, outcome in zip(case.selects, outcomes, strict=True):
@@ -174,6 +186,7 @@ def run_fuzz(
         "pg_errors": 0,
         "relation_checks": 0,
         "relation_skipped": 0,
+        "optimizer_checked": 0,
     }
     ran = 0
     untranslated: dict[str, int] = {}
