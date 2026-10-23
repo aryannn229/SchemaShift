@@ -39,7 +39,7 @@ function ThemeToggle() {
       aria-label={`Theme: ${pref}. Switch to ${next}`}
       title={`Theme: ${pref}`}
       onClick={() => setPref(next)}
-      className="inline-flex h-8 w-8 items-center justify-center rounded border border-line text-muted hover:bg-raised hover:text-fg"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-line text-muted shadow-sm hover:bg-raised hover:text-fg"
     >
       <Icon size={15} aria-hidden />
     </button>
@@ -56,10 +56,10 @@ function Layout() {
         Skip to content
       </a>
       <header className="sticky top-0 z-30 border-b border-line bg-bg/95 backdrop-blur">
-        <div className="mx-auto flex h-12 max-w-screen-2xl items-center gap-6 px-4">
+        <div className="mx-auto flex h-14 max-w-screen-2xl items-center gap-8 px-4">
           <NavLink to="/" className="flex items-baseline gap-1.5">
-            <h1 className="text-base font-semibold tracking-tight">SchemaShift</h1>
-            <span className="hidden text-xs text-muted sm:inline">SQL to MongoDB compiler</span>
+            <h1 className="text-lg font-semibold tracking-tight">SchemaShift</h1>
+            <span className="hidden text-xs text-muted sm:inline">SQL to MongoDB migration</span>
           </NavLink>
           <nav aria-label="Primary" className="flex items-center gap-1">
             {NAV.map((n) => (
@@ -69,8 +69,8 @@ function Layout() {
                 end={n.end}
                 className={({ isActive }) =>
                   cx(
-                    "rounded px-2.5 py-1 text-sm font-medium",
-                    isActive ? "bg-raised text-fg" : "text-muted hover:text-fg",
+                    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    isActive ? "bg-accent-soft text-accent" : "text-muted hover:bg-raised hover:text-fg",
                   )
                 }
               >
@@ -83,7 +83,7 @@ function Layout() {
               href={REPO_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-8 items-center gap-1.5 rounded border border-line px-2.5 text-sm text-muted hover:bg-raised hover:text-fg"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-line px-3 text-sm text-muted shadow-sm hover:bg-raised hover:text-fg"
             >
               <GithubMark />
               <span className="hidden sm:inline">GitHub</span>

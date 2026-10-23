@@ -1,0 +1,9 @@
+{
+  "description": "Large demo: 14 tables, 12 queries and a money transfer. Shows every kind of problem the compiler can find.",
+  "access_hints": {
+    "fk:transactions.account_id->accounts.id": {"estimated_child_count_per_parent": 5000}
+  },
+  "relationship_overrides": {
+    "m2n:beneficiaries": "REF_ARRAY"
+  }
+}

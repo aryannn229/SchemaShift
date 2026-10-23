@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { CompileRequest, CompileResponse, RunDetail, Verdict } from "../api/client";
 import { CodeTab } from "./CodeTab";
 import { IRTab } from "./IRTab";
+import { OverviewTab } from "./OverviewTab";
 import { RelationshipsTab } from "./RelationshipsTab";
 import { SummaryTab } from "./SummaryTab";
 import { EmptyState, ErrorState, SkeletonBlock, Tabs } from "./ui";
@@ -10,6 +11,7 @@ import { VerdictsTab } from "./VerdictsTab";
 import { VerificationTab } from "./VerificationTab";
 
 const TABS = [
+  { id: "Overview", label: "Overview" },
   { id: "Summary", label: "Summary" },
   { id: "Verdicts", label: "Verdicts" },
   { id: "Relationships", label: "Relationships" },
@@ -38,7 +40,7 @@ export function ResultTabs({
   onOverride?: (relationshipId: string, decision: "EMBED" | "REFERENCE") => void;
   request?: { schema_sql: string; queries_sql?: string; options?: CompileRequest["options"] };
 }) {
-  const [tab, setTab] = useState<Tab>("Summary");
+  const [tab, setTab] = useState<Tab>("Overview");
 
   let body: React.ReactNode;
   if (tab === "Verification")
@@ -51,6 +53,7 @@ export function ResultTabs({
         Compile some SQL to see results. Load a sample from the editor toolbar to start.
       </EmptyState>
     );
+  else if (tab === "Overview") body = <OverviewTab result={result} />;
   else if (tab === "Summary") body = <SummaryTab result={result} run={run} />;
   else if (tab === "Verdicts") body = <VerdictsTab result={result} run={run} onSelect={onSelectVerdict} />;
   else if (tab === "Relationships")

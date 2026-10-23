@@ -1,4 +1,4 @@
-import { PanelLeftClose, PanelLeftOpen, Play, ShieldCheck, Sparkles } from "lucide-react";
+import { Layers, PanelLeftClose, PanelLeftOpen, Play, ShieldCheck, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Group, Panel, Separator, type PanelImperativeHandle } from "react-resizable-panels";
@@ -81,8 +81,8 @@ export default function Home() {
   };
 
   /** Class demo: load the banking sample, compile it, and start a verified run when available. */
-  const runDemo = async () => {
-    const req = await loadSample("banking");
+  const runDemo = async (name = "banking") => {
+    const req = await loadSample(name);
     if (!req) return;
     compile.mutate(req);
     startRun.mutate({ ...req, verify: true, seed: 1 }, { onSuccess: (r) => setRunId(r.run_id) });
@@ -154,7 +154,7 @@ export default function Home() {
         <div className="ml-auto flex items-center gap-2">
           <select
             aria-label="Load sample"
-            className="h-8 rounded border border-line bg-surface px-2 text-sm"
+            className="h-8 rounded-md border border-line bg-surface px-2 text-sm shadow-sm"
             value=""
             onChange={(e) => void loadSample(e.target.value)}
           >
@@ -167,6 +167,9 @@ export default function Home() {
           </select>
           <Button size="sm" onClick={() => void runDemo()} icon={<Sparkles size={13} aria-hidden />}>
             Demo
+          </Button>
+          <Button size="sm" onClick={() => void runDemo("enterprise")} icon={<Layers size={13} aria-hidden />}>
+            Large example
           </Button>
           <Button size="sm" aria-expanded={optionsOpen} onClick={() => setOptionsOpen(!optionsOpen)}>
             Options

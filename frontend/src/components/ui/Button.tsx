@@ -5,8 +5,8 @@ import { cx } from "./cx";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-accent text-accent-fg hover:opacity-90 border border-transparent",
-  secondary: "bg-surface text-fg border border-line hover:bg-raised",
+  primary: "bg-accent text-accent-fg shadow-sm hover:opacity-90 border border-transparent",
+  secondary: "bg-surface text-fg border border-line shadow-sm hover:bg-raised",
   ghost: "bg-transparent text-fg border border-transparent hover:bg-raised",
   danger: "bg-broken-soft text-broken border border-broken/40 hover:opacity-90",
 };
@@ -30,9 +30,9 @@ export function Button({
     <button
       type={type}
       className={cx(
-        "inline-flex items-center justify-center gap-1.5 rounded font-medium transition-colors",
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        size === "sm" ? "h-7 px-2 text-xs" : "h-8 px-3 text-sm",
+        size === "sm" ? "h-8 px-3 text-sm" : "h-9 px-4 text-sm",
         VARIANTS[variant],
         className,
       )}

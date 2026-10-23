@@ -28,5 +28,5 @@ test("home shows empty result state and disabled compile", () => {
   renderAt("/");
   expect(screen.getByText(/compile some sql/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Compile" })).toBeDisabled();
-  expect(screen.getAllByRole("tab")).toHaveLength(9);
+  expect(screen.getAllByRole("tab")).toHaveLength(10);
 });

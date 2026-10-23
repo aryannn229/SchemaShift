@@ -1,0 +1,16 @@
+SELECT a.id, COUNT(*) AS n, SUM(t.amount) AS total FROM accounts a JOIN transactions t ON t.account_id = a.id GROUP BY a.id;
+SELECT c.full_name, k.national_id FROM customers c JOIN kyc_profiles k ON k.customer_id = c.id;
+SELECT c.full_name, a.balance FROM customers c LEFT JOIN accounts a ON a.customer_id = c.id;
+SELECT SUM(balance) FROM accounts;
+SELECT AVG(salary) FROM employees;
+SELECT b.name, COUNT(*) AS staff FROM branches b JOIN employees e ON e.branch_id = b.id GROUP BY b.name;
+SELECT m.name, SUM(t.amount) AS spent FROM merchants m JOIN transactions t ON t.merchant_id = m.id GROUP BY m.name;
+SELECT l.id, l.principal, e.full_name FROM loans l LEFT JOIN employees e ON e.id = l.officer_id;
+SELECT l.id, SUM(p.amount) AS repaid FROM loans l JOIN loan_payments p ON p.loan_id = l.id GROUP BY l.id;
+SELECT c.full_name, COUNT(*) AS open_tickets FROM customers c JOIN support_tickets s ON s.customer_id = c.id WHERE s.open = TRUE GROUP BY c.full_name;
+SELECT r.name, COUNT(*) AS branches FROM regions r JOIN branches b ON b.region_id = r.id GROUP BY r.name;
+BEGIN;
+UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+INSERT INTO transactions (account_id, kind, amount) VALUES (1, 'transfer', 100);
+COMMIT;
